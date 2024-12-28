@@ -46,8 +46,7 @@ RSpec.describe Ductwork::Pipeline do
         klass.define do |pipeline|
           pipeline.start(spy)
         end
-      end.to change { Ductwork.definitions.count }.by(1)
-      expect(Ductwork.definitions[klass]).not_to be_nil
+      end.to change(klass, :pipeline_definition).from(nil)
     end
   end
 end

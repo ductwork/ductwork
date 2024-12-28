@@ -5,12 +5,14 @@ module Ductwork
     class DefinitionError < StandardError; end
 
     module ClassMethods
+      attr_reader :pipeline_definition
+
       def define(&block)
         if !block_given?
           raise DefinitionError, "Definition block must be given"
         end
 
-        if Ductwork.definitions.key?(self)
+        if pipeline_definition
           raise DefinitionError, "Pipeline has already been defined"
         end
 
@@ -18,7 +20,7 @@ module Ductwork
 
         block.call(builder)
 
-        Ductwork.definitions[self] = builder.complete!
+        @pipeline_definition = builder.complete!
       end
     end
 
