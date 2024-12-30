@@ -41,12 +41,21 @@ RSpec.describe Ductwork::Pipeline do
       end.to yield_with_args(builder)
     end
 
-    it "adds the definition to the set of definitions" do
+    it "sets the definition on the class" do
       expect do
         klass.define do |pipeline|
           pipeline.start(spy)
         end
       end.to change(klass, :pipeline_definition).from(nil)
+    end
+
+    it "adds the pipeline to whole set of pipelines" do
+      expect do
+        klass.define do |pipeline|
+          pipeline.start(spy)
+        end
+      end.to change(Ductwork.pipelines, :count).by(1)
+      expect(Ductwork.pipelines).to eq([klass.to_s])
     end
   end
 end

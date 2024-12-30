@@ -11,4 +11,12 @@ require_relative "ductwork/supervisor"
 require_relative "ductwork/version"
 
 module Ductwork
+  def self.pipelines
+    @_pipelines ||= []
+  end
+
+  # NOTE: this is test interface only
+  def self.reset!
+    @_pipelines = nil
+  end
 end
