@@ -7,6 +7,7 @@ module Ductwork
     DEFAULT_ENV = :default
     DEFAULT_FILE_PATH = "config/ductwork.yml"
     DELIMITER = ","
+    PIPELINES_WILDCARD = "*"
 
     class FileError < StandardError; end
 
@@ -20,7 +21,13 @@ module Ductwork
     end
 
     def pipelines
-      config.dig(:workers, 0, :pipelines).split(DELIMITER).map(&:strip)
+      raw_pipelines = config.dig(:workers, 0, :pipelines)
+
+      if raw_pipelines == PIPELINES_WILDCARD
+        Ductwork.pipelines
+      else
+        raw_pipelines.split(DELIMITER).map(&:strip)
+      end
     end
 
     private

@@ -16,14 +16,14 @@ RSpec.describe Ductwork::Configuration do
       <<~DATA
         default: &default
           workers:
-            - pipelines: "*"
+            - pipelines: "PipelineA, PipelineB"
 
         development:
           <<: *default
 
         test:
           workers:
-            - pipelines: "PipelineA, PipelineB"
+            - pipelines: "*"
 
         production:
           <<: *default
@@ -36,7 +36,7 @@ RSpec.describe Ductwork::Configuration do
     end
 
     it "returns the pipelines from the config file at the given path" do
-      rails = double(env: "test") # rubocop:disable RSpec/VerifiedDoubles
+      rails = double(env: "development") # rubocop:disable RSpec/VerifiedDoubles
       stub_const("Rails", rails)
 
       config = described_class.new(path: config_file.path)
@@ -47,7 +47,7 @@ RSpec.describe Ductwork::Configuration do
     it "returns the pipelines using the default environment" do
       config = described_class.new(path: config_file.path)
 
-      expect(config.pipelines).to eq(["*"])
+      expect(config.pipelines).to eq(%w[PipelineA PipelineB])
     end
 
     it "returns the pipelines from the default config file if no path given" do
@@ -55,7 +55,19 @@ RSpec.describe Ductwork::Configuration do
 
       config = described_class.new
 
-      expect(config.pipelines).to eq(["*"])
+      expect(config.pipelines).to eq(%w[PipelineA PipelineB])
+    end
+
+    it "returns all defined pipelines when wildcard is configured" do
+      Ductwork.pipelines << "PipelineA"
+      Ductwork.pipelines << "PipelineB"
+      Ductwork.pipelines << "PipelineC"
+      rails = double(env: "test") # rubocop:disable RSpec/VerifiedDoubles
+      stub_const("Rails", rails)
+
+      config = described_class.new(path: config_file.path)
+
+      expect(config.pipelines).to eq(%w[PipelineA PipelineB PipelineC])
     end
 
     def create_temp_file
