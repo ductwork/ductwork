@@ -10,7 +10,8 @@ module Ductwork
         parser = build_option_parser(options)
         parser.parse!(args)
         configuration = Configuration.new(**options)
-        Ductwork::Supervisor.start!(configuration)
+
+        Ductwork::WorkerLauncher.start!(configuration)
       end
 
       private

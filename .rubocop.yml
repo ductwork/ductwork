@@ -36,6 +36,9 @@ Style/IfUnlessModifier:
 Style/NegatedIf:
   Enabled: false
 
+Style/Next:
+  Enabled: false
+
 Style/StringLiterals:
   EnforcedStyle: double_quotes
 

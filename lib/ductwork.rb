@@ -9,6 +9,7 @@ require_relative "ductwork/definition_builder"
 require_relative "ductwork/pipeline"
 require_relative "ductwork/supervisor"
 require_relative "ductwork/version"
+require_relative "ductwork/worker_launcher"
 
 module Ductwork
   def self.pipelines
