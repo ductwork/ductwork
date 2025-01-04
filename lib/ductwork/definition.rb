@@ -2,6 +2,10 @@
 
 module Ductwork
   class Definition
-    # TODO: implement
+    attr_reader :steps
+
+    def initialize
+      @steps = []
+    end
   end
 end

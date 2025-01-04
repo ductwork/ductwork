@@ -20,7 +20,7 @@ module Ductwork
 
         block.call(builder)
 
-        @pipeline_definition = builder.complete!
+        @pipeline_definition = builder.complete
 
         Ductwork.pipelines << to_s
       end
