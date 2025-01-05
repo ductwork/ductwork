@@ -66,7 +66,7 @@ module Ductwork
     attr_reader :definition, :started, :depth
 
     def add_step(klass:, type:)
-      step = StepDefinition.new(klass: klass, type: type)
+      step = StepDefinition.new(klass: klass.name.to_s, type: type)
       definition.steps << step
     end
   end
