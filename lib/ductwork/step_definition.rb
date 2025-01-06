@@ -8,5 +8,9 @@ module Ductwork
       @klass = klass
       @type = type
     end
+
+    def first?
+      type == :start
+    end
   end
 end

@@ -14,6 +14,8 @@ module Ductwork
       template "bin/ductwork"
       migration_template "db/create_ductwork_pipeline_instances.rb",
                          "db/migrate/create_ductwork_pipeline_instances.rb"
+      migration_template "db/create_ductwork_steps.rb",
+                         "db/migrate/create_ductwork_steps.rb"
       chmod "bin/ductwork", 0o755 & ~File.umask, verbose: false
     end
   end

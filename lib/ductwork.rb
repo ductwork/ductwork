@@ -3,6 +3,7 @@
 require "active_record"
 require "active_support"
 require "active_support/core_ext/hash"
+require "active_support/core_ext/time"
 require "rails/railtie"
 
 require_relative "ductwork/configuration"

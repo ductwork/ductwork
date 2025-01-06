@@ -19,4 +19,18 @@ RSpec.describe Ductwork::StepDefinition do
       expect(step.type).to eq(type)
     end
   end
+
+  describe "#first?" do
+    it "returns true when the step definition is first" do
+      step = described_class.new(klass: klass, type: :start)
+
+      expect(step).to be_first
+    end
+
+    it "returns false when the step definition is not first" do
+      step = described_class.new(klass: klass, type: :chain)
+
+      expect(step).not_to be_first
+    end
+  end
 end
