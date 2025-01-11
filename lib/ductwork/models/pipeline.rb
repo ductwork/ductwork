@@ -1,7 +1,25 @@
 # frozen_string_literal: true
 
 module Ductwork
-  class Pipeline
+  class Pipeline < Ductwork::Record
+    has_many :steps, class_name: "Ductwork::Step", foreign_key: "pipeline_id", dependent: :destroy
+
+    validates :name, uniqueness: true, presence: true
+    validates :status, presence: true
+    validates :triggered_at, presence: true
+
+    enum :status,
+         pending: "pending",
+         in_progress: "in_progress",
+         completed: "completed"
+
+    def self.inherited(subclass)
+      super
+      subclass.class_eval do
+        default_scope { where(name: name.to_s) }
+      end
+    end
+
     class DefinitionError < StandardError; end
 
     class << self
@@ -27,8 +45,8 @@ module Ductwork
 
       def trigger(_args)
         Record.transaction do
-          instance = create_pipeline_instance
-          steps = create_steps(instance)
+          pipeline = create_pipeline
+          steps = create_steps(pipeline)
           steps.each_with_index do |step, index|
             step.previous_step = if index.positive?
                                    steps[index - 1]
@@ -39,21 +57,21 @@ module Ductwork
             step.save!
           end
 
-          instance
+          pipeline
         end
       end
 
       private
 
-      def create_pipeline_instance
-        PipelineInstance.create!(
+      def create_pipeline
+        create!(
           name: name.to_s,
           status: :in_progress,
           triggered_at: Time.current
         )
       end
 
-      def create_steps(instance)
+      def create_steps(pipeline)
         pipeline_definition.steps.map do |step|
           started_at = if step.first?
                          Time.current
@@ -65,7 +83,7 @@ module Ductwork
                  end
 
           Step.create!(
-            pipeline: instance,
+            pipeline: pipeline,
             step_type: type,
             klass: step.klass,
             started_at: started_at

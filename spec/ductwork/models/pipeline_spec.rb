@@ -1,6 +1,78 @@
 # frozen_string_literal: true
 
 RSpec.describe Ductwork::Pipeline do
+  describe "validations" do
+    let(:name) { "MyPipeline" }
+    let(:triggered_at) { Time.current }
+    let(:status) { "in_progress" }
+
+    it "is invalid if the `name` is not present" do
+      pipeline = described_class.new(triggered_at:, status:)
+
+      expect(pipeline).not_to be_valid
+      expect(pipeline.errors.full_messages).to eq(["Name can't be blank"])
+    end
+
+    it "is invalid if the name is already taken" do
+      described_class.create!(name:, triggered_at:, status:)
+
+      pipeline = described_class.new(name:, triggered_at:, status:)
+
+      expect(pipeline).not_to be_valid
+      expect(pipeline.errors.full_messages).to eq(["Name has already been taken"])
+    end
+
+    it "is invalid if `triggered_at` is not present" do
+      pipeline = described_class.new(name:, status:)
+
+      expect(pipeline).not_to be_valid
+      expect(pipeline.errors.full_messages).to eq(["Triggered at can't be blank"])
+    end
+
+    it "is invalid if `status` is not present" do
+      pipeline = described_class.new(name:, triggered_at:)
+
+      expect(pipeline).not_to be_valid
+      expect(pipeline.errors.full_messages).to eq(["Status can't be blank"])
+    end
+
+    it "is valid otherwise" do
+      pipeline = described_class.new(name:, triggered_at:, status:)
+
+      expect(pipeline).to be_valid
+    end
+  end
+
+  describe "default scope" do
+    subject(:klass) do
+      Class.new(described_class) do
+        def self.name
+          "MyPipeline"
+        end
+      end
+    end
+
+    let(:other_klass) do
+      Class.new(described_class) do
+        def self.name
+          "MyOtherPipeline"
+        end
+      end
+    end
+
+    it "only returns records with the given pipeline name" do
+      record = klass.create!(
+        name: "MyPipeline",
+        status: :in_progress,
+        triggered_at: Time.current
+      )
+
+      expect(klass.all.count).to eq(1)
+      expect(klass.all.first).to eq(record)
+      expect(other_klass.all.count).to eq(0)
+    end
+  end
+
   describe ".define" do
     subject(:klass) do
       Class.new(described_class) do
@@ -76,17 +148,17 @@ RSpec.describe Ductwork::Pipeline do
 
     let(:args) { 1 }
 
-    it "creates and returns a pipeline instance record" do
-      instance = nil
+    it "creates and returns a pipeline record" do
+      pipeline = nil
 
       expect do
-        instance = klass.trigger(args)
-      end.to change(Ductwork::PipelineInstance, :count).by(1)
-      expect(instance.name).to eq("MyPipeline")
-      expect(instance).to be_in_progress
-      expect(instance.triggered_at).to be_present
-      expect(instance.completed_at).to be_nil
-      expect(instance.steps.count).to eq(2)
+        pipeline = klass.trigger(args)
+      end.to change(described_class, :count).by(1)
+      expect(pipeline.name).to eq("MyPipeline")
+      expect(pipeline).to be_in_progress
+      expect(pipeline.triggered_at).to be_present
+      expect(pipeline.completed_at).to be_nil
+      expect(pipeline.steps.count).to eq(2)
     end
 
     it "creates step records" do

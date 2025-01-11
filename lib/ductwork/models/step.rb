@@ -2,7 +2,7 @@
 
 module Ductwork
   class Step < Ductwork::Record
-    belongs_to :pipeline, class_name: "Ductwork::PipelineInstance"
+    belongs_to :pipeline, class_name: "Ductwork::Pipeline"
     belongs_to :next_step, class_name: "Ductwork::Step", optional: true
     has_one :previous_step, class_name: "Ductwork::Step", foreign_key: "next_step_id"
 
