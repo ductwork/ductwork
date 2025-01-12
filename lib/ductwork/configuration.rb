@@ -4,11 +4,14 @@ require "debug"
 
 module Ductwork
   class Configuration
+    DEFAULT_ADAPTER = "activejob"
     DEFAULT_ENV = :default
     DEFAULT_FILE_PATH = "config/ductwork.yml"
     DELIMITER = ","
     PIPELINES_WILDCARD = "*"
+    SUPPORTED_ADAPTERS = %w[sidekiq resqueue delayed_job activejob].freeze
 
+    class AdapterError < StandardError; end
     class FileError < StandardError; end
 
     def initialize(path: DEFAULT_FILE_PATH)
@@ -27,6 +30,18 @@ module Ductwork
         Ductwork.pipelines
       else
         raw_pipelines.split(DELIMITER).map(&:strip)
+      end
+    end
+
+    def adapter
+      adapter = config[:adapter]
+
+      if adapter.nil?
+        DEFAULT_ADAPTER
+      elsif SUPPORTED_ADAPTERS.include?(adapter)
+        adapter
+      else
+        raise AdapterError, "Adapter is not supported"
       end
     end
 
