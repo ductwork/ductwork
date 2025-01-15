@@ -7,6 +7,7 @@ class CreateDuctworkSteps < ActiveRecord::Migration[7.0]
       table.belongs_to :next_step, index: true, foreign_key: { to_table: :ductwork_steps }
       table.string :step_type, null: false
       table.string :klass, null: false
+      table.string :status, null: false
       table.timestamp :started_at
       table.timestamp :completed_at
     end

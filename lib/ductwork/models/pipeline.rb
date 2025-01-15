@@ -86,6 +86,7 @@ module Ductwork
             pipeline: pipeline,
             step_type: type,
             klass: step.klass,
+            status: :in_progress,
             started_at: started_at
           )
         end
