@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+
+# frozen_string_literal: true
+
+require_relative "../config/environment"
+require "ductwork/cli"
+
+Ductwork::CLI.start!(ARGV)

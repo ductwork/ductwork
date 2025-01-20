@@ -9,8 +9,3 @@
 
 # rspec failure tracking
 .rspec_status
-
-# files from rails generator in test rails application
-/spec/internal/bin/
-/spec/internal/db/migrate/
-/spec/internal/config/ductwork.yml
