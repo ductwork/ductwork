@@ -9,6 +9,7 @@ class CreateDuctworkJobs < ActiveRecord::Migration[7.0]
       table.string :status, null: false
       table.json :return_value
       table.timestamp :enqueued_at, null: false
+      table.timestamp :advancing_at
       table.timestamp :completed_at
     end
 

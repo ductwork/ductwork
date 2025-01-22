@@ -21,7 +21,7 @@ RSpec.describe Ductwork::SidekiqWrapperJob do
       Ductwork::Job.create!(
         adapter: "sidekiq",
         enqueued_at: Time.current,
-        status: "in_progress",
+        status: "running",
         step:,
         jid:
       )
@@ -44,8 +44,8 @@ RSpec.describe Ductwork::SidekiqWrapperJob do
       job.jid = jid
       job.perform(klass, *args)
 
-      expect(job_record.reload.completed_at).to be_within(1.second).of(Time.current)
-      expect(job_record).to be_completed
+      expect(job_record.reload).to be_advancing
+      expect(job_record.advancing_at).to be_within(1.second).of(Time.current)
       expect(job_record.return_value).to eq("return_value")
     end
   end

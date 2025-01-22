@@ -195,7 +195,7 @@ RSpec.describe Ductwork::Pipeline do
         klass.trigger(args)
       end.to change(Ductwork::Job, :count).by(1)
       job = Ductwork::Job.last
-      expect(job).to be_in_progress
+      expect(job).to be_running
       expect(job).to be_sidekiq
       expect(job.jid).to be_present
       expect(job.enqueued_at).to be_present

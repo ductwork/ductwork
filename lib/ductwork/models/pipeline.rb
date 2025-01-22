@@ -106,7 +106,7 @@ module Ductwork
           adapter: Ductwork.configuration.adapter,
           jid: SecureRandom.uuid,
           enqueued_at: Time.current,
-          status: "in_progress",
+          status: "running",
           step: step
         )
       end

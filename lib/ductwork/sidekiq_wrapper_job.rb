@@ -10,8 +10,8 @@ module Ductwork
       return_value = klass.constantize.new.perform(*args)
       job = Job.find_by!(jid: jid)
       job.update!(
-        completed_at: Time.current,
-        status: "completed",
+        advancing_at: Time.current,
+        status: "advancing",
         return_value: return_value
       )
     end
