@@ -7,9 +7,6 @@ AllCops:
   NewCops: enable
   TargetRubyVersion: 3.1
 
-Gemspec/RequireMFA:
-  Enabled: false
-
 Lint/EmptyClass:
   AllowComments: true
 
