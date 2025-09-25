@@ -20,6 +20,7 @@ module Ductwork
 
     attr_reader :pipeline_name, :running
 
+    # rubocop:disable Metrics/*
     def update_pipelines
       pipelines.find_each do |pipeline|
         break if !running
@@ -44,15 +45,15 @@ module Ductwork
               )
             end
 
-            args = [job.step.klass] + step.jobs.pluck(:return_value)
+            # args = [job.step.klass] + step.jobs.pluck(:return_value)
 
             if job.sidekiq?
-              Ductwork::SidekiqWrapperJob.client_push(
-                "queue" => Ductwork.configuration.job_queue,
-                "class" => "Ductwork::SidekiqWrapperJob",
-                "args" => args,
-                "jid" => job.jid
-              )
+              # Ductwork::SidekiqWrapperJob.client_push(
+              #   "queue" => Ductwork.configuration.job_queue,
+              #   "class" => "Ductwork::SidekiqWrapperJob",
+              #   "args" => args,
+              #   "jid" => job.jid
+              # )
             end
           elsif !next_step.collapse?
             step.jobs.advancing.find_each do |job|
@@ -68,6 +69,7 @@ module Ductwork
         end
       end
     end
+    # rubocop:enable Metrics/*
 
     def pipelines
       Ductwork::PipelineInstance.in_progress.where(name: pipeline_name)

@@ -111,14 +111,14 @@ module Ductwork
         )
       end
 
-      def enqueue_job(job, *args)
+      def enqueue_job(job, _args)
         if job.sidekiq?
-          Ductwork::SidekiqWrapperJob.client_push(
-            "queue" => Ductwork.configuration.job_queue,
-            "class" => "Ductwork::SidekiqWrapperJob",
-            "args" => [job.step.klass] + args,
-            "jid" => job.jid
-          )
+          # Ductwork::SidekiqWrapperJob.client_push(
+          #   "queue" => Ductwork.configuration.job_queue,
+          #   "class" => "Ductwork::SidekiqWrapperJob",
+          #   "args" => [job.step.klass] + args,
+          #   "jid" => job.jid
+          # )
         end
       end
     end

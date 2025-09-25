@@ -5,7 +5,7 @@ require "active_support"
 require "active_support/core_ext/hash"
 require "active_support/core_ext/time"
 require "securerandom"
-require "rails/railtie"
+require "rails/engine"
 
 require_relative "ductwork/configuration"
 require_relative "ductwork/definition"
@@ -15,7 +15,6 @@ require_relative "ductwork/step_definition"
 require_relative "ductwork/supervisor"
 require_relative "ductwork/version"
 require_relative "ductwork/worker_launcher"
-require_relative "ductwork/railtie" if defined?(Rails)
 
 module Ductwork
   class << self
@@ -32,3 +31,5 @@ module Ductwork
     end
   end
 end
+
+require_relative "ductwork/engine" if defined?(Rails::Engine)

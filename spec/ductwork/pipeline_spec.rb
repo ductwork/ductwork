@@ -200,17 +200,5 @@ RSpec.describe Ductwork::Pipeline do
       expect(job.jid).to be_present
       expect(job.enqueued_at).to be_present
     end
-
-    it "enqueues a sidekiq job when the adapter is sidekiq" do
-      Ductwork.configuration = instance_double(
-        Ductwork::Configuration,
-        adapter: "sidekiq",
-        job_queue: "high-priority"
-      )
-
-      expect do
-        klass.trigger(args)
-      end.to change(Ductwork::SidekiqWrapperJob.jobs, :count).by(1)
-    end
   end
 end

@@ -27,7 +27,7 @@ Gem::Specification.new do |spec|
   end
   spec.bindir = "exe"
   spec.executables = spec.files.grep(%r{\Aexe/}) { |f| File.basename(f) }
-  spec.require_paths = ["lib"]
+  spec.require_paths = %w[app config lib]
 
   rails_version_constraint = [">= 7.0", "< 8.1"]
   spec.add_dependency "activerecord", rails_version_constraint
