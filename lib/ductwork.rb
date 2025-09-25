@@ -6,15 +6,13 @@ require "active_support/core_ext/hash"
 require "active_support/core_ext/time"
 require "securerandom"
 require "rails/engine"
+require "zeitwerk"
+require "ductwork/engine"
 
-require_relative "ductwork/configuration"
-require_relative "ductwork/definition"
-require_relative "ductwork/definition_builder"
-require_relative "ductwork/pipeline_worker"
-require_relative "ductwork/step_definition"
-require_relative "ductwork/supervisor"
-require_relative "ductwork/version"
-require_relative "ductwork/worker_launcher"
+loader = Zeitwerk::Loader.for_gem
+loader.inflector.inflect("cli" => "CLI")
+loader.ignore("#{__dir__}/generators")
+loader.setup
 
 module Ductwork
   class << self
@@ -31,5 +29,3 @@ module Ductwork
     end
   end
 end
-
-require "ductwork/engine" if defined?(Rails::Engine)

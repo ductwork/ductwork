@@ -33,4 +33,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "activerecord", rails_version_constraint
   spec.add_dependency "activesupport", rails_version_constraint
   spec.add_dependency "railties", rails_version_constraint
+  spec.add_dependency "zeitwerk", "~> 2.7"
 end

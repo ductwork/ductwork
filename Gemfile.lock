@@ -5,6 +5,7 @@ PATH
       activerecord (>= 7.0, < 8.1)
       activesupport (>= 7.0, < 8.1)
       railties (>= 7.0, < 8.1)
+      zeitwerk (~> 2.7)
 
 GEM
   remote: https://rubygems.org/
