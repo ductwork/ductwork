@@ -6,9 +6,7 @@ module Ductwork
   class CLI
     class << self
       def start!(args)
-        options = {}
-        parser = build_option_parser(options)
-        parser.parse!(args)
+        options = parse_options(args)
         Ductwork.configuration = Configuration.new(**options)
 
         Ductwork::WorkerLauncher.start!
@@ -16,7 +14,9 @@ module Ductwork
 
       private
 
-      def build_option_parser(options)
+      def parse_options(args)
+        options = {}
+
         OptionParser.new do |op|
           op.banner = "ductwork [options]"
 
@@ -33,7 +33,9 @@ module Ductwork
             puts "Ductwork #{Ductwork::VERSION}"
             exit
           end
-        end
+        end.parse!(args)
+
+        options
       end
     end
   end
