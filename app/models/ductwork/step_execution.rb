@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Ductwork
-  class Job < Ductwork::Record
+  class StepExecution < Ductwork::Record
     belongs_to :step, class_name: "Ductwork::Step"
 
     validates :adapter, presence: true

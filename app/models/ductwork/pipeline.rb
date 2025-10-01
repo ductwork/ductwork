@@ -4,7 +4,9 @@ module Ductwork
   class Pipeline < Ductwork::Record
     has_many :steps, class_name: "Ductwork::Step", foreign_key: "pipeline_id", dependent: :destroy
 
-    validates :name, uniqueness: true, presence: true
+    validates :klass, presence: true
+    validates :definition, presence: true
+    validates :definition_sha1, presence: true
     validates :status, presence: true
     validates :triggered_at, presence: true
 
@@ -16,7 +18,7 @@ module Ductwork
     def self.inherited(subclass)
       super
       subclass.class_eval do
-        default_scope { where(name: name.to_s) }
+        default_scope { where(klass: name.to_s) }
       end
     end
 
@@ -40,7 +42,7 @@ module Ductwork
 
         @pipeline_definition = builder.complete
 
-        Ductwork.pipelines << name.to_s
+        Ductwork.pipelines << klass.to_s
       end
 
       def trigger(*args)
@@ -62,7 +64,7 @@ module Ductwork
 
       def create_pipeline!
         create!(
-          name: name.to_s,
+          klass: name.to_s,
           status: :in_progress,
           triggered_at: Time.current
         )
