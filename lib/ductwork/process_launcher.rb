@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Ductwork
-  class WorkerLauncher
+  class ProcessLauncher
     def self.start!
       supervisor = Ductwork::Supervisor.new
 
