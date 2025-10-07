@@ -4,11 +4,10 @@ module Ductwork
   class ProcessLauncher
     def self.start!
       supervisor = Ductwork::Supervisor.new
+      pipelines_to_advance = Ductwork.configuration.pipelines
 
-      Ductwork.configuration.pipelines.each do |pipeline|
-        supervisor.add_worker(metadata: { pipeline: pipeline }) do
-          Ductwork::PipelineAdvancer.new(pipeline).run
-        end
+      supervisor.add_worker(metadata: { pipelines: pipelines_to_advance }) do
+        Ductwork::PipelineAdvancer.new(pipelines_to_advance).run
       end
 
       supervisor.run

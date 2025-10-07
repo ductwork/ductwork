@@ -2,8 +2,8 @@
 
 module Ductwork
   class PipelineAdvancer
-    def initialize(pipeline_name)
-      @pipeline_name = pipeline_name
+    def initialize(pipeline_names)
+      @pipeline_names = pipeline_names
       @running = true
       Signal.trap(:INT) { @running = false }
       Signal.trap(:TERM) { @running = false }
@@ -18,7 +18,7 @@ module Ductwork
 
     private
 
-    attr_reader :pipeline_name, :running
+    attr_reader :pipeline_names, :running
 
     # rubocop:disable Metrics/*
     def update_pipelines
@@ -72,7 +72,7 @@ module Ductwork
     # rubocop:enable Metrics/*
 
     def pipelines
-      Ductwork::PipelineInstance.in_progress.where(name: pipeline_name)
+      Ductwork::PipelineInstance.in_progress.where(name: pipeline_names)
     end
   end
 end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Ductwork::WorkerLauncher do
+RSpec.describe Ductwork::ProcessLauncher do
   describe ".start!" do
     it "creates workers for each configured pipeline" do
       pipelines = %w[PipelineA PipelineB]
@@ -12,7 +12,7 @@ RSpec.describe Ductwork::WorkerLauncher do
 
       expect(Ductwork::Supervisor).to have_received(:new)
       expect(supervisor).to have_received(:add_worker)
-        .with({ metadata: { pipeline: /Pipeline./ } }).twice
+        .with({ metadata: { pipelines: %w[PipelineA PipelineB] } }).once
       expect(supervisor).to have_received(:run)
     end
   end
