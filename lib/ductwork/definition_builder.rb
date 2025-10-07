@@ -30,13 +30,13 @@ module Ductwork
       self
     end
 
-    def expand_chain(klass)
+    def expand(to: klass)
       if !started
         raise StartError, "Must start pipeline before expanding chain"
       end
 
       depth << 1
-      add_step(klass: klass, type: :expand)
+      add_step(klass: to, type: :expand)
       self
     end
 

@@ -45,12 +45,12 @@ RSpec.describe Ductwork::DefinitionBuilder do
     end
   end
 
-  describe "#expand_chain" do
+  describe "#expand" do
     let(:builder) { described_class.new }
 
     it "raises if pipeline has not been started" do
       expect do
-        builder.expand_chain(spy)
+        builder.expand(to: spy)
       end.to raise_error(
         described_class::StartError,
         "Must start pipeline before expanding chain"
@@ -58,7 +58,7 @@ RSpec.describe Ductwork::DefinitionBuilder do
     end
 
     it "adds a step to the definition" do
-      definition = builder.start(MyFirstJob).expand_chain(MySecondJob).complete
+      definition = builder.start(MyFirstJob).expand(to: MySecondJob).complete
 
       step = definition.steps.last
       expect(definition.steps.length).to eq(2)
