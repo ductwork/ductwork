@@ -8,109 +8,106 @@ module Ductwork
 
     def initialize
       @definition = Ductwork::Definition.new
-      @started = false
-      @branch_count = 0
-      @depth = []
+      @current_branches = []
+      @divisions = 0
+      @expansions = 0
     end
 
     def start(klass)
       if started?
-        raise StartError, "Can only start pipeline once"
+        raise StartError, "Can only start pipeline definition once"
       end
 
-      @started = true
-      @branch_count += 1
-      definition.add_starting_node(klass)
+      branch = Branch.new
+      branch.start(klass)
+      definition.branch = branch
+      @current_branches = [branch]
+
       self
     end
 
     def chain(klass)
-      if not_started?
-        raise StartError, "Must start pipeline before chaining"
+      if !started?
+        raise StartError, "Must start pipeline definition before chaining"
       end
 
-      definition.add_node(klass, transition: :chain)
+      current_branches.sole.chain(klass)
+
       self
     end
 
     def divide(to:)
-      if not_started?
-        raise StartError, "Must start pipeline before dividing"
+      if !started?
+        raise StartError, "Must start pipeline definition before dividing"
       end
 
-      @branch_count += 1
-      definition.add_nodes(to, transition: :divide)
+      branches = current_branches.sole.divide(to)
+      @current_branches = branches
+      @divisions += 1
+
+      yield branches if block_given?
+
       self
     end
 
     def combine(into:)
-      if not_started?
-        raise StartError, "Must start pipeline before combining"
+      if !started?
+        raise StartError, "Must start pipeline definition before combining"
       end
 
-      if not_divided?
-        raise CombineError, "Must divide pipeline before combining steps"
+      if divisions.zero?
+        raise CombineError, "Must divide pipeline definition before combining steps"
       end
 
-      # create edges to single node from all current stage nodes
-      definition.combine(into)
+      branch = current_branches.first.combine(current_branches.last, into: into)
+      @current_branches = [branch]
+      @divisions -= 1
 
       self
     end
 
-    ##############################
-    ## OLD
-    ##############################
-    def expand(to: klass)
-      if not_started?
-        raise StartError, "Must start pipeline before expanding chain"
+    def expand(to:)
+      if !started?
+        raise StartError, "Must start pipeline definition before expanding chain"
       end
 
-      depth << 1
-      add_step(klass: to, type: :expand)
+      current_branches.sole.expand(to)
+      @expansions += 1
+
       self
     end
 
-    def collapse(into: klass)
-      if not_started?
-        raise StartError, "Must start pipeline before collapsing steps"
+    def collapse(into:)
+      if !started?
+        raise StartError, "Must start pipeline definition before collapsing steps"
       end
 
-      if depth.pop.nil?
-        raise CollapseError, "Must expand pipeline before collapsing steps"
+      if expansions.zero?
+        raise CollapseError, "Must expand pipeline definition before collapsing steps"
       end
 
-      add_step(klass: into, type: :collapse)
+      @expansions -= 1
+      current_branches.sole.collapse(into)
+
       self
     end
 
     def complete
-      if not_started?
-        raise StartError, "Must start pipeline before completing definition"
+      if !started?
+        raise StartError, "Must start pipeline definition before completing"
       end
+
+      # create Branches and PlaceholderSteps or something
 
       definition
     end
 
     private
 
-    attr_reader :definition, :started, :depth, :branch_count
+    attr_reader :definition, :current_branches, :divisions, :expansions
 
     def started?
-      @started
-    end
-
-    def not_started?
-      !started?
-    end
-
-    def not_divided?
-      branch_count == 1
-    end
-
-    def add_step(klass:, type:)
-      step = StepDefinition.new(klass: klass.name.to_s, type: type)
-      definition.steps << step
+      current_branches.any?
     end
   end
 end

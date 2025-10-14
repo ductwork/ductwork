@@ -17,6 +17,7 @@ module Ductwork
 
     def self.inherited(subclass)
       super
+
       subclass.class_eval do
         default_scope { where(klass: name.to_s) }
       end
