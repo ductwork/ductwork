@@ -1,34 +1,50 @@
 # frozen_string_literal: true
 
-RSpec.xdescribe Ductwork::Pipeline do
+RSpec.describe Ductwork::Pipeline do
   describe "validations" do
     let(:klass) { "MyPipeline" }
     let(:triggered_at) { Time.current }
     let(:status) { "in_progress" }
+    let(:definition) { JSON.dump({}) }
+    let(:definition_sha1) { Digest::SHA1.hexdigest(definition) }
 
     it "is invalid if the `klass` is not present" do
-      pipeline = described_class.new(triggered_at:, status:)
+      pipeline = described_class.new(triggered_at:, status:, definition:, definition_sha1:)
 
       expect(pipeline).not_to be_valid
-      expect(pipeline.errors.full_messages).to eq(["Name can't be blank"])
+      expect(pipeline.errors.full_messages).to eq(["Klass can't be blank"])
     end
 
     it "is invalid if `triggered_at` is not present" do
-      pipeline = described_class.new(klass:, status:)
+      pipeline = described_class.new(klass:, status:, definition:, definition_sha1:)
 
       expect(pipeline).not_to be_valid
       expect(pipeline.errors.full_messages).to eq(["Triggered at can't be blank"])
     end
 
     it "is invalid if `status` is not present" do
-      pipeline = described_class.new(klass:, triggered_at:)
+      pipeline = described_class.new(klass:, triggered_at:, definition:, definition_sha1:)
 
       expect(pipeline).not_to be_valid
       expect(pipeline.errors.full_messages).to eq(["Status can't be blank"])
     end
 
+    it "is invalid if `definition` is not present" do
+      pipeline = described_class.new(klass:, triggered_at:, status:, definition_sha1:)
+
+      expect(pipeline).not_to be_valid
+      expect(pipeline.errors.full_messages).to eq(["Definition can't be blank"])
+    end
+
+    it "is invalid if `definition_sha1` is not present" do
+      pipeline = described_class.new(klass:, triggered_at:, status:, definition:)
+
+      expect(pipeline).not_to be_valid
+      expect(pipeline.errors.full_messages).to eq(["Definition sha1 can't be blank"])
+    end
+
     it "is valid otherwise" do
-      pipeline = described_class.new(klass:, triggered_at:, status:)
+      pipeline = described_class.new(klass:, triggered_at:, status:, definition:, definition_sha1:)
 
       expect(pipeline).to be_valid
     end
@@ -55,6 +71,8 @@ RSpec.xdescribe Ductwork::Pipeline do
       record = klass.create!(
         klass: "MyPipeline",
         status: :in_progress,
+        definition: "{}",
+        definition_sha1: Digest::SHA1.hexdigest("{}"),
         triggered_at: Time.current
       )
 
@@ -64,7 +82,7 @@ RSpec.xdescribe Ductwork::Pipeline do
     end
   end
 
-  describe ".define" do
+  xdescribe ".define" do
     subject(:klass) do
       Class.new(described_class) do
         def self.name
@@ -124,7 +142,7 @@ RSpec.xdescribe Ductwork::Pipeline do
     end
   end
 
-  describe ".trigger" do
+  xdescribe ".trigger" do
     subject(:klass) do
       Class.new(described_class) do
         define do |pipeline|
