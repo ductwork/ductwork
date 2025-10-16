@@ -7,8 +7,8 @@ Gem::Specification.new do |spec|
   spec.version = Ductwork::VERSION
   spec.authors = ["Tyler Ewing"]
   spec.email = ["tewing10@gmail.com"]
-  spec.summary = "A jobs pipeline"
-  spec.description = "A jobs pipeline"
+  spec.summary = "A pipeline framework"
+  spec.description = "A pipeline framework"
   spec.homepage = "https://github.com/zoso10/ductwork"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.1.0"
