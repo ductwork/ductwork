@@ -82,7 +82,7 @@ RSpec.describe Ductwork::Pipeline do
     end
   end
 
-  describe ".define", pending: "test updates" do
+  describe ".define" do
     subject(:klass) do
       Class.new(described_class) do
         def self.name
@@ -92,8 +92,6 @@ RSpec.describe Ductwork::Pipeline do
     end
 
     it "raises if no definition block is given" do
-      skip "passing test"
-
       expect do
         klass.define
       end.to raise_error(

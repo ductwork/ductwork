@@ -43,7 +43,7 @@ module Ductwork
 
         @pipeline_definition = builder.complete
 
-        Ductwork.pipelines << klass.to_s
+        Ductwork.pipelines << name.to_s
       end
 
       def trigger(*args)
