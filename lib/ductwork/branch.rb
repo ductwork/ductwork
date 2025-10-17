@@ -28,7 +28,7 @@ module Ductwork
         end
       end
 
-      yield *branches if block_given?
+      yield(*branches) if block_given?
 
       branches
     end
