@@ -18,8 +18,8 @@ module Ductwork
       add_step(klass, :chain)
     end
 
-    def divide(klasses)
-      klasses.map do |klass|
+    def divide(to:)
+      branches = to.map do |klass|
         self.class.new(parents: [self]).tap do |branch|
           step = Ductwork::PlaceholderStep.new(klass, :divide)
 
@@ -27,6 +27,10 @@ module Ductwork
           children.push(branch)
         end
       end
+
+      yield *branches if block_given?
+
+      branches
     end
 
     def combine(*branches, into:)

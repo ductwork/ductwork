@@ -63,6 +63,14 @@ RSpec.describe Ductwork::DefinitionBuilder do
       expect(returned_builder).to eq(builder)
     end
 
+    it "returns the builder instance when given a block" do
+      returned_builder = builder.start(MyFirstJob).divide(to: [MySecondJob, MyThirdJob]) do
+        puts
+      end
+
+      expect(returned_builder).to eq(builder)
+    end
+
     it "adds new branches and steps to the definition" do
       definition = builder.start(MyFirstJob).divide(to: [MySecondJob, MyThirdJob]).complete
 
@@ -71,6 +79,12 @@ RSpec.describe Ductwork::DefinitionBuilder do
       expect(first_step.klass).to eq(MyFirstJob)
       expect(second_step.klass).to eq(MySecondJob)
       expect(third_step.klass).to eq(MyThirdJob)
+    end
+
+    it "yields the new branches if a block is given" do
+      expect do |block|
+        builder.start(MyFirstJob).divide(to: [MySecondJob, MyThirdJob], &block)
+      end.to yield_control
     end
 
     it "raises if pipeline has not been started" do

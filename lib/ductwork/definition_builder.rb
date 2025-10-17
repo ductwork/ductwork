@@ -41,7 +41,7 @@ module Ductwork
         raise StartError, "Must start pipeline definition before dividing"
       end
 
-      branches = current_branches.sole.divide(to)
+      branches = current_branches.sole.divide(to:)
       @current_branches = branches
       @divisions += 1
 

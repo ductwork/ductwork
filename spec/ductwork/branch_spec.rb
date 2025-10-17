@@ -25,7 +25,7 @@ RSpec.describe Ductwork::Branch do
 
   describe "#divide" do
     it "returns new branches with parent-child relationships" do
-      branches = branch.divide([MyFirstJob, MySecondJob])
+      branches = branch.divide(to: [MyFirstJob, MySecondJob])
 
       expect(branches.length).to eq(2)
       expect(branches[0].parents).to match_array(branch)
@@ -34,12 +34,18 @@ RSpec.describe Ductwork::Branch do
     end
 
     it "returns new branches with placeholder steps" do
-      branches = branch.divide([MyFirstJob, MySecondJob])
+      branches = branch.divide(to: [MyFirstJob, MySecondJob])
 
       expect(branches[0].steps.sole.klass).to eq(MyFirstJob)
       expect(branches[0].steps.sole.type).to eq(:divide)
       expect(branches[1].steps.sole.klass).to eq(MySecondJob)
       expect(branches[1].steps.sole.type).to eq(:divide)
+    end
+
+    it "yields the new branches if a block is given" do
+      expect do |block|
+        branch.divide(to: [MyFirstJob, MySecondJob], &block)
+      end.to yield_control
     end
   end
 
