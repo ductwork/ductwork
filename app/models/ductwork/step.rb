@@ -6,7 +6,6 @@ module Ductwork
     belongs_to :next_step, class_name: "Ductwork::Step", optional: true
     has_one :previous_step, class_name: "Ductwork::Step", foreign_key: "next_step_id"
     has_one :job, class_name: "Ductwork::Job", foreign_key: "step_id"
-    has_many :executions, class_name: "Ductwork::StepExecution", foreign_key: "step_id", dependent: :destroy
 
     validates :klass, presence: true
     validates :pipeline_id, presence: true
