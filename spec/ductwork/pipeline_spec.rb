@@ -182,7 +182,13 @@ RSpec.describe Ductwork::Pipeline do
       expect(step.started_at).to be_present
     end
 
-    it "enqueues a job"
+    it "enqueues a job" do
+      expect do
+        klass.trigger(args)
+      end.to change(Ductwork::Job, :count).by(1)
+        .and change(Ductwork::Execution, :count).by(1)
+        .and change(Ductwork::Availability, :count).by(1)
+    end
 
     it "raises if pipeline not defined" do
       other_klass = Class.new(described_class) do

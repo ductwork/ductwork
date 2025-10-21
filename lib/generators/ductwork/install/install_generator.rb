@@ -12,12 +12,20 @@ module Ductwork
     def create_files
       template "config/ductwork.yml"
       template "bin/ductwork"
+
       migration_template "db/create_ductwork_pipelines.rb",
                          "db/migrate/create_ductwork_pipelines.rb"
       migration_template "db/create_ductwork_steps.rb",
                          "db/migrate/create_ductwork_steps.rb"
       migration_template "db/create_ductwork_step_executions.rb",
                          "db/migrate/create_ductwork_step_executions.rb"
+      migration_template "db/create_ductwork_jobs.rb",
+                         "db/migrate/create_ductwork_jobs.rb"
+      migration_template "db/create_ductwork_executions.rb",
+                         "db/migrate/create_ductwork_executions.rb"
+      migration_template "db/create_ductwork_availabilities.rb",
+                         "db/migrate/create_ductwork_availabilities.rb"
+
       chmod "bin/ductwork", 0o755 & ~File.umask, verbose: false
     end
   end

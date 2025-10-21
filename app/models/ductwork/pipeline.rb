@@ -46,7 +46,8 @@ module Ductwork
         Ductwork.pipelines << name.to_s
       end
 
-      def trigger(*)
+      # NOTE: will eventually refactor this method to fix the style violations
+      def trigger(*args) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
         if pipeline_definition.nil?
           raise DefinitionError, "Pipeline must be defined before triggering"
         end
@@ -62,11 +63,23 @@ module Ductwork
             definition_sha1: Digest::SHA1.hexdigest(pipeline_definition.to_json),
             triggered_at: Time.current
           )
-          pipeline.steps.create!(
+          step = pipeline.steps.create!(
             klass: step_definition.klass,
             status: :in_progress,
             step_type: :start,
             started_at: Time.current
+          )
+          job = step.create_job!(
+            klass: step_definition.klass,
+            started_at: Time.current,
+            input_args: JSON.dump(args)
+          )
+          execution = job.executions.create!(
+            started_at: Time.current
+          )
+          execution.create_availability!(
+            started_at: Time.current,
+            completed: false
           )
         end
 
