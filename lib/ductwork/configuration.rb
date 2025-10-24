@@ -33,18 +33,6 @@ module Ductwork
       end
     end
 
-    def adapter
-      adapter = config[:adapter]
-
-      if adapter.nil?
-        DEFAULT_ADAPTER
-      elsif SUPPORTED_ADAPTERS.include?(adapter)
-        adapter
-      else
-        raise AdapterError, "Adapter is not supported"
-      end
-    end
-
     def job_queue
       config[:job_queue]
     end

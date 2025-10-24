@@ -22,52 +22,51 @@ module Ductwork
 
     # rubocop:disable Metrics
     def update_pipelines
-      pipelines.find_each do |pipeline|
-        break if !running
+      # pipelines.find_each do |pipeline|
+      #   break if !running
 
-        pipeline.steps.in_progress.find_each do |step|
-          break if !running
+      #   pipeline.steps.in_progress.find_each do |step|
+      #     break if !running
 
-          next_step = step.next_step
+      #     next_step = step.next_step
 
-          if next_step.collapse? && step.jobs.all?(&:advancing?)
-            job = nil
+      #     if next_step.collapse? && step.jobs.all?(&:advancing?)
+      #       job = nil
 
-            Record.transaction do
-              step.jobs.update!(status: "completed", completed_at: Time.current)
-              next_step.update!(status: "in_progress", started_at: Time.current)
-              step.update!(status: "completed", completed_at: Time.current)
-              job = next_step.jobs.create!(
-                adapter: Ductwork.configuration.adapter,
-                jid: SecureRandom.uuid,
-                enqueued_at: Time.current,
-                status: "running"
-              )
-            end
+      #       Record.transaction do
+      #         step.jobs.update!(status: "completed", completed_at: Time.current)
+      #         next_step.update!(status: "in_progress", started_at: Time.current)
+      #         step.update!(status: "completed", completed_at: Time.current)
+      #         job = next_step.jobs.create!(
+      #           jid: SecureRandom.uuid,
+      #           enqueued_at: Time.current,
+      #           status: "running"
+      #         )
+      #       end
 
-            # args = [job.step.klass] + step.jobs.pluck(:return_value)
+      #       # args = [job.step.klass] + step.jobs.pluck(:return_value)
 
-            if job.sidekiq?
-              # Ductwork::SidekiqWrapperJob.client_push(
-              #   "queue" => Ductwork.configuration.job_queue,
-              #   "class" => "Ductwork::SidekiqWrapperJob",
-              #   "args" => args,
-              #   "jid" => job.jid
-              # )
-            end
-          elsif !next_step.collapse?
-            step.jobs.advancing.find_each do |job|
-              Record.transaction do
-                job.update!(status: "completed", completed_at: Time.current)
-                next_step.status = "in_progress"
-                next_step.started_at ||= Time.current
-                next_step.save!
-                # what else?
-              end
-            end
-          end
-        end
-      end
+      #       if job.sidekiq?
+      #         # Ductwork::SidekiqWrapperJob.client_push(
+      #         #   "queue" => Ductwork.configuration.job_queue,
+      #         #   "class" => "Ductwork::SidekiqWrapperJob",
+      #         #   "args" => args,
+      #         #   "jid" => job.jid
+      #         # )
+      #       end
+      #     elsif !next_step.collapse?
+      #       step.jobs.advancing.find_each do |job|
+      #         Record.transaction do
+      #           job.update!(status: "completed", completed_at: Time.current)
+      #           next_step.status = "in_progress"
+      #           next_step.started_at ||= Time.current
+      #           next_step.save!
+      #           # what else?
+      #         end
+      #       end
+      #     end
+      #   end
+      # end
     end
     # rubocop:enable Metrics
 

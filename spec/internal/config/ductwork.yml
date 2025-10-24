@@ -1,5 +1,4 @@
 default: &default
-  adapter: "activejob"
   job_queue: "high-priority"
   workers:
     - pipelines: "*"

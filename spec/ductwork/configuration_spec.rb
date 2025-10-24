@@ -92,56 +92,6 @@ RSpec.describe Ductwork::Configuration do
     end
   end
 
-  describe "#adapter" do
-    let(:config_file) do
-      Tempfile.new("ductwork.yml").tap do |file|
-        data = <<~DATA
-          test:
-            adapter: #{adapter}
-            workers:
-              - pipelines: "*"
-        DATA
-        file.write(data)
-        file.rewind
-      end
-    end
-
-    after do
-      config_file.close
-      config_file.unlink
-    end
-
-    context "when the adapter is supported" do
-      let(:adapter) { "sidekiq" }
-
-      it "returns the configured adapter" do
-        config = described_class.new(path: config_file.path)
-
-        expect(config.adapter).to eq("sidekiq")
-      end
-
-      it "returns the default adapter if none is configured" do
-        path = Rails.root.join("config/ductwork.yml")
-
-        config = described_class.new(path:)
-
-        expect(config.adapter).to eq("activejob")
-      end
-    end
-
-    context "when the adapter is not supported" do
-      let(:adapter) { "silly-job" }
-
-      it "raises an error" do
-        config = described_class.new(path: config_file.path)
-
-        expect do
-          config.adapter
-        end.to raise_error(described_class::AdapterError, "Adapter is not supported")
-      end
-    end
-  end
-
   describe "#job_queue" do
     let(:job_queue) { "high-priority" }
     let(:config_file) do
@@ -149,7 +99,6 @@ RSpec.describe Ductwork::Configuration do
         data = <<~DATA
           test:
             job_queue: #{job_queue}
-            adapter: "sidekiq"
             workers:
               - pipelines: "*"
         DATA
