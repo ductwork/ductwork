@@ -19,8 +19,7 @@ module Ductwork
         started_at: Time.current
       )
       execution.create_availability!(
-        started_at: Time.current,
-        completed: false
+        started_at: Time.current
       )
 
       job

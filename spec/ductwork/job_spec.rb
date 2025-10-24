@@ -74,7 +74,6 @@ RSpec.describe Ductwork::Job do
       availability = execution.availability
       expect(availability.started_at).to be_within(1.second).of(Time.current)
       expect(availability.completed_at).to be_nil
-      expect(availability.completed).to be(false)
     end
   end
 end
