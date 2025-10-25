@@ -20,7 +20,6 @@ module Ductwork
 
     attr_reader :pipeline_names, :running
 
-    # rubocop:disable Metrics
     def update_pipelines
       # pipelines.find_each do |pipeline|
       #   break if !running
@@ -67,7 +66,6 @@ module Ductwork
       #   end
       # end
     end
-    # rubocop:enable Metrics
 
     def pipelines
       Ductwork::PipelineInstance.in_progress.where(name: pipeline_names)

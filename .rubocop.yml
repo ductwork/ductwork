@@ -39,6 +39,9 @@ RSpec/SpecFilePathFormat:
 Style/Documentation:
   Enabled: false
 
+Style/EmptyElse:
+  AllowComments: true
+
 Style/GuardClause:
   Enabled: false
 

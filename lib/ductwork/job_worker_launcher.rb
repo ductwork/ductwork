@@ -7,7 +7,7 @@ module Ductwork
     end
 
     def run
-      #Ductwork.configuration.job_thread_count.times.map do
+      # Ductwork.configuration.job_thread_count.times.map do
       #   Thread.new do
       #     Ductwork::JobWorker.new(pipeline).run
       #   end
