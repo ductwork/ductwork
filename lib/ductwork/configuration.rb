@@ -33,10 +33,6 @@ module Ductwork
       end
     end
 
-    def job_queue
-      config[:job_queue]
-    end
-
     private
 
     attr_reader :config

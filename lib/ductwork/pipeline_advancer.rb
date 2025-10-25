@@ -48,7 +48,6 @@ module Ductwork
 
       #       if job.sidekiq?
       #         # Ductwork::SidekiqWrapperJob.client_push(
-      #         #   "queue" => Ductwork.configuration.job_queue,
       #         #   "class" => "Ductwork::SidekiqWrapperJob",
       #         #   "args" => args,
       #         #   "jid" => job.jid

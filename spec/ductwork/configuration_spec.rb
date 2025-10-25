@@ -91,31 +91,4 @@ RSpec.describe Ductwork::Configuration do
       end
     end
   end
-
-  describe "#job_queue" do
-    let(:job_queue) { "high-priority" }
-    let(:config_file) do
-      Tempfile.new("ductwork.yml").tap do |file|
-        data = <<~DATA
-          test:
-            job_queue: #{job_queue}
-            workers:
-              - pipelines: "*"
-        DATA
-        file.write(data)
-        file.rewind
-      end
-    end
-
-    after do
-      config_file.close
-      config_file.unlink
-    end
-
-    it "returns the configured job queue" do
-      config = described_class.new(path: config_file.path)
-
-      expect(config.job_queue).to eq(job_queue)
-    end
-  end
 end
