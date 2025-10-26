@@ -2,7 +2,7 @@
 
 module Ductwork
   class Supervisor
-    DEFAULT_TIMEOUT = 5 # seconds
+    DEFAULT_TIMEOUT = 10 # seconds
 
     attr_reader :workers
 
@@ -55,7 +55,7 @@ module Ductwork
 
     def terminate_gracefully
       workers.each do |worker|
-        Process.kill(:TERM, worker[:pid])
+        ::Process.kill(:TERM, worker[:pid])
       end
     end
 
@@ -65,7 +65,7 @@ module Ductwork
       while workers.any? && now < deadline
         sleep(0.1)
         workers.each_with_index do |worker, index|
-          if Process.wait(worker[:pid], Process::WNOHANG)
+          if ::Process.wait(worker[:pid], ::Process::WNOHANG)
             workers[index] = nil
           end
         end
@@ -75,8 +75,8 @@ module Ductwork
 
     def terminate_immediately
       workers.each_with_index do |worker, index|
-        Process.kill(:KILL, worker[:pid])
-        Process.wait(worker[:pid])
+        ::Process.kill(:KILL, worker[:pid])
+        ::Process.wait(worker[:pid])
         workers[index] = nil
       rescue Errno::ESRCH, Errno::ECHILD
         # no-op because process is already dead
@@ -86,14 +86,14 @@ module Ductwork
     end
 
     def process_dead?(pid)
-      Process.kill(0, pid)
+      ::Process.kill(0, pid)
       true
     rescue Errno::ESRCH, Errno::EPERM
       false
     end
 
     def now
-      Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      ::Process.clock_gettime(::Process::CLOCK_MONOTONIC)
     end
   end
 end

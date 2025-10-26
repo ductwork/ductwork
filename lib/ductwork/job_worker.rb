@@ -2,16 +2,13 @@
 
 module Ductwork
   class JobWorker
-    def initialize(pipeline)
+    def initialize(pipeline, running_coordinator)
       @pipeline = pipeline
-      @running = true
-      # TODO: don't handle signals in threads
-      Signal.trap(:INT) { @running = false }
-      Signal.trap(:TERM) { @running = false }
+      @running_coordinator = running_coordinator
     end
 
     def run
-      while running
+      while running?
         job = claim_job
 
         if job.present?
@@ -24,10 +21,14 @@ module Ductwork
 
     private
 
-    attr_reader :pipeline, :running
+    attr_reader :pipeline, :running_coordinator
+
+    def running?
+      running_coordinator.running?
+    end
 
     def claim_job
-      process_id = Process.pid
+      process_id = ::Process.pid
       id = Ductwork::Availability
            .where(completed_at: nil)
            .order(:created_at)

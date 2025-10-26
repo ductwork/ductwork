@@ -1,6 +1,7 @@
 default: &default
-  workers:
-    - pipelines: "*"
+  pipelines: "*"
+  job_worker:
+    count: 5
 
 development:
   <<: *default

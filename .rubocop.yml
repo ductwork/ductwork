@@ -54,6 +54,9 @@ Style/NegatedIf:
 Style/Next:
   Enabled: false
 
+Style/RedundantConstantBase:
+  Enabled: false
+
 Style/StringLiterals:
   EnforcedStyle: double_quotes
 

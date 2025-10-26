@@ -5,7 +5,7 @@ RSpec.describe Ductwork::Supervisor do
 
   after do
     supervisor.workers.each do |worker|
-      Process.kill(:KILL, worker[:pid])
+      ::Process.kill(:KILL, worker[:pid])
     end
   end
 
@@ -16,7 +16,7 @@ RSpec.describe Ductwork::Supervisor do
 
       expect(supervisor.workers.count).to eq(2)
       supervisor.workers.each do |worker|
-        status = Process.kill(0, worker[:pid])
+        status = ::Process.kill(0, worker[:pid])
         expect(status).to eq(1)
       end
     end
@@ -30,7 +30,7 @@ RSpec.describe Ductwork::Supervisor do
 
       sleep(1) # Wait for process to be restarted
 
-      status = Process.kill(0, supervisor.workers.first[:pid])
+      status = ::Process.kill(0, supervisor.workers.first[:pid])
       expect(supervisor.workers.count).to eq(1)
       expect(status).to eq(1)
 
@@ -57,7 +57,7 @@ RSpec.describe Ductwork::Supervisor do
       expect(supervisor.workers.count).to eq(0)
       pids.each do |pid|
         expect do
-          Process.kill(0, pid)
+          ::Process.kill(0, pid)
         end.to raise_error(Errno::ESRCH, "No such process")
       end
     end
@@ -74,7 +74,7 @@ RSpec.describe Ductwork::Supervisor do
       expect(supervisor.workers.count).to eq(0)
       pids.each do |pid|
         expect do
-          Process.kill(0, pid)
+          ::Process.kill(0, pid)
         end.to raise_error(Errno::ESRCH, "No such process")
       end
     end
