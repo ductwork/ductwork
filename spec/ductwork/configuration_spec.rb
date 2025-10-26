@@ -117,6 +117,34 @@ RSpec.describe Ductwork::Configuration do
     end
   end
 
+  describe "#job_worker_shutdown_timeout" do
+    let(:config_file) { create_temp_file }
+    let(:data) do
+      <<~DATA
+        default: &default
+          job_worker:
+            shutdown_timeout: 30
+
+        test:
+          <<: *default
+      DATA
+    end
+
+    before do
+      create_default_config_file
+    end
+
+    after do
+      cleanup
+    end
+
+    it "returns the timeout" do
+      config = described_class.new
+
+      expect(config.job_worker_shutdown_timeout).to eq(30)
+    end
+  end
+
   def create_temp_file
     Tempfile.new("ductwork.yml").tap do |file|
       file.write(data)

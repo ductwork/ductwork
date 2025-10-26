@@ -42,6 +42,10 @@ module Ductwork
       end
     end
 
+    def job_worker_shutdown_timeout
+      config.dig(:job_worker, :shutdown_timeout)
+    end
+
     private
 
     attr_reader :config
