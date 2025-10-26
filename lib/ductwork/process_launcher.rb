@@ -14,7 +14,7 @@ module Ductwork
 
       pipelines_to_advance.each do |pipeline|
         supervisor.add_worker(metadata: { pipeline: }) do
-          # TODO: maybe rename to `Processes::JobWorkerThreadLauncher`
+          # TODO: maybe rename to `Processes::JobWorkerLauncher`
           Ductwork::JobWorkerLauncher.new(pipeline).run
         end
       end
