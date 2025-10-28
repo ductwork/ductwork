@@ -9,6 +9,9 @@ require:
 AllCops:
   NewCops: enable
   TargetRubyVersion: 3.1
+  Exclude:
+    - Appraisals
+    - gemfiles/**/*
 
 Layout/MultilineMethodCallIndentation:
   Exclude:

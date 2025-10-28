@@ -2,9 +2,9 @@ PATH
   remote: .
   specs:
     ductwork (0.1.0)
-      activerecord (>= 7.0, < 8.1)
-      activesupport (>= 7.0, < 8.1)
-      railties (>= 7.0, < 8.1)
+      activerecord (>= 7.1, < 8.1)
+      activesupport (>= 7.1, < 8.1)
+      railties (>= 7.1, < 8.1)
       zeitwerk (~> 2.7)
 
 GEM
@@ -45,6 +45,10 @@ GEM
       securerandom (>= 0.3)
       tzinfo (~> 2.0, >= 2.0.5)
       uri (>= 0.13.1)
+    appraisal (2.5.0)
+      bundler
+      rake
+      thor (>= 0.14.0)
     ast (2.4.2)
     base64 (0.2.0)
     benchmark (0.4.0)
@@ -189,6 +193,7 @@ PLATFORMS
   x86_64-linux
 
 DEPENDENCIES
+  appraisal
   combustion
   debug
   ductwork!

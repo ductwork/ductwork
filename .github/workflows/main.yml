@@ -25,5 +25,9 @@ jobs:
       with:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true
-    - name: Run the default task
-      run: bundle exec rake
+    - name: Appraisals install
+      run: bundle exec appraisal install
+    - name: Run specs
+      run: bundle exec appraisal rake spec
+    - name: Run rubocop
+      run: bundle exec rake rubocop

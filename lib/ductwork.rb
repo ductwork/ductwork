@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
-require "active_record"
+require "logger"
 require "active_support"
 require "active_support/core_ext/hash"
 require "active_support/core_ext/time"
+require "active_record"
 require "securerandom"
 require "rails/engine"
 require "zeitwerk"
