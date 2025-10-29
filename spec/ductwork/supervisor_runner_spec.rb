@@ -4,7 +4,8 @@ RSpec.describe Ductwork::SupervisorRunner do
   describe ".start!" do
     it "creates workers for each configured pipeline" do
       pipelines = %w[PipelineA PipelineB]
-      Ductwork.configuration = instance_double(Ductwork::Configuration, pipelines:)
+      logger = instance_double(::Logger, debug: nil)
+      Ductwork.configuration = instance_double(Ductwork::Configuration, pipelines:, logger:)
       supervisor = instance_double(Ductwork::Supervisor, add_worker: nil, run: nil)
       allow(Ductwork::Supervisor).to receive(:new).and_return(supervisor)
 
