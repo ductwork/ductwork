@@ -21,6 +21,9 @@ Layout/MultilineMethodCallIndentation:
 Lint/EmptyClass:
   AllowComments: true
 
+Metrics/ClassLength:
+  Max: 150
+
 Metrics/MethodLength:
   Max: 30
 

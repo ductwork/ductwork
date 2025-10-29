@@ -8,6 +8,7 @@ module Ductwork
       def start!(args)
         options = parse_options(args)
         Ductwork.configuration = Configuration.new(**options)
+        Ductwork.configuration.logger = Ductwork::Configuration::DEFAULT_LOGGER
 
         Ductwork::SupervisorRunner.start!
       end

@@ -6,6 +6,7 @@ module Ductwork
     DEFAULT_FILE_PATH = "config/ductwork.yml"
     DEFAULT_JOB_WORKER_COUNT = 5 # threads
     DEFAULT_JOB_WORKER_SHUTDOWN_TIMEOUT = 30 # seconds
+    DEFAULT_LOGGER = ::Logger.new($stdout)
     PIPELINES_WILDCARD = "*"
 
     class AdapterError < StandardError; end
