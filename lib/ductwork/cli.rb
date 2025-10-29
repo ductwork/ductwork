@@ -26,7 +26,7 @@ module Ductwork
           end
 
           op.on("-h", "--help", "Prints this help") do
-            puts opts
+            puts op
             exit
           end
 
