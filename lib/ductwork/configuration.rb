@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "debug"
-
 module Ductwork
   class Configuration
     DEFAULT_ADAPTER = "activejob"
