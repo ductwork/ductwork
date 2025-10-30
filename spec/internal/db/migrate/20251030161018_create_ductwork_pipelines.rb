@@ -11,6 +11,6 @@ class CreateDuctworkPipelines < ActiveRecord::Migration[7.0]
       table.string :status, null: false
     end
 
-    add_index :ductwork_pipelines, :klass, unique: true
+    add_index :ductwork_pipelines, :klass
   end
 end
