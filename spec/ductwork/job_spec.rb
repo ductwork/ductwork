@@ -76,4 +76,24 @@ RSpec.describe Ductwork::Job do
       expect(availability.completed_at).to be_nil
     end
   end
+
+  describe ".claim_latest" do
+    let(:availability) { create(:availability) }
+    let(:execution) { availability.execution }
+
+    it "updates the the availability record" do
+      be_almost_now = be_within(1.second).of(Time.current)
+
+      expect do
+        described_class.claim_latest
+      end.to change { availability.reload.completed_at }.from(nil).to(be_almost_now)
+        .and change(availability, :process_id).from(nil).to(::Process.pid)
+    end
+
+    it "updates the execution record" do
+      expect do
+        described_class.claim_latest
+      end.to change { execution.reload.process_id }.from(nil).to(::Process.pid)
+    end
+  end
 end

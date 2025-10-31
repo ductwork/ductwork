@@ -13,13 +13,13 @@ module Ductwork
         role: :job_worker,
         pipeline: pipeline
       )
-      while running?
+      while running_context.running?
         logger.debug(
           msg: "Attempting to claim job",
           role: :job_worker,
           pipeline: pipeline
         )
-        job = claim_job
+        job = Job.claim_latest
 
         if job.present?
           process_job(job)
@@ -39,57 +39,6 @@ module Ductwork
     private
 
     attr_reader :pipeline, :running_context
-
-    def running?
-      running_context.running?
-    end
-
-    def claim_job
-      process_id = ::Process.pid
-      id = Ductwork::Availability
-           .where(completed_at: nil)
-           .order(:created_at)
-           .limit(1)
-           .pluck(:id)
-           .first
-
-      if id.present?
-        # TODO: probably makes sense to use SQL here instead of relying
-        # on ActiveRecord to construct the correct `UPDATE` query
-        rows_updated = nil
-        Ductwork::Record.transaction do
-          rows_updated = Ductwork::Availability
-                         .where(id:, completed_at: nil)
-                         .update_all(completed_at: Time.current, process_id:)
-          Ductwork::Execution
-            .joins(:availability)
-            .where(completed_at: nil)
-            .where(ductwork_availabilities: { id: id })
-            .update_all(process_id: process_id)
-        end
-
-        if rows_updated == 1
-          logger.debug(
-            msg: "Job claimed",
-            role: :job_worker,
-            pipeline: pipeline,
-            process_id: process_id,
-            availability_id: id
-          )
-          Ductwork::Job
-            .joins(executions: :availability)
-            .find_by(ductwork_availabilities: { id:, process_id: })
-        else
-          logger.debug(
-            msg: "Did not claim job, avoided race condition",
-            role: :job_worker,
-            pipeline: pipeline,
-            process_id: process_id,
-            availability_id: id
-          )
-        end
-      end
-    end
 
     def process_job(job)
       logger.debug(

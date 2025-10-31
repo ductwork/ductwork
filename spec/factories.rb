@@ -2,6 +2,23 @@
 
 # This will guess the User class
 FactoryBot.define do
+  factory :availability, class: "Ductwork::Availability" do
+    started_at { Time.current }
+    execution
+  end
+
+  factory :execution, class: "Ductwork::Execution" do
+    started_at { Time.current }
+    job
+  end
+
+  factory :job, class: "Ductwork::Job" do
+    started_at { Time.current }
+    klass { "MyStepA" }
+    input_args { 1 }
+    step
+  end
+
   factory :pipeline, class: "Ductwork::Pipeline" do
     sequence(:klass) { |n| "MyPipeline#{n}" }
     triggered_at { Time.current }
