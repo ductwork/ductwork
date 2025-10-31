@@ -62,9 +62,17 @@ module Ductwork
       if id.present?
         # TODO: probably makes sense to use SQL here instead of relying
         # on ActiveRecord to construct the correct `UPDATE` query
-        rows_updated = Ductwork::Availability
-                       .where(id:, completed_at: nil)
-                       .update_all(completed_at: Time.current, process_id:)
+        rows_updated = nil
+        Ductwork::Record.transaction do
+          rows_updated = Ductwork::Availability
+                         .where(id:, completed_at: nil)
+                         .update_all(completed_at: Time.current, process_id:)
+          Ductwork::Execution
+            .joins(:availability)
+            .where(completed_at: nil)
+            .where(ductwork_availabilities: { id: id })
+            .update_all(process_id: process_id)
+        end
 
         if rows_updated == 1
           Ductwork::Job
