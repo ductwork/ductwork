@@ -18,7 +18,6 @@ Rails::Generators.invoke(
 Combustion.initialize! :active_record
 
 require "rspec/rails"
-require "sidekiq/testing"
 
 Dir
   .glob("support/**/*.rb", base: "spec")

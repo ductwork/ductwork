@@ -14,7 +14,6 @@ gem "rubocop-factory_bot"
 gem "rubocop-rake"
 gem "rubocop-rspec"
 gem "rubocop-rspec_rails"
-gem "sidekiq"
 gem "sqlite3"
 gem "rails", "7.2.2.2"
 
