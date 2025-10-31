@@ -58,13 +58,13 @@ RSpec.describe Ductwork::DefinitionBuilder do
 
   describe "#divide" do
     it "returns the builder instance" do
-      returned_builder = builder.start(MyFirstStep).divide(to: [MySecondStep, MyThirdJob])
+      returned_builder = builder.start(MyFirstStep).divide(to: [MySecondStep, MyThirdStep])
 
       expect(returned_builder).to eq(builder)
     end
 
     it "returns the builder instance when given a block" do
-      returned_builder = builder.start(MyFirstStep).divide(to: [MySecondStep, MyThirdJob]) do
+      returned_builder = builder.start(MyFirstStep).divide(to: [MySecondStep, MyThirdStep]) do
         puts
       end
 
@@ -72,18 +72,18 @@ RSpec.describe Ductwork::DefinitionBuilder do
     end
 
     it "adds new branches and steps to the definition" do
-      definition = builder.start(MyFirstStep).divide(to: [MySecondStep, MyThirdJob]).complete
+      definition = builder.start(MyFirstStep).divide(to: [MySecondStep, MyThirdStep]).complete
 
       first_step = definition.branch.steps.sole
       second_step, third_step = definition.branch.children.map { |b| b.steps.sole }
       expect(first_step.klass).to eq(MyFirstStep)
       expect(second_step.klass).to eq(MySecondStep)
-      expect(third_step.klass).to eq(MyThirdJob)
+      expect(third_step.klass).to eq(MyThirdStep)
     end
 
     it "yields the new branches if a block is given" do
       expect do |block|
-        builder.start(MyFirstStep).divide(to: [MySecondStep, MyThirdJob], &block)
+        builder.start(MyFirstStep).divide(to: [MySecondStep, MyThirdStep], &block)
       end.to yield_control
     end
 
@@ -101,14 +101,14 @@ RSpec.describe Ductwork::DefinitionBuilder do
     it "returns the builder instance with method chaining" do
       returned_builder = builder
                          .start(MyFirstStep)
-                         .divide(to: [MySecondStep, MyThirdJob])
+                         .divide(to: [MySecondStep, MyThirdStep])
                          .combine(into: MyFourthJob)
 
       expect(returned_builder).to eq(builder)
     end
 
     it "returns the builder instance when given a block" do
-      returned_builder = builder.start(MyFirstStep).divide(to: [MySecondStep, MyThirdJob]) do |b1, b2|
+      returned_builder = builder.start(MyFirstStep).divide(to: [MySecondStep, MyThirdStep]) do |b1, b2|
         b1.combine(b2, into: MyFourthJob)
       end
 
@@ -118,7 +118,7 @@ RSpec.describe Ductwork::DefinitionBuilder do
     it "merges the branches together into a new step with method chaining" do
       definition = builder
                    .start(MyFirstStep)
-                   .divide(to: [MySecondStep, MyThirdJob])
+                   .divide(to: [MySecondStep, MyThirdStep])
                    .combine(into: MyFourthJob)
                    .complete
 
@@ -127,14 +127,14 @@ RSpec.describe Ductwork::DefinitionBuilder do
       fourth_step = definition.branch.children.first.children.sole.steps.sole
       expect(first_step.klass).to eq(MyFirstStep)
       expect(second_step.klass).to eq(MySecondStep)
-      expect(third_step.klass).to eq(MyThirdJob)
+      expect(third_step.klass).to eq(MyThirdStep)
       expect(fourth_step.klass).to eq(MyFourthJob)
     end
 
     it "merges multiple branches together into a new step" do
       definition = builder
                    .start(MyFirstStep)
-                   .divide(to: [MySecondStep, MyThirdJob, MyFourthJob])
+                   .divide(to: [MySecondStep, MyThirdStep, MyFourthJob])
                    .combine(into: MyFifthJob)
                    .complete
 
@@ -145,7 +145,7 @@ RSpec.describe Ductwork::DefinitionBuilder do
     end
 
     it "merges the branches together into a new step when given a block" do
-      definition = builder.start(MyFirstStep).divide(to: [MySecondStep, MyThirdJob]) do |b1, b2|
+      definition = builder.start(MyFirstStep).divide(to: [MySecondStep, MyThirdStep]) do |b1, b2|
         b1.combine(b2, into: MyFourthJob)
       end.complete
 
@@ -154,7 +154,7 @@ RSpec.describe Ductwork::DefinitionBuilder do
       fourth_step = definition.branch.children.first.children.sole.steps.sole
       expect(first_step.klass).to eq(MyFirstStep)
       expect(second_step.klass).to eq(MySecondStep)
-      expect(third_step.klass).to eq(MyThirdJob)
+      expect(third_step.klass).to eq(MyThirdStep)
       expect(fourth_step.klass).to eq(MyFourthJob)
     end
 
@@ -208,7 +208,7 @@ RSpec.describe Ductwork::DefinitionBuilder do
       returned_builder = builder
                          .start(MyFirstStep)
                          .expand(to: MySecondStep)
-                         .collapse(into: MyThirdJob)
+                         .collapse(into: MyThirdStep)
 
       expect(returned_builder).to eq(builder)
     end
@@ -217,14 +217,14 @@ RSpec.describe Ductwork::DefinitionBuilder do
       definition = builder
                    .start(MyFirstStep)
                    .expand(to: MySecondStep)
-                   .collapse(into: MyThirdJob)
+                   .collapse(into: MyThirdStep)
                    .complete
 
       first_step, second_step, third_step = definition.branch.steps
       expect(definition.branch.steps.length).to eq(3)
       expect(first_step.klass).to eq(MyFirstStep)
       expect(second_step.klass).to eq(MySecondStep)
-      expect(third_step.klass).to eq(MyThirdJob)
+      expect(third_step.klass).to eq(MyThirdStep)
       expect(third_step.type).to eq(:collapse)
     end
 

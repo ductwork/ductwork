@@ -8,7 +8,7 @@ RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
     definition = Class.new(Ductwork::Pipeline) do
       define do |pipeline|
         pipeline.start(MyFirstStep)
-        pipeline.divide(to: [MySecondStep, MyThirdJob]) do |branch1, branch2|
+        pipeline.divide(to: [MySecondStep, MyThirdStep]) do |branch1, branch2|
           branch1.chain(MyFourthJob)
           branch1.combine(branch2, into: MyFifthJob)
         end
@@ -29,7 +29,7 @@ RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
     definition = Class.new(Ductwork::Pipeline) do
       define do |pipeline|
         pipeline.start(MyFirstStep)
-        pipeline.divide(to: [MySecondStep, MyThirdJob]) do |branch1, branch2|
+        pipeline.divide(to: [MySecondStep, MyThirdStep]) do |branch1, branch2|
           branch1.divide(to: [MyFourthJob, MyFifthJob]) do |sub_branch1, sub_branch2|
             branch2.combine(sub_branch1, sub_branch2, into: MyFirstStep)
           end
