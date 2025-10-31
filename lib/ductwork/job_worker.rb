@@ -81,9 +81,16 @@ module Ductwork
         pipeline: pipeline,
         job_klass: job.klass
       )
-      Object.const_get(job.klass).new.execute(job.input_args)
+      output_payload = Object.const_get(job.klass).new.execute(job.input_args)
       logger.debug(
         msg: "Executed job",
+        role: :job_worker,
+        pipeline: pipeline,
+        job_klass: job.klass
+      )
+      job.update!(output_payload: output_payload)
+      logger.debug(
+        msg: "Saved output payload",
         role: :job_worker,
         pipeline: pipeline,
         job_klass: job.klass
