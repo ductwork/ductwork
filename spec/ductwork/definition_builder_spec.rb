@@ -135,13 +135,13 @@ RSpec.describe Ductwork::DefinitionBuilder do
       definition = builder
                    .start(MyFirstStep)
                    .divide(to: [MySecondStep, MyThirdStep, MyFourthStep])
-                   .combine(into: MyFifthJob)
+                   .combine(into: MyFifthStep)
                    .complete
 
       combined_branch = definition.branch.children.sample.children.sole
       expect(definition.branch.children.length).to eq(3)
       expect(combined_branch.parents.length).to eq(3)
-      expect(combined_branch.steps.sole.klass).to eq(MyFifthJob)
+      expect(combined_branch.steps.sole.klass).to eq(MyFifthStep)
     end
 
     it "merges the branches together into a new step when given a block" do

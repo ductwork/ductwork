@@ -10,7 +10,7 @@ RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
         pipeline.start(MyFirstStep)
         pipeline.divide(to: [MySecondStep, MyThirdStep]) do |branch1, branch2|
           branch1.chain(MyFourthStep)
-          branch1.combine(branch2, into: MyFifthJob)
+          branch1.combine(branch2, into: MyFifthStep)
         end
       end
     end.pipeline_definition
@@ -22,7 +22,7 @@ RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
     expect(branch1.children.length).to eq(1)
     expect(branch2.steps.length).to eq(1)
     expect(branch2.children.length).to eq(1)
-    expect(combined_branch.steps.sole.klass).to eq(MyFifthJob)
+    expect(combined_branch.steps.sole.klass).to eq(MyFifthStep)
   end
 
   it "correctly handles combining multiple branches" do
@@ -30,7 +30,7 @@ RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
       define do |pipeline|
         pipeline.start(MyFirstStep)
         pipeline.divide(to: [MySecondStep, MyThirdStep]) do |branch1, branch2|
-          branch1.divide(to: [MyFourthStep, MyFifthJob]) do |sub_branch1, sub_branch2|
+          branch1.divide(to: [MyFourthStep, MyFifthStep]) do |sub_branch1, sub_branch2|
             branch2.combine(sub_branch1, sub_branch2, into: MyFirstStep)
           end
         end
