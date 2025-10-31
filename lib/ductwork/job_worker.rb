@@ -22,12 +22,6 @@ module Ductwork
         job = claim_job
 
         if job.present?
-          logger.debug(
-            msg: "Job claimed",
-            role: :job_worker,
-            pipeline: pipeline
-          )
-
           process_job(job)
         else
           logger.debug(
@@ -75,9 +69,24 @@ module Ductwork
         end
 
         if rows_updated == 1
+          logger.debug(
+            msg: "Job claimed",
+            role: :job_worker,
+            pipeline: pipeline,
+            process_id: process_id,
+            availability_id: id
+          )
           Ductwork::Job
             .joins(executions: :availability)
             .find_by(ductwork_availabilities: { id:, process_id: })
+        else
+          logger.debug(
+            msg: "Did not claim job, avoided race condition",
+            role: :job_worker,
+            pipeline: pipeline,
+            process_id: process_id,
+            availability_id: id
+          )
         end
       end
     end
