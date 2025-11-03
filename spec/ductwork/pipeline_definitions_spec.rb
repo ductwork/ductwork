@@ -5,25 +5,38 @@
 # definitions to uncover any bugs and drive impementation
 RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
   it "correctly chains steps after dividing" do
-    pending "implementation of `Ductwork::BranchBuilder#chain`"
     definition = Class.new(Ductwork::Pipeline) do
       define do |pipeline|
         pipeline.start(MyFirstStep)
         pipeline.divide(to: [MySecondStep, MyThirdStep]) do |branch1, branch2|
-          branch1.chain(MyFourthStep)
-          branch1.combine(branch2, into: MyFifthStep)
+          branch1.chain(MyFourthStep).combine(branch2, into: MyFifthStep)
         end
       end
     end.pipeline_definition
 
-    branch1, branch2 = definition.branch.children
-    combined_branch = definition.branch.children.first.children.sole
-    expect(branch1.steps.length).to eq(2)
-    expect(branch1.steps.second.klass).to eq(MyFourthStep)
-    expect(branch1.children.length).to eq(1)
-    expect(branch2.steps.length).to eq(1)
-    expect(branch2.children.length).to eq(1)
-    expect(combined_branch.steps.sole.klass).to eq(MyFifthStep)
+    expect(definition[:nodes]).to eq(
+      %w[MyFirstStep MySecondStep MyThirdStep MyFourthStep MyFifthStep]
+    )
+    expect(definition[:edges]["MyFirstStep"]).to eq(
+      [
+        { to: %w[MySecondStep MyThirdStep], type: :divide },
+      ]
+    )
+    expect(definition[:edges]["MySecondStep"]).to eq(
+      [
+        { to: %w[MyFourthStep], type: :chain },
+      ]
+    )
+    expect(definition[:edges]["MyThirdStep"]).to eq(
+      [
+        { to: %w[MyFifthStep], type: :combine },
+      ]
+    )
+    expect(definition[:edges]["MyFourthStep"]).to eq(
+      [
+        { to: %w[MyFifthStep], type: :combine },
+      ]
+    )
   end
 
   it "correctly handles combining multiple branches" do

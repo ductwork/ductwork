@@ -1,7 +1,44 @@
 # frozen_string_literal: true
 
 RSpec.describe Ductwork::BranchBuilder do
+  describe "#chain" do
+    # NOTE: we can assume the definition has at least this state because
+    # this class is only used in the `DefinitionBuilder`
+    let(:definition) do
+      {
+        nodes: %w[MyFirstStep],
+        edges: {
+          "MyFirstStep" => [],
+        },
+      }
+    end
+
+    it "returns itself" do
+      builder = described_class.new(klass: MyFirstStep, definition:)
+
+      instance = builder.chain(MySecondStep)
+
+      expect(instance).to eq(builder)
+    end
+
+    it "adds a new node and edge to the definition" do
+      builder = described_class.new(klass: MyFirstStep, definition:)
+
+      builder.chain(MySecondStep)
+
+      expect(definition[:nodes]).to eq(%w[MyFirstStep MySecondStep])
+      expect(definition[:edges]["MyFirstStep"]).to eq(
+        [
+          { to: %w[MySecondStep], type: :chain },
+        ]
+      )
+      expect(definition[:edges]["MySecondStep"]).to eq([])
+    end
+  end
+
   describe "#combine" do
+    # NOTE: we can assume the definition has at least this state because
+    # this class is only used in the `DefinitionBuilder`
     let(:definition) do
       {
         nodes: %w[MyFirstStep MySecondStep],
@@ -10,6 +47,15 @@ RSpec.describe Ductwork::BranchBuilder do
           "MySecondStep" => [],
         },
       }
+    end
+
+    it "returns itself" do
+      builder = described_class.new(klass: MyFirstStep, definition:)
+      other_builder = described_class.new(klass: MySecondStep, definition:)
+
+      instance = builder.combine(other_builder, into: MyThirdStep)
+
+      expect(instance).to eq(builder)
     end
 
     it "combines the branch builder into the given step" do

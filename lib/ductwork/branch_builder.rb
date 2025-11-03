@@ -7,12 +7,26 @@ module Ductwork
     def initialize(klass:, definition:)
       @klass = klass
       @definition = definition
+      @last_node = klass.name
     end
 
-    # TODO: implement `#chain`, `#divide`, `#expand`, and `#collapse`
+    # TODO: implement `#divide`, `#expand`, and `#collapse`
+
+    def chain(next_klass)
+      definition[:edges][last_node] << {
+        to: [next_klass.name],
+        type: :chain,
+      }
+
+      definition[:nodes].push(next_klass.name)
+      definition[:edges][next_klass.name] = []
+      @last_node = next_klass.name
+
+      self
+    end
 
     def combine(*branch_builders, into:)
-      definition[:edges][klass.name] << {
+      definition[:edges][last_node] << {
         to: [into.name],
         type: :combine,
       }
@@ -24,10 +38,12 @@ module Ductwork
       end
       definition[:nodes].push(into.name)
       definition[:edges][into.name] = []
+
+      self
     end
 
     private
 
-    attr_reader :definition
+    attr_reader :definition, :last_node
   end
 end
