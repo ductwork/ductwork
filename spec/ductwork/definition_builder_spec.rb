@@ -13,9 +13,9 @@ RSpec.describe Ductwork::DefinitionBuilder do
     it "adds the initial branch and step to the definition" do
       definition = builder.start(MyFirstStep).complete
 
-      step = definition.branch.steps.sole
-      expect(step.klass).to eq(MyFirstStep)
-      expect(step.type).to eq(:start)
+      expect(definition[:nodes]).to eq(["MyFirstStep"])
+      expect(definition[:edges].length).to eq(1)
+      expect(definition[:edges]["MyFirstStep"]).to eq([])
     end
 
     it "raises if called more than once" do
@@ -38,12 +38,17 @@ RSpec.describe Ductwork::DefinitionBuilder do
     it "adds a new step to the current branch of the definition" do
       definition = builder.start(MyFirstStep).chain(MySecondStep).complete
 
-      first_step, last_step = definition.branch.steps
-      expect(definition.branch.steps.length).to eq(2)
-      expect(first_step.klass).to eq(MyFirstStep)
-      expect(first_step.type).to eq(:start)
-      expect(last_step.klass).to eq(MySecondStep)
-      expect(last_step.type).to eq(:chain)
+      expect(definition[:nodes]).to eq(%w[MyFirstStep MySecondStep])
+      expect(definition[:edges].length).to eq(2)
+      expect(definition[:edges]["MyFirstStep"]).to eq(
+        [
+          {
+            to: %w[MySecondStep],
+            type: :chain,
+          },
+        ]
+      )
+      expect(definition[:edges]["MySecondStep"]).to eq([])
     end
 
     it "raises if pipeline has not been started" do
@@ -72,13 +77,23 @@ RSpec.describe Ductwork::DefinitionBuilder do
     end
 
     it "adds new branches and steps to the definition" do
-      definition = builder.start(MyFirstStep).divide(to: [MySecondStep, MyThirdStep]).complete
+      definition = builder
+                   .start(MyFirstStep)
+                   .divide(to: [MySecondStep, MyThirdStep])
+                   .complete
 
-      first_step = definition.branch.steps.sole
-      second_step, third_step = definition.branch.children.map { |b| b.steps.sole }
-      expect(first_step.klass).to eq(MyFirstStep)
-      expect(second_step.klass).to eq(MySecondStep)
-      expect(third_step.klass).to eq(MyThirdStep)
+      expect(definition[:nodes]).to eq(%w[MyFirstStep MySecondStep MyThirdStep])
+      expect(definition[:edges].length).to eq(3)
+      expect(definition[:edges]["MyFirstStep"]).to eq(
+        [
+          {
+            to: %w[MySecondStep MyThirdStep],
+            type: :divide,
+          },
+        ]
+      )
+      expect(definition[:edges]["MySecondStep"]).to eq([])
+      expect(definition[:edges]["MyThirdStep"]).to eq([])
     end
 
     it "yields the new branches if a block is given" do
@@ -92,7 +107,7 @@ RSpec.describe Ductwork::DefinitionBuilder do
         builder.divide(to: [spy, spy])
       end.to raise_error(
         described_class::StartError,
-        "Must start pipeline definition before dividing"
+        "Must start pipeline definition before dividing chain"
       )
     end
   end
@@ -122,13 +137,35 @@ RSpec.describe Ductwork::DefinitionBuilder do
                    .combine(into: MyFourthStep)
                    .complete
 
-      first_step = definition.branch.steps.sole
-      second_step, third_step = definition.branch.children.map { |b| b.steps.sole }
-      fourth_step = definition.branch.children.first.children.sole.steps.sole
-      expect(first_step.klass).to eq(MyFirstStep)
-      expect(second_step.klass).to eq(MySecondStep)
-      expect(third_step.klass).to eq(MyThirdStep)
-      expect(fourth_step.klass).to eq(MyFourthStep)
+      expect(definition[:nodes]).to eq(
+        %w[MyFirstStep MySecondStep MyThirdStep MyFourthStep]
+      )
+      expect(definition[:edges].length).to eq(4)
+      expect(definition[:edges]["MyFirstStep"]).to eq(
+        [
+          {
+            to: %w[MySecondStep MyThirdStep],
+            type: :divide,
+          },
+        ]
+      )
+      expect(definition[:edges]["MySecondStep"]).to eq(
+        [
+          {
+            to: %w[MyFourthStep],
+            type: :combine,
+          },
+        ]
+      )
+      expect(definition[:edges]["MyThirdStep"]).to eq(
+        [
+          {
+            to: %w[MyFourthStep],
+            type: :combine,
+          },
+        ]
+      )
+      expect(definition[:edges]["MyFourthStep"]).to eq([])
     end
 
     it "merges multiple branches together into a new step" do
@@ -138,38 +175,101 @@ RSpec.describe Ductwork::DefinitionBuilder do
                    .combine(into: MyFifthStep)
                    .complete
 
-      combined_branch = definition.branch.children.sample.children.sole
-      expect(definition.branch.children.length).to eq(3)
-      expect(combined_branch.parents.length).to eq(3)
-      expect(combined_branch.steps.sole.klass).to eq(MyFifthStep)
+      expect(definition[:edges].length).to eq(5)
+      expect(definition[:edges]["MySecondStep"]).to eq(
+        [
+          {
+            to: %w[MyFifthStep],
+            type: :combine,
+          },
+        ]
+      )
+      expect(definition[:edges]["MyThirdStep"]).to eq(
+        [
+          {
+            to: %w[MyFifthStep],
+            type: :combine,
+          },
+        ]
+      )
+      expect(definition[:edges]["MyFourthStep"]).to eq(
+        [
+          {
+            to: %w[MyFifthStep],
+            type: :combine,
+          },
+        ]
+      )
     end
 
     it "merges the branches together into a new step when given a block" do
-      definition = builder.start(MyFirstStep).divide(to: [MySecondStep, MyThirdStep]) do |b1, b2|
-        b1.combine(b2, into: MyFourthStep)
+      definition = builder.start(MyFirstStep).divide(to: [MySecondStep, MyThirdStep, MyFourthStep]) do |b1, b2, b3|
+        b1.combine(b2, b3, into: MyFifthStep)
       end.complete
 
-      first_step = definition.branch.steps.sole
-      second_step, third_step = definition.branch.children.map { |b| b.steps.sole }
-      fourth_step = definition.branch.children.first.children.sole.steps.sole
-      expect(first_step.klass).to eq(MyFirstStep)
-      expect(second_step.klass).to eq(MySecondStep)
-      expect(third_step.klass).to eq(MyThirdStep)
-      expect(fourth_step.klass).to eq(MyFourthStep)
+      expect(definition[:nodes]).to eq(
+        %w[MyFirstStep MySecondStep MyThirdStep MyFourthStep MyFifthStep]
+      )
+      expect(definition[:edges].length).to eq(5)
+      expect(definition[:edges]["MyFirstStep"]).to eq(
+        [
+          {
+            to: %w[MySecondStep MyThirdStep MyFourthStep],
+            type: :divide,
+          },
+        ]
+      )
+      expect(definition[:edges]["MySecondStep"]).to eq(
+        [
+          {
+            to: %w[MyFifthStep],
+            type: :combine,
+          },
+        ]
+      )
+      expect(definition[:edges]["MyThirdStep"]).to eq(
+        [
+          {
+            to: %w[MyFifthStep],
+            type: :combine,
+          },
+        ]
+      )
+      expect(definition[:edges]["MyFourthStep"]).to eq(
+        [
+          {
+            to: %w[MyFifthStep],
+            type: :combine,
+          },
+        ]
+      )
+      expect(definition[:edges]["MyFifthStep"]).to eq([])
     end
 
     it "raises if pipeline has not been started" do
       expect do
-        builder.combine(into: spy)
+        builder.combine(into: MyFirstStep)
       end.to raise_error(
         described_class::StartError,
-        "Must start pipeline definition before combining"
+        "Must start pipeline definition before combining steps"
       )
     end
 
     it "raises if the pipeline is not divided" do
       expect do
-        builder.start(spy).combine(into: spy)
+        builder.start(MyFirstStep).combine(into: MySecondStep)
+      end.to raise_error(
+        described_class::CombineError,
+        "Must divide pipeline definition before combining steps"
+      )
+    end
+
+    it "raises if the pipeline is not divided and steps are chained" do
+      expect do
+        builder
+          .start(MyFirstStep)
+          .chain(MySecondStep)
+          .combine(into: MyThirdStep)
       end.to raise_error(
         described_class::CombineError,
         "Must divide pipeline definition before combining steps"
@@ -184,13 +284,20 @@ RSpec.describe Ductwork::DefinitionBuilder do
       expect(returned_builder).to eq(builder)
     end
 
-    it "adds a placeholder step to the definition" do
+    it "adds a step to the definition" do
       definition = builder.start(MyFirstStep).expand(to: MySecondStep).complete
 
-      step = definition.branch.steps.last
-      expect(definition.branch.steps.length).to eq(2)
-      expect(step.klass).to eq(MySecondStep)
-      expect(step.type).to eq(:expand)
+      expect(definition[:nodes]).to eq(%w[MyFirstStep MySecondStep])
+      expect(definition[:edges].length).to eq(2)
+      expect(definition[:edges]["MyFirstStep"]).to eq(
+        [
+          {
+            to: %w[MySecondStep],
+            type: :expand,
+          },
+        ]
+      )
+      expect(definition[:edges]["MySecondStep"]).to eq([])
     end
 
     it "raises if pipeline has not been started" do
@@ -220,12 +327,25 @@ RSpec.describe Ductwork::DefinitionBuilder do
                    .collapse(into: MyThirdStep)
                    .complete
 
-      first_step, second_step, third_step = definition.branch.steps
-      expect(definition.branch.steps.length).to eq(3)
-      expect(first_step.klass).to eq(MyFirstStep)
-      expect(second_step.klass).to eq(MySecondStep)
-      expect(third_step.klass).to eq(MyThirdStep)
-      expect(third_step.type).to eq(:collapse)
+      expect(definition[:nodes]).to eq(%w[MyFirstStep MySecondStep MyThirdStep])
+      expect(definition[:edges].length).to eq(3)
+      expect(definition[:edges]["MyFirstStep"]).to eq(
+        [
+          {
+            to: %w[MySecondStep],
+            type: :expand,
+          },
+        ]
+      )
+      expect(definition[:edges]["MySecondStep"]).to eq(
+        [
+          {
+            to: %w[MyThirdStep],
+            type: :collapse,
+          },
+        ]
+      )
+      expect(definition[:edges]["MyThirdStep"]).to eq([])
     end
 
     it "raises if pipeline has not been started" do
@@ -240,6 +360,18 @@ RSpec.describe Ductwork::DefinitionBuilder do
     it "raises if chain is not expanded" do
       expect do
         builder.start(spy).collapse(into: spy)
+      end.to raise_error(
+        described_class::CollapseError,
+        "Must expand pipeline definition before collapsing steps"
+      )
+    end
+
+    it "raises if chain is not expanded and steps are chained" do
+      expect do
+        builder
+          .start(MyFirstStep)
+          .chain(MySecondStep)
+          .collapse(into: MyThirdStep)
       end.to raise_error(
         described_class::CollapseError,
         "Must expand pipeline definition before collapsing steps"

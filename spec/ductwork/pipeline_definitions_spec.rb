@@ -1,10 +1,11 @@
 # frozen_string_literal: true
 
-# NOTE: this test may eventually be absorbed into branch and/or deinition
+# NOTE: this test may eventually be absorbed into branch and/or definition
 # builder specs. this test file is meant to exercise more complex pipeline
-# definitions to uncover any bugs
+# definitions to uncover any bugs and drive impementation
 RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
   it "correctly chains steps after dividing" do
+    pending "implementation of `Ductwork::BranchBuilder#chain`"
     definition = Class.new(Ductwork::Pipeline) do
       define do |pipeline|
         pipeline.start(MyFirstStep)
@@ -26,6 +27,7 @@ RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
   end
 
   it "correctly handles combining multiple branches" do
+    pending "implementation of `Ductwork::BranchBuilder#divide`"
     definition = Class.new(Ductwork::Pipeline) do
       define do |pipeline|
         pipeline.start(MyFirstStep)

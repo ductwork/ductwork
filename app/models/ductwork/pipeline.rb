@@ -51,7 +51,7 @@ module Ductwork
           raise DefinitionError, "Pipeline must be defined before triggering"
         end
 
-        step_definition = pipeline_definition.branch.steps.first
+        step_klass = pipeline_definition.dig(:nodes, 0)
 
         Record.transaction do
           pipeline = create!(
@@ -62,12 +62,12 @@ module Ductwork
             triggered_at: Time.current
           )
           step = pipeline.steps.create!(
-            klass: step_definition.klass,
+            klass: step_klass,
             status: :in_progress,
             step_type: :start,
             started_at: Time.current
           )
-          Ductwork::Job.enqueue(step_definition.klass, step, *args)
+          Ductwork::Job.enqueue(step_klass, step, *args)
 
           pipeline
         end

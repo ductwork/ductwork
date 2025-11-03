@@ -7,107 +7,139 @@ module Ductwork
     class CombineError < StandardError; end
 
     def initialize
-      @definition = Ductwork::Definition.new
-      @current_branches = []
-      @divisions = 0
-      @expansions = 0
+      @definition = {
+        nodes: [],
+        edges: {},
+      }
     end
 
     def start(klass)
-      if started?
-        raise StartError, "Can only start pipeline definition once"
-      end
-
-      branch = Branch.new
-      branch.start(klass)
-      definition.branch = branch
-      @current_branches = [branch]
+      validate_started!
+      add_new_nodes(klass)
 
       self
     end
 
+    # NOTE: there is a bug here that does not allow the user to reuse step classes in the same pipeline. i'll fix this
     def chain(klass)
-      if !started?
-        raise StartError, "Must start pipeline definition before chaining"
-      end
-
-      current_branches.sole.chain(klass)
+      validate_definition_started!(action: "chaining")
+      add_edge_to_last_node(klass, type: :chain)
+      add_new_nodes(klass)
 
       self
     end
 
     def divide(to:)
-      if !started?
-        raise StartError, "Must start pipeline definition before dividing"
+      validate_definition_started!(action: "dividing chain")
+      add_edge_to_last_node(*to, type: :divide)
+      add_new_nodes(*to)
+
+      if block_given?
+        branches = to.map do |klass|
+          Ductwork::BranchBuilder
+            .new(klass: klass, definition: definition)
+        end
+
+        yield branches
       end
-
-      branches = current_branches.sole.divide(to:)
-      @current_branches = branches
-      @divisions += 1
-
-      yield branches if block_given?
 
       self
     end
 
     def combine(into:)
-      if !started?
-        raise StartError, "Must start pipeline definition before combining"
-      end
+      validate_definition_started!(action: "combining steps")
 
-      if divisions.zero?
+      if not_divided?
         raise CombineError, "Must divide pipeline definition before combining steps"
       end
 
-      branch = current_branches[0].combine(*current_branches[1..], into: into)
-      @current_branches = [branch]
-      @divisions -= 1
+      last_nodes = definition[:nodes].reverse.select do |node|
+        definition[:edges][node].empty?
+      end
+      last_nodes.each do |node|
+        definition[:edges][node] << {
+          to: [into.name],
+          type: :combine,
+        }
+      end
+      add_new_nodes(into)
 
       self
     end
 
     def expand(to:)
-      if !started?
-        raise StartError, "Must start pipeline definition before expanding chain"
-      end
-
-      current_branches.sole.expand(to)
-      @expansions += 1
+      validate_definition_started!(action: "expanding chain")
+      add_edge_to_last_node(to, type: :expand)
+      add_new_nodes(to)
 
       self
     end
 
     def collapse(into:)
-      if !started?
-        raise StartError, "Must start pipeline definition before collapsing steps"
-      end
+      validate_definition_started!(action: "collapsing steps")
 
-      if expansions.zero?
+      if not_expanded?
         raise CollapseError, "Must expand pipeline definition before collapsing steps"
       end
 
-      @expansions -= 1
-      current_branches.sole.collapse(into)
+      add_edge_to_last_node(into, type: :collapse)
+      add_new_nodes(into)
 
       self
     end
 
     def complete
-      if !started?
-        raise StartError, "Must start pipeline definition before completing"
-      end
-
-      # create Branches and PlaceholderSteps or something
+      validate_definition_started!(action: "completing")
 
       definition
     end
 
     private
 
-    attr_reader :definition, :current_branches, :divisions, :expansions
+    attr_reader :definition
 
-    def started?
-      current_branches.any?
+    def validate_started!
+      if definition[:nodes].any?
+        raise StartError, "Can only start pipeline definition once"
+      end
+    end
+
+    def validate_definition_started!(action:)
+      if definition[:nodes].empty?
+        raise StartError, "Must start pipeline definition before #{action}"
+      end
+    end
+
+    def not_divided?
+      last_edge.nil? || last_edge[:type] != :divide
+    end
+
+    def not_expanded?
+      last_edge.nil? || last_edge[:type] != :expand
+    end
+
+    def last_edge
+      last_edge_node = definition[:nodes].reverse.find do |node|
+        definition[:edges][node].any?
+      end
+
+      definition.dig(:edges, last_edge_node, -1)
+    end
+
+    def add_new_nodes(*klasses)
+      definition[:nodes].push(*klasses.map(&:name))
+      klasses.each do |klass|
+        definition[:edges][klass.name] = []
+      end
+    end
+
+    def add_edge_to_last_node(*klasses, type:)
+      last_node = definition.dig(:nodes, -1)
+
+      definition[:edges][last_node] << {
+        to: klasses.map(&:name),
+        type: type,
+      }
     end
   end
 end
