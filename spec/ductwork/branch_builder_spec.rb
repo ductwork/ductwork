@@ -2,6 +2,8 @@
 
 RSpec.describe Ductwork::BranchBuilder do
   describe "#chain" do
+    subject(:builder) { described_class.new(klass: MyFirstStep, definition:) }
+
     # NOTE: we can assume the definition has at least this state because
     # this class is only used in the `DefinitionBuilder`
     let(:definition) do
@@ -14,16 +16,12 @@ RSpec.describe Ductwork::BranchBuilder do
     end
 
     it "returns itself" do
-      builder = described_class.new(klass: MyFirstStep, definition:)
-
       instance = builder.chain(MySecondStep)
 
       expect(instance).to eq(builder)
     end
 
     it "adds a new node and edge to the definition" do
-      builder = described_class.new(klass: MyFirstStep, definition:)
-
       builder.chain(MySecondStep)
 
       expect(definition[:nodes]).to eq(%w[MyFirstStep MySecondStep])
@@ -36,7 +34,48 @@ RSpec.describe Ductwork::BranchBuilder do
     end
   end
 
+  describe "#divide" do
+    subject(:builder) { described_class.new(klass: MyFirstStep, definition:) }
+
+    let(:definition) do
+      {
+        nodes: %w[MyFirstStep],
+        edges: {
+          "MyFirstStep" => [],
+        },
+      }
+    end
+
+    it "returns itself" do
+      instance = builder.divide(to: [MySecondStep, MyThirdStep]) {} # rubocop:disable Lint/EmptyBlock
+
+      expect(instance).to eq(builder)
+    end
+
+    it "adds a new node and edge to the definition" do
+      builder.divide(to: [MySecondStep, MyThirdStep]) {} # rubocop:disable Lint/EmptyBlock
+
+      expect(definition[:nodes]).to eq(%w[MyFirstStep MySecondStep MyThirdStep])
+      expect(definition[:edges]["MyFirstStep"]).to eq(
+        [
+          { to: %w[MySecondStep MyThirdStep], type: :divide },
+        ]
+      )
+      expect(definition[:edges]["MySecondStep"]).to eq([])
+      expect(definition[:edges]["MyThirdStep"]).to eq([])
+    end
+
+    it "yields the sub-branches to the block" do
+      expect do |block|
+        builder.divide(to: [MySecondStep, MyThirdStep], &block)
+      end.to yield_control
+    end
+  end
+
   describe "#combine" do
+    subject(:builder) { described_class.new(klass: MyFirstStep, definition:) }
+
+    let(:other_builder) { described_class.new(klass: MySecondStep, definition:) }
     # NOTE: we can assume the definition has at least this state because
     # this class is only used in the `DefinitionBuilder`
     let(:definition) do
@@ -50,18 +89,12 @@ RSpec.describe Ductwork::BranchBuilder do
     end
 
     it "returns itself" do
-      builder = described_class.new(klass: MyFirstStep, definition:)
-      other_builder = described_class.new(klass: MySecondStep, definition:)
-
       instance = builder.combine(other_builder, into: MyThirdStep)
 
       expect(instance).to eq(builder)
     end
 
     it "combines the branch builder into the given step" do
-      builder = described_class.new(klass: MyFirstStep, definition:)
-      other_builder = described_class.new(klass: MySecondStep, definition:)
-
       builder.combine(other_builder, into: MyThirdStep)
 
       expect(definition[:nodes]).to eq(%w[MyFirstStep MySecondStep MyThirdStep])
