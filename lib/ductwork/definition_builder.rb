@@ -14,7 +14,7 @@ module Ductwork
     end
 
     def start(klass)
-      validate_started!
+      validate_start_once!
       add_new_nodes(klass)
 
       self
@@ -48,10 +48,7 @@ module Ductwork
 
     def combine(into:)
       validate_definition_started!(action: "combining steps")
-
-      if not_divided?
-        raise CombineError, "Must divide pipeline definition before combining steps"
-      end
+      validate_definition_divided!
 
       last_nodes = definition[:nodes].reverse.select do |node|
         definition[:edges][node].empty?
@@ -77,11 +74,7 @@ module Ductwork
 
     def collapse(into:)
       validate_definition_started!(action: "collapsing steps")
-
-      if not_expanded?
-        raise CollapseError, "Must expand pipeline definition before collapsing steps"
-      end
-
+      validate_definition_expanded!
       add_edge_to_last_node(into, type: :collapse)
       add_new_nodes(into)
 
@@ -98,7 +91,7 @@ module Ductwork
 
     attr_reader :definition
 
-    def validate_started!
+    def validate_start_once!
       if definition[:nodes].any?
         raise StartError, "Can only start pipeline definition once"
       end
@@ -110,12 +103,16 @@ module Ductwork
       end
     end
 
-    def not_divided?
-      last_edge.nil? || last_edge[:type] != :divide
+    def validate_definition_divided!
+      if last_edge.nil? || last_edge[:type] != :divide
+        raise CombineError, "Must divide pipeline definition before combining steps"
+      end
     end
 
-    def not_expanded?
-      last_edge.nil? || last_edge[:type] != :expand
+    def validate_definition_expanded!
+      if last_edge.nil? || last_edge[:type] != :expand
+        raise CollapseError, "Must expand pipeline definition before collapsing steps"
+      end
     end
 
     def last_edge
