@@ -42,10 +42,7 @@ RSpec.describe Ductwork::DefinitionBuilder do
       expect(definition[:edges].length).to eq(2)
       expect(definition[:edges]["MyFirstStep"]).to eq(
         [
-          {
-            to: %w[MySecondStep],
-            type: :chain,
-          },
+          { to: %w[MySecondStep], type: :chain },
         ]
       )
       expect(definition[:edges]["MySecondStep"]).to eq([])
@@ -86,10 +83,7 @@ RSpec.describe Ductwork::DefinitionBuilder do
       expect(definition[:edges].length).to eq(3)
       expect(definition[:edges]["MyFirstStep"]).to eq(
         [
-          {
-            to: %w[MySecondStep MyThirdStep],
-            type: :divide,
-          },
+          { to: %w[MySecondStep MyThirdStep], type: :divide },
         ]
       )
       expect(definition[:edges]["MySecondStep"]).to eq([])
@@ -143,26 +137,17 @@ RSpec.describe Ductwork::DefinitionBuilder do
       expect(definition[:edges].length).to eq(4)
       expect(definition[:edges]["MyFirstStep"]).to eq(
         [
-          {
-            to: %w[MySecondStep MyThirdStep],
-            type: :divide,
-          },
+          { to: %w[MySecondStep MyThirdStep], type: :divide },
         ]
       )
       expect(definition[:edges]["MySecondStep"]).to eq(
         [
-          {
-            to: %w[MyFourthStep],
-            type: :combine,
-          },
+          { to: %w[MyFourthStep], type: :combine },
         ]
       )
       expect(definition[:edges]["MyThirdStep"]).to eq(
         [
-          {
-            to: %w[MyFourthStep],
-            type: :combine,
-          },
+          { to: %w[MyFourthStep], type: :combine },
         ]
       )
       expect(definition[:edges]["MyFourthStep"]).to eq([])
@@ -178,26 +163,17 @@ RSpec.describe Ductwork::DefinitionBuilder do
       expect(definition[:edges].length).to eq(5)
       expect(definition[:edges]["MySecondStep"]).to eq(
         [
-          {
-            to: %w[MyFifthStep],
-            type: :combine,
-          },
+          { to: %w[MyFifthStep], type: :combine },
         ]
       )
       expect(definition[:edges]["MyThirdStep"]).to eq(
         [
-          {
-            to: %w[MyFifthStep],
-            type: :combine,
-          },
+          { to: %w[MyFifthStep], type: :combine },
         ]
       )
       expect(definition[:edges]["MyFourthStep"]).to eq(
         [
-          {
-            to: %w[MyFifthStep],
-            type: :combine,
-          },
+          { to: %w[MyFifthStep], type: :combine },
         ]
       )
     end
@@ -213,34 +189,22 @@ RSpec.describe Ductwork::DefinitionBuilder do
       expect(definition[:edges].length).to eq(5)
       expect(definition[:edges]["MyFirstStep"]).to eq(
         [
-          {
-            to: %w[MySecondStep MyThirdStep MyFourthStep],
-            type: :divide,
-          },
+          { to: %w[MySecondStep MyThirdStep MyFourthStep], type: :divide },
         ]
       )
       expect(definition[:edges]["MySecondStep"]).to eq(
         [
-          {
-            to: %w[MyFifthStep],
-            type: :combine,
-          },
+          { to: %w[MyFifthStep], type: :combine },
         ]
       )
       expect(definition[:edges]["MyThirdStep"]).to eq(
         [
-          {
-            to: %w[MyFifthStep],
-            type: :combine,
-          },
+          { to: %w[MyFifthStep], type: :combine },
         ]
       )
       expect(definition[:edges]["MyFourthStep"]).to eq(
         [
-          {
-            to: %w[MyFifthStep],
-            type: :combine,
-          },
+          { to: %w[MyFifthStep], type: :combine },
         ]
       )
       expect(definition[:edges]["MyFifthStep"]).to eq([])
@@ -291,10 +255,7 @@ RSpec.describe Ductwork::DefinitionBuilder do
       expect(definition[:edges].length).to eq(2)
       expect(definition[:edges]["MyFirstStep"]).to eq(
         [
-          {
-            to: %w[MySecondStep],
-            type: :expand,
-          },
+          { to: %w[MySecondStep], type: :expand },
         ]
       )
       expect(definition[:edges]["MySecondStep"]).to eq([])
@@ -331,18 +292,12 @@ RSpec.describe Ductwork::DefinitionBuilder do
       expect(definition[:edges].length).to eq(3)
       expect(definition[:edges]["MyFirstStep"]).to eq(
         [
-          {
-            to: %w[MySecondStep],
-            type: :expand,
-          },
+          { to: %w[MySecondStep], type: :expand },
         ]
       )
       expect(definition[:edges]["MySecondStep"]).to eq(
         [
-          {
-            to: %w[MyThirdStep],
-            type: :collapse,
-          },
+          { to: %w[MyThirdStep], type: :collapse },
         ]
       )
       expect(definition[:edges]["MyThirdStep"]).to eq([])
