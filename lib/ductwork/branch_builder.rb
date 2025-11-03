@@ -2,14 +2,15 @@
 
 module Ductwork
   class BranchBuilder
+    class CollapseError < StandardError; end
+
     attr_reader :last_node
 
     def initialize(klass:, definition:)
       @last_node = klass.name
       @definition = definition
+      @expansions = 0
     end
-
-    # TODO: implement `#expand` and `#collapse`
 
     def chain(next_klass)
       definition[:edges][last_node] << {
@@ -59,8 +60,41 @@ module Ductwork
       self
     end
 
+    def expand(to:)
+      definition[:edges][last_node] << {
+        to: [to.name],
+        type: :expand,
+      }
+
+      definition[:nodes].push(to.name)
+      definition[:edges][to.name] = []
+      @last_node = to.name
+      @expansions += 1
+
+      self
+    end
+
+    def collapse(into:)
+      if expansions.zero?
+        raise CollapseError,
+              "Must expand pipeline definition before collapsing steps"
+      end
+
+      definition[:edges][last_node] << {
+        to: [into.name],
+        type: :collapse,
+      }
+
+      definition[:nodes].push(into.name)
+      definition[:edges][into.name] = []
+      @last_node = into.name
+      @expansions -= 1
+
+      self
+    end
+
     private
 
-    attr_reader :definition
+    attr_reader :definition, :expansions
   end
 end

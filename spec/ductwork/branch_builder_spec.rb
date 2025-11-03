@@ -37,6 +37,8 @@ RSpec.describe Ductwork::BranchBuilder do
   describe "#divide" do
     subject(:builder) { described_class.new(klass: MyFirstStep, definition:) }
 
+    # NOTE: we can assume the definition has at least this state because
+    # this class is only used in the `DefinitionBuilder`
     let(:definition) do
       {
         nodes: %w[MyFirstStep],
@@ -99,16 +101,10 @@ RSpec.describe Ductwork::BranchBuilder do
 
       expect(definition[:nodes]).to eq(%w[MyFirstStep MySecondStep MyThirdStep])
       expect(definition[:edges]["MyFirstStep"].sole).to eq(
-        {
-          to: %w[MyThirdStep],
-          type: :combine,
-        }
+        { to: %w[MyThirdStep], type: :combine }
       )
       expect(definition[:edges]["MySecondStep"].sole).to eq(
-        {
-          to: %w[MyThirdStep],
-          type: :combine,
-        }
+        { to: %w[MyThirdStep], type: :combine }
       )
     end
 
@@ -124,24 +120,105 @@ RSpec.describe Ductwork::BranchBuilder do
       builder.combine(*other_builders, into: MyFourthStep)
 
       expect(definition[:edges]["MyFirstStep"].sole).to eq(
-        {
-          to: %w[MyFourthStep],
-          type: :combine,
-        }
+        { to: %w[MyFourthStep], type: :combine }
       )
       expect(definition[:edges]["MySecondStep"].sole).to eq(
-        {
-          to: %w[MyFourthStep],
-          type: :combine,
-        }
+        { to: %w[MyFourthStep], type: :combine }
       )
       expect(definition[:edges]["MyThirdStep"].sole).to eq(
-        {
-          to: %w[MyFourthStep],
-          type: :combine,
-        }
+        { to: %w[MyFourthStep], type: :combine }
       )
       expect(definition[:edges]["MyFourthStep"]).to eq([])
+    end
+  end
+
+  describe "#expand" do
+    subject(:builder) { described_class.new(klass: MyFirstStep, definition:) }
+
+    # NOTE: we can assume the definition has at least this state because
+    # this class is only used in the `DefinitionBuilder`
+    let(:definition) do
+      {
+        nodes: %w[MyFirstStep],
+        edges: {
+          "MyFirstStep" => [],
+        },
+      }
+    end
+
+    it "returns itself" do
+      instance = builder.expand(to: MySecondStep)
+
+      expect(instance).to eq(builder)
+    end
+
+    it "adds a new node and edge to the definition" do
+      builder.expand(to: MySecondStep)
+
+      expect(definition[:nodes]).to eq(%w[MyFirstStep MySecondStep])
+      expect(definition[:edges]["MyFirstStep"]).to eq(
+        [
+          { to: %w[MySecondStep], type: :expand },
+        ]
+      )
+      expect(definition[:edges]["MySecondStep"]).to eq([])
+    end
+  end
+
+  describe "#collapse" do
+    subject(:builder) { described_class.new(klass: MyFirstStep, definition:) }
+
+    # NOTE: we can assume the definition has at least this state because
+    # this class is only used in the `DefinitionBuilder`
+    let(:definition) do
+      {
+        nodes: %w[MyFirstStep],
+        edges: {
+          "MyFirstStep" => [],
+        },
+      }
+    end
+
+    before do
+      builder.expand(to: MySecondStep)
+    end
+
+    it "returns itself" do
+      instance = builder.collapse(into: MyThirdStep)
+
+      expect(instance).to eq(builder)
+    end
+
+    it "adds a new node and edge to the definition" do
+      builder.collapse(into: MyThirdStep)
+
+      expect(definition[:nodes]).to eq(%w[MyFirstStep MySecondStep MyThirdStep])
+      expect(definition[:edges]["MyFirstStep"]).to eq(
+        [
+          { to: %w[MySecondStep], type: :expand },
+        ]
+      )
+      expect(definition[:edges]["MySecondStep"]).to eq(
+        [
+          { to: %w[MyThirdStep], type: :collapse },
+        ]
+      )
+      expect(definition[:edges]["MyThirdStep"]).to eq([])
+    end
+
+    it "raises when the branch definition has not been expanded" do
+      definition = {
+        nodes: %w[MyFirstStep],
+        edges: { "MyFirstStep" => [] },
+      }
+      builder = described_class.new(klass: MyFirstStep, definition:)
+
+      expect do
+        builder.collapse(into: MySecondStep)
+      end.to raise_error(
+        described_class::CollapseError,
+        "Must expand pipeline definition before collapsing steps"
+      )
     end
   end
 end

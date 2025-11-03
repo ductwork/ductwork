@@ -89,4 +89,44 @@ RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
     )
     expect(definition[:edges]["MySixthStep"]).to eq([])
   end
+
+  it "correctly handles expanding and collapsing sub-branches" do
+    definition = Class.new(Ductwork::Pipeline) do
+      define do |pipeline|
+        pipeline.start(MyFirstStep)
+        pipeline.divide(to: [MySecondStep, MyThirdStep]) do |branch1, _branch2|
+          branch1
+            .chain(MyFourthStep)
+            .expand(to: MyFifthStep)
+            .collapse(into: MySixthStep)
+        end
+      end
+    end.pipeline_definition
+
+    expect(definition[:nodes]).to eq(
+      %w[MyFirstStep MySecondStep MyThirdStep MyFourthStep MyFifthStep MySixthStep]
+    )
+    expect(definition[:edges]["MyFirstStep"]).to eq(
+      [
+        { to: %w[MySecondStep MyThirdStep], type: :divide },
+      ]
+    )
+    expect(definition[:edges]["MySecondStep"]).to eq(
+      [
+        { to: %w[MyFourthStep], type: :chain },
+      ]
+    )
+    expect(definition[:edges]["MyThirdStep"]).to eq([])
+    expect(definition[:edges]["MyFourthStep"]).to eq(
+      [
+        { to: %w[MyFifthStep], type: :expand },
+      ]
+    )
+    expect(definition[:edges]["MyFifthStep"]).to eq(
+      [
+        { to: %w[MySixthStep], type: :collapse },
+      ]
+    )
+    expect(definition[:edges]["MySixthStep"]).to eq([])
+  end
 end
