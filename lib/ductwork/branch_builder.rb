@@ -10,7 +10,7 @@ module Ductwork
       @last_node = klass.name
     end
 
-    # TODO: implement `#divide`, `#expand`, and `#collapse`
+    # TODO: implement `#expand`, and `#collapse`
 
     def chain(next_klass)
       definition[:edges][last_node] << {
@@ -21,6 +21,24 @@ module Ductwork
       definition[:nodes].push(next_klass.name)
       definition[:edges][next_klass.name] = []
       @last_node = next_klass.name
+
+      self
+    end
+
+    def divide(to:)
+      definition[:edges][last_node] << {
+        to: to.map(&:name),
+        type: :divide,
+      }
+
+      definition[:nodes].push(*to.map(&:name))
+      sub_branches = to.map do |klass|
+        definition[:edges][klass.name] = []
+
+        Ductwork::BranchBuilder.new(klass: klass, definition: definition)
+      end
+
+      yield sub_branches
 
       self
     end
