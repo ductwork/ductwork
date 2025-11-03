@@ -5,12 +5,11 @@ module Ductwork
     attr_reader :last_node
 
     def initialize(klass:, definition:)
-      @klass = klass
-      @definition = definition
       @last_node = klass.name
+      @definition = definition
     end
 
-    # TODO: implement `#expand`, and `#collapse`
+    # TODO: implement `#expand` and `#collapse`
 
     def chain(next_klass)
       definition[:edges][last_node] << {
@@ -62,6 +61,6 @@ module Ductwork
 
     private
 
-    attr_reader :klass, :definition
+    attr_reader :definition
   end
 end
