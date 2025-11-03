@@ -9,13 +9,15 @@ RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
       define do |pipeline|
         pipeline.start(MyFirstStep)
         pipeline.divide(to: [MySecondStep, MyThirdStep]) do |branch1, branch2|
-          branch1.chain(MyFourthStep).combine(branch2, into: MyFifthStep)
+          branch1.chain(MyFourthStep)
+          branch2.chain(MyFifthStep)
+          branch1.combine(branch2, into: MySixthStep)
         end
       end
     end.pipeline_definition
 
     expect(definition[:nodes]).to eq(
-      %w[MyFirstStep MySecondStep MyThirdStep MyFourthStep MyFifthStep]
+      %w[MyFirstStep MySecondStep MyThirdStep MyFourthStep MyFifthStep MySixthStep]
     )
     expect(definition[:edges]["MyFirstStep"]).to eq(
       [
@@ -29,14 +31,20 @@ RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
     )
     expect(definition[:edges]["MyThirdStep"]).to eq(
       [
-        { to: %w[MyFifthStep], type: :combine },
+        { to: %w[MyFifthStep], type: :chain },
       ]
     )
     expect(definition[:edges]["MyFourthStep"]).to eq(
       [
-        { to: %w[MyFifthStep], type: :combine },
+        { to: %w[MySixthStep], type: :combine },
       ]
     )
+    expect(definition[:edges]["MyFifthStep"]).to eq(
+      [
+        { to: %w[MySixthStep], type: :combine },
+      ]
+    )
+    expect(definition[:edges]["MySixthStep"]).to eq([])
   end
 
   it "correctly handles combining multiple branches" do

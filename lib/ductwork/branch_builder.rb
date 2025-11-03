@@ -2,7 +2,7 @@
 
 module Ductwork
   class BranchBuilder
-    attr_reader :klass
+    attr_reader :last_node
 
     def initialize(klass:, definition:)
       @klass = klass
@@ -31,7 +31,7 @@ module Ductwork
         type: :combine,
       }
       branch_builders.each do |branch|
-        definition[:edges][branch.klass.name] << {
+        definition[:edges][branch.last_node] << {
           to: [into.name],
           type: :combine,
         }
@@ -44,6 +44,6 @@ module Ductwork
 
     private
 
-    attr_reader :definition, :last_node
+    attr_reader :klass, :definition
   end
 end
