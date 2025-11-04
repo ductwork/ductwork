@@ -54,6 +54,19 @@ module Ductwork
               )
               Ductwork::Job.enqueue(next_step, step.job.output_payload)
             end
+          elsif type == "expand"
+            klass = to.sole
+            payload = JSON.parse(step.job.output_payload)
+
+            payload.each do |input_arg|
+              next_step = pipeline.steps.create!(
+                klass: klass,
+                status: :in_progress,
+                step_type: type,
+                started_at: Time.current
+              )
+              Ductwork::Job.enqueue(next_step, input_arg)
+            end
           elsif type == "combine"
             # do combine lol
           else
