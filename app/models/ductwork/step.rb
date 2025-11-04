@@ -3,8 +3,6 @@
 module Ductwork
   class Step < Ductwork::Record
     belongs_to :pipeline, class_name: "Ductwork::Pipeline"
-    belongs_to :next_step, class_name: "Ductwork::Step", optional: true
-    has_one :previous_step, class_name: "Ductwork::Step", foreign_key: "next_step_id"
     has_one :job, class_name: "Ductwork::Job", foreign_key: "step_id"
 
     validates :klass, presence: true
@@ -20,6 +18,8 @@ module Ductwork
     enum :step_type,
          start: "start",
          default: "default", # `chain` is used by AR
+         divide: "divide",
+         combine: "combine",
          expand: "expand",
          collapse: "collapse"
   end
