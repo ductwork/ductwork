@@ -15,7 +15,7 @@ module Ductwork
       logger.debug(msg: "Entering main work loop", role: :pipeline_advancer)
 
       while running_context.running?
-        advance_all_pipelines
+        advance_all_pipelines!
         report_heartbeat!
         sleep(1)
       end
@@ -23,23 +23,46 @@ module Ductwork
       shutdown
     end
 
-    def advance_all_pipelines
-      logger.debug(msg: "Advancing all pipelines", role: :pipeline_advancer)
+    def advance_all_pipelines! # rubocop:disable Metrics
+      logger.debug(msg: "Advancing pipelines", role: :pipeline_advancer)
 
-      pipelines.find_each do |_pipeline|
+      Ductwork::Step.advancing.find_each do |step| # rubocop:disable Metrics/BlockLength
         break if !running_context.running?
 
-        # 1. Query all other `steps` records in the same Stage/Branch
-        # 2. If all steps are status "advancing", continue.
-        #      Otherwise, Stage is not ready to advance
-        # 3. Check if any `steps.job` has failed:
-        #      If not, continue.
-        #      If yes, halt pipeline and log
-        # 4. Mark all `steps` in Stage as "completed"
-        # 5. Create next Stage and all `steps` with status "in-progress" from pipeline definition
+        pipeline = step.pipeline
+        definition = JSON.parse(pipeline.definition).with_indifferent_access
+        edge = definition.dig(:edges, step.klass, 0)
+        # should this be here or in a transaction somewhere
+        # -> will prob need to rethink this algorithm so theres atomocity maybs?
+        step.update!(status: :completed, completed_at: Time.current)
+
+        if edge.nil?
+          if !pipeline.steps.where.not(status: :completed).exists?
+            pipeline.update!(status: "completed", completed_at: Time.current)
+          end
+        else
+          type = edge[:type] == "chain" ? "default" : edge[:type]
+          to = edge[:to]
+
+          if type.in?(%w[default divide])
+            to.each do |klass|
+              next_step = pipeline.steps.create!(
+                klass: klass,
+                status: :in_progress,
+                step_type: type,
+                started_at: Time.current
+              )
+              Ductwork::Job.enqueue(next_step, step.job.output_payload)
+            end
+          elsif type == "combine"
+            # do combine lol
+          else
+            logger.error("Invalid step type? This is wrong lol")
+          end
+        end
       end
 
-      logger.debug(msg: "Advanced all pipelines", role: :pipeline_advancer)
+      logger.debug(msg: "Advanced pipelines", role: :pipeline_advancer)
     end
 
     private
@@ -52,14 +75,6 @@ module Ductwork
         machine_identifier: Ductwork::MachineIdentifier.fetch,
         last_heartbeat_at: Time.current
       )
-    end
-
-    def pipelines
-      Ductwork::Pipeline
-        .joins(:steps)
-        .where(klass: klasses)
-        .where(steps: { status: "advancing" })
-        .distinct
     end
 
     def report_heartbeat!
