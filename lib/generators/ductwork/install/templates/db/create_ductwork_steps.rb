@@ -9,6 +9,7 @@ class CreateDuctworkSteps < ActiveRecord::Migration[7.0]
       table.timestamp :started_at
       table.timestamp :completed_at
       table.string :status, null: false
+      table.timestamps null: false
     end
   end
 end

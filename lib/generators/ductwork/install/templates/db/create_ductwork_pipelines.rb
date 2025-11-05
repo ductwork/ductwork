@@ -9,6 +9,7 @@ class CreateDuctworkPipelines < ActiveRecord::Migration[7.0]
       table.timestamp :triggered_at, null: false
       table.timestamp :completed_at
       table.string :status, null: false
+      table.timestamps null: false
     end
 
     add_index :ductwork_pipelines, :klass
