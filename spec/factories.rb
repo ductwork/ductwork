@@ -20,7 +20,7 @@ FactoryBot.define do
   end
 
   factory :pipeline, class: "Ductwork::Pipeline" do
-    sequence(:klass) { |n| "MyPipeline#{n}" }
+    klass { "MyPipeline1" }
     triggered_at { Time.current }
     definition { JSON.dump({}) }
     definition_sha1 { Digest::SHA1.hexdigest(definition) }

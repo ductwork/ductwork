@@ -39,6 +39,9 @@ RSpec/ExampleLength:
 RSpec/MultipleExpectations:
   Max: 10
 
+RSpec/MultipleMemoizedHelpers:
+  Max: 10
+
 RSpec/SpecFilePathFormat:
   Exclude:
     - spec/ductwork/models/**/*.rb

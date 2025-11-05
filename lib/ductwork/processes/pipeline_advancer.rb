@@ -11,7 +11,7 @@ module Ductwork
       def call # rubocop:disable Metrics
         logger.debug(msg: "Advancing pipelines", role: :pipeline_advancer)
 
-        Ductwork::Step.advancing.find_each do |step| # rubocop:disable Metrics/BlockLength
+        steps_to_advance.find_each do |step| # rubocop:disable Metrics/BlockLength
           break if !running_context.running?
 
           pipeline = step.pipeline
@@ -37,9 +37,12 @@ module Ductwork
                   step_type: type,
                   started_at: Time.current
                 )
-                args = JSON.parse(step.job.output_payload)["payload"]
+                payload = step.job.output_payload
+                input_arg = if payload.present?
+                              JSON.parse(payload).fetch("payload", nil)
+                            end
 
-                Ductwork::Job.enqueue(next_step, args)
+                Ductwork::Job.enqueue(next_step, input_arg)
               end
             elsif type == "combine"
               previous_klasses = definition[:edges].select do |_, v|
@@ -104,6 +107,13 @@ module Ductwork
       private
 
       attr_reader :running_context, :klasses
+
+      def steps_to_advance
+        Ductwork::Step
+          .advancing
+          .joins(:pipeline)
+          .where(ductwork_pipelines: { klass: klasses })
+      end
 
       def logger
         Ductwork.configuration.logger
