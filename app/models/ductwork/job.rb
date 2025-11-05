@@ -56,19 +56,21 @@ module Ductwork
     end
 
     def self.enqueue(step, args)
-      job = step.create_job!(
-        klass: step.klass,
-        started_at: Time.current,
-        input_args: JSON.dump({ args: args })
-      )
-      execution = job.executions.create!(
-        started_at: Time.current
-      )
-      execution.create_availability!(
-        started_at: Time.current
-      )
+      Ductwork::Record.transaction do
+        job = step.create_job!(
+          klass: step.klass,
+          started_at: Time.current,
+          input_args: JSON.dump({ args: args })
+        )
+        execution = job.executions.create!(
+          started_at: Time.current
+        )
+        execution.create_availability!(
+          started_at: Time.current
+        )
 
-      job
+        job
+      end
     end
 
     def execute(pipeline)
