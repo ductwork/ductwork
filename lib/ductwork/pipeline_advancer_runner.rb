@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Ductwork
-  class PipelineAdvancer
+  class PipelineAdvancerRunner
     def initialize(*klasses)
       @klasses = klasses
       @running_context = Ductwork::RunningContext.new

@@ -14,7 +14,7 @@ module Ductwork
           role: :supervisor_runner
         )
         # TODO: maybe rename to `Processes::PipelineAdvancer`
-        Ductwork::PipelineAdvancer.new(*pipelines_to_advance).run
+        Ductwork::PipelineAdvancerRunner.new(*pipelines_to_advance).run
       end
 
       pipelines_to_advance.each do |pipeline|
