@@ -7,10 +7,9 @@ module Ductwork
 
       attr_reader :workers
 
-      def initialize(timeout: DEFAULT_TIMEOUT)
+      def initialize
         @running = true
         @workers = []
-        @timeout = timeout
 
         Signal.trap(:INT) { @running = false }
         Signal.trap(:TERM) { @running = false }
@@ -50,7 +49,7 @@ module Ductwork
 
       private
 
-      attr_reader :running, :timeout
+      attr_reader :running
 
       def check_workers
         logger.debug(msg: "Checking workers are alive", role: :supervisor)
@@ -87,7 +86,7 @@ module Ductwork
       end
 
       def wait_for_workers_to_exit
-        deadline = now + timeout
+        deadline = now + Ductwork.configuration.supervisor_shutdown_timeout
 
         while workers.any? && now < deadline
           sleep(0.1)

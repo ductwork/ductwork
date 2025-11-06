@@ -8,6 +8,7 @@ default: &default
     polling_timeout: 1
   supervisor:
     polling_timeout: 1
+    shutdown_timeout: 30
 
 development:
   <<: *default

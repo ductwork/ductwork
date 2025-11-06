@@ -63,7 +63,9 @@ RSpec.describe Ductwork::Processes::Supervisor do
     end
 
     it "waits then forcefully terminates remaining workers" do
-      supervisor = described_class.new(timeout: 1)
+      Ductwork.configuration.supervisor_shutdown_timeout = 1
+
+      supervisor = described_class.new
       supervisor.add_worker { sleep }
       supervisor.add_worker { sleep }
       pids = supervisor.workers.map { |worker| worker[:pid] }

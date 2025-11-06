@@ -9,10 +9,12 @@ module Ductwork
     DEFAULT_JOB_WORKER_SHUTDOWN_TIMEOUT = 20 # seconds
     DEFAULT_PIPELINE_POLLING_TIMEOUT = 1 # second
     DEFAULT_SUPERVISOR_POLLING_TIMEOUT = 1 # second
+    DEFAULT_SUPERVISOR_SHUTDOWN_TIMEOUT = 30 # seconds
     DEFAULT_LOGGER = ::Logger.new($stdout)
     PIPELINES_WILDCARD = "*"
 
     attr_accessor :logger
+    attr_writer :supervisor_shutdown_timeout
 
     def initialize(path: DEFAULT_FILE_PATH)
       full_path = Pathname.new(path)
@@ -65,8 +67,17 @@ module Ductwork
         DEFAULT_SUPERVISOR_POLLING_TIMEOUT
     end
 
+    def supervisor_shutdown_timeout
+      @supervisor_shutdown_timeout ||= fetch_supervisor_shutdown_timeout
+    end
+
     private
 
     attr_reader :config
+
+    def fetch_supervisor_shutdown_timeout
+      config.dig(:supervisor, :shutdown_timeout) ||
+        DEFAULT_SUPERVISOR_SHUTDOWN_TIMEOUT
+    end
   end
 end
