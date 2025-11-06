@@ -2,17 +2,25 @@
 
 RSpec.describe Ductwork::Execution do
   describe "validations" do
+    let(:retry_count) { rand(0..2) }
     let(:started_at) { Time.current }
 
     it "is invalid when started_at is blank" do
-      execution = described_class.new
+      execution = described_class.new(retry_count:)
 
       expect(execution).not_to be_valid
       expect(execution.errors.full_messages.sole).to eq("Started at can't be blank")
     end
 
-    it "is valid otherwise" do
+    it "is invalid when retry_count is blank" do
       execution = described_class.new(started_at:)
+
+      expect(execution).not_to be_valid
+      expect(execution.errors.full_messages.sole).to eq("Retry count can't be blank")
+    end
+
+    it "is valid otherwise" do
+      execution = described_class.new(started_at:, retry_count:)
 
       expect(execution).to be_valid
     end

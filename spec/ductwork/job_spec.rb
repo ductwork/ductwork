@@ -34,6 +34,34 @@ RSpec.describe Ductwork::Job do
     end
   end
 
+  describe ".claim_latest" do
+    let(:availability) { create(:availability) }
+    let(:execution) { availability.execution }
+
+    it "updates the the availability record" do
+      be_almost_now = be_within(1.second).of(Time.current)
+
+      expect do
+        described_class.claim_latest
+      end.to change { availability.reload.completed_at }.from(nil).to(be_almost_now)
+        .and change(availability, :process_id).from(nil).to(::Process.pid)
+    end
+
+    it "updates the execution record" do
+      expect do
+        described_class.claim_latest
+      end.to change { execution.reload.process_id }.from(nil).to(::Process.pid)
+    end
+
+    it "does not claim job execution availabilities in the future" do
+      future_availability = create(:availability, started_at: 5.seconds.from_now)
+
+      expect do
+        described_class.claim_latest
+      end.not_to change { future_availability.reload.completed_at }.from(nil)
+    end
+  end
+
   describe ".enqueue" do
     let(:step) { create(:step) }
     let(:args) { %i[foo bar] }
@@ -73,26 +101,6 @@ RSpec.describe Ductwork::Job do
       availability = execution.availability
       expect(availability.started_at).to be_within(1.second).of(Time.current)
       expect(availability.completed_at).to be_nil
-    end
-  end
-
-  describe ".claim_latest" do
-    let(:availability) { create(:availability) }
-    let(:execution) { availability.execution }
-
-    it "updates the the availability record" do
-      be_almost_now = be_within(1.second).of(Time.current)
-
-      expect do
-        described_class.claim_latest
-      end.to change { availability.reload.completed_at }.from(nil).to(be_almost_now)
-        .and change(availability, :process_id).from(nil).to(::Process.pid)
-    end
-
-    it "updates the execution record" do
-      expect do
-        described_class.claim_latest
-      end.to change { execution.reload.process_id }.from(nil).to(::Process.pid)
     end
   end
 
@@ -166,6 +174,18 @@ RSpec.describe Ductwork::Job do
       expect(result.error_klass).to eq("StandardError")
       expect(result.error_message).to eq("bad times")
       expect(result.error_backtrace).to be_present
+    end
+
+    it "creates a new execution available in the future" do
+      user_step = instance_double(MyFirstStep)
+      allow(user_step).to receive(:execute).and_raise(StandardError, "bad times")
+      allow(MyFirstStep).to receive(:new).and_return(user_step)
+
+      job.execute(step.pipeline)
+
+      execution = job.executions.last
+      expect(execution.retry_count).to eq(1)
+      expect(execution.availability.started_at).to be_within(1.second).of(10.seconds.from_now)
     end
 
     it "marks the step as 'advancing' when the job execution completes" do

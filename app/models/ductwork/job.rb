@@ -9,9 +9,14 @@ module Ductwork
     validates :started_at, presence: true
     validates :input_args, presence: true
 
+    # NOTE: this will eventually become a configurable value
+    RETRY_MAX = 3
+    FAILED_EXECUTION_TIMEOUT = 10.seconds
+
     def self.claim_latest
       process_id = ::Process.pid
       id = Ductwork::Availability
+           .where("started_at <= ?", Time.current)
            .where(completed_at: nil)
            .order(:created_at)
            .limit(1)
@@ -63,7 +68,8 @@ module Ductwork
           input_args: JSON.dump({ args: })
         )
         execution = job.executions.create!(
-          started_at: Time.current
+          started_at: Time.current,
+          retry_count: 0
         )
         execution.create_availability!(
           started_at: Time.current
@@ -141,6 +147,16 @@ module Ductwork
           error_message: error.message,
           error_backtrace: error.backtrace
         )
+
+        if execution.retry_count < RETRY_MAX
+          new_execution = executions.create!(
+            retry_count: execution.retry_count + 1,
+            started_at: FAILED_EXECUTION_TIMEOUT.from_now
+          )
+          new_execution.create_availability!(
+            started_at: FAILED_EXECUTION_TIMEOUT.from_now
+          )
+        end
       end
     end
   end
