@@ -5,6 +5,7 @@ module Ductwork
     DEFAULT_ENV = :default
     DEFAULT_FILE_PATH = "config/ductwork.yml"
     DEFAULT_JOB_WORKER_COUNT = 5 # threads
+    DEFAULT_JOB_WORKER_MAX_RETRY = 3 # attempts
     DEFAULT_JOB_WORKER_POLLING_TIMEOUT = 1 # second
     DEFAULT_JOB_WORKER_SHUTDOWN_TIMEOUT = 20 # seconds
     DEFAULT_PIPELINE_POLLING_TIMEOUT = 1 # second
@@ -16,7 +17,7 @@ module Ductwork
     attr_accessor :logger
     attr_writer :job_worker_polling_timeout, :job_worker_shutdown_timeout,
                 :pipeline_polling_timeout, :supervisor_polling_timeout,
-                :supervisor_shutdown_timeout, :database
+                :supervisor_shutdown_timeout, :job_worker_max_retry
 
     def initialize(path: DEFAULT_FILE_PATH)
       full_path = Pathname.new(path)
@@ -53,6 +54,10 @@ module Ductwork
       end
     end
 
+    def job_worker_max_retry
+      @job_worker_max_retry ||= fetch_job_worker_max_retry
+    end
+
     def job_worker_polling_timeout
       @job_worker_polling_timeout ||= fetch_job_worker_polling_timeout
     end
@@ -76,6 +81,11 @@ module Ductwork
     private
 
     attr_reader :config
+
+    def fetch_job_worker_max_retry
+      config.dig(:job_worker, :max_retry) ||
+        DEFAULT_JOB_WORKER_MAX_RETRY
+    end
 
     def fetch_job_worker_polling_timeout
       config.dig(:job_worker, :polling_timeout) ||

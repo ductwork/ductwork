@@ -9,8 +9,6 @@ module Ductwork
     validates :started_at, presence: true
     validates :input_args, presence: true
 
-    # NOTE: this will eventually become a configurable value
-    RETRY_MAX = 3
     FAILED_EXECUTION_TIMEOUT = 10.seconds
 
     def self.claim_latest
@@ -148,7 +146,7 @@ module Ductwork
           error_backtrace: error.backtrace
         )
 
-        if execution.retry_count < RETRY_MAX
+        if execution.retry_count < Ductwork.configuration.job_worker_max_retry
           new_execution = executions.create!(
             retry_count: execution.retry_count + 1,
             started_at: FAILED_EXECUTION_TIMEOUT.from_now
