@@ -16,7 +16,7 @@ module Ductwork
     attr_accessor :logger
     attr_writer :job_worker_polling_timeout, :job_worker_shutdown_timeout,
                 :pipeline_polling_timeout, :supervisor_polling_timeout,
-                :supervisor_shutdown_timeout
+                :supervisor_shutdown_timeout, :database
 
     def initialize(path: DEFAULT_FILE_PATH)
       full_path = Pathname.new(path)
@@ -37,6 +37,10 @@ module Ductwork
       else
         raw_pipelines.map(&:strip)
       end
+    end
+
+    def database
+      config[:database]
     end
 
     def job_worker_count(pipeline)
