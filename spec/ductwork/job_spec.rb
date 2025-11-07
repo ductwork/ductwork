@@ -207,13 +207,31 @@ RSpec.describe Ductwork::Job do
         expect(execution.availability.started_at).to be_within(1.second).of(10.seconds.from_now)
       end
 
-      it "marks the pipeline as halted when retries are exhausted" do
-        pipeline.in_progress!
-        create(:execution, retry_count: 3, job: step.job)
+      context "when retries are exhausted" do
+        let(:on_halt_step) { instance_double(MyHaltStep, execute: nil) }
 
-        expect do
+        before do
+          pipeline.update!(
+            status: "in_progress",
+            definition: { metadata: { on_halt: { klass: "MyHaltStep" } } }.to_json
+          )
+          pipeline.in_progress!
+          create(:execution, retry_count: 3, job: step.job)
+          allow(MyHaltStep).to receive(:new).and_return(on_halt_step)
+        end
+
+        it "marks the pipeline as halted" do
+          expect do
+            job.execute(pipeline)
+          end.to change { pipeline.reload.status }.to("halted")
+        end
+
+        it "calls the on halt class if one is configured in the definition" do
           job.execute(pipeline)
-        end.to change { pipeline.reload.status }.to("halted")
+
+          expect(MyHaltStep).to have_received(:new)
+          expect(on_halt_step).to have_received(:execute)
+        end
       end
     end
   end

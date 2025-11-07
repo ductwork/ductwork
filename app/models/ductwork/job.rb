@@ -95,10 +95,10 @@ module Ductwork
 
       begin
         output_payload = instance.execute
-        update_execution_succeeded!(execution, run, output_payload)
+        execution_succeeded!(execution, run, output_payload)
         result = "success"
       rescue StandardError => e
-        update_execution_failed!(pipeline, execution, run, e)
+        execution_failed!(execution, run, e)
         result = "failure"
       ensure
         logger.debug(
@@ -123,7 +123,7 @@ module Ductwork
       Ductwork.configuration.logger
     end
 
-    def update_execution_succeeded!(execution, run, output_payload)
+    def execution_succeeded!(execution, run, output_payload)
       payload = JSON.dump({ payload: output_payload })
 
       Ductwork::Record.transaction do
@@ -135,7 +135,10 @@ module Ductwork
       end
     end
 
-    def update_execution_failed!(pipeline, execution, run, error)
+    def execution_failed!(execution, run, error) # rubocop:disable Metrics/AbcSize
+      halted = false
+      pipeline = step.pipeline
+
       Ductwork::Record.transaction do
         execution.update!(completed_at: Time.current)
         run.update!(completed_at: Time.current)
@@ -155,8 +158,18 @@ module Ductwork
             started_at: FAILED_EXECUTION_TIMEOUT.from_now
           )
         elsif execution.retry_count >= Ductwork.configuration.job_worker_max_retry
+          halted = true
           pipeline.halted!
-          # trigger `on_halt` if configured
+        end
+      end
+
+      # NOTE: perform lifecycle hook execution outside of the transaction as
+      # to not unnecessarily hold it open
+      if halted
+        klass = JSON.parse(pipeline.definition).dig("metadata", "on_halt", "klass")
+
+        if klass.present?
+          Object.const_get(klass).new(error).execute
         end
       end
     end

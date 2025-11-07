@@ -43,6 +43,9 @@ RSpec/MultipleExpectations:
 RSpec/MultipleMemoizedHelpers:
   Max: 10
 
+RSpec/NestedGroups:
+  Max: 4
+
 RSpec/SpecFilePathFormat:
   Exclude:
     - spec/ductwork/models/**/*.rb
