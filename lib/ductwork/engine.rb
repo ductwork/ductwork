@@ -8,7 +8,7 @@ module Ductwork
 
     initializer "ductwork.configure" do
       Ductwork.configuration ||= Ductwork::Configuration.new
-      Ductwork.configuration.logger ||= Ductwork::Configuration::DEFAULT_LOGGER
+      Ductwork.configuration.logger = Rails.logger
     end
   end
 end
