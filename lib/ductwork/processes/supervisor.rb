@@ -11,6 +11,8 @@ module Ductwork
         @running = true
         @workers = []
 
+        run_hooks_for(:start)
+
         Signal.trap(:INT) { @running = false }
         Signal.trap(:TERM) { @running = false }
       end
@@ -45,6 +47,7 @@ module Ductwork
         terminate_gracefully
         wait_for_workers_to_exit
         terminate_immediately
+        run_hooks_for(:stop)
       end
 
       private
@@ -135,6 +138,12 @@ module Ductwork
             .where(pid:, machine_identifier:)
             .where("last_heartbeat_at < ?", 5.minutes.ago)
             .exists?
+        end
+      end
+
+      def run_hooks_for(event)
+        Ductwork.hooks[:supervisor].fetch(event, []).each do |block|
+          block.call(self)
         end
       end
 

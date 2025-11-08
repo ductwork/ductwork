@@ -12,6 +12,7 @@ module Ductwork
       end
 
       def run
+        run_hooks_for(:start)
         create_process!
         logger.debug(msg: "Entering main work loop", role: :pipeline_advancer)
 
@@ -63,6 +64,14 @@ module Ductwork
         end
 
         logger.debug(msg: "Process deleted", role: :pipeline_advancer)
+
+        run_hooks_for(:stop)
+      end
+
+      def run_hooks_for(event)
+        Ductwork.hooks[:advancer].fetch(event, []).each do |block|
+          block.call(self)
+        end
       end
 
       def logger

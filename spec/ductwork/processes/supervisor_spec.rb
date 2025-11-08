@@ -2,10 +2,22 @@
 
 RSpec.describe Ductwork::Processes::Supervisor do
   let(:supervisor) { described_class.new }
+  let(:block) { ->(_supervisor) {} }
 
   after do
     supervisor.workers.each do |worker|
       ::Process.kill(:KILL, worker[:pid])
+    end
+  end
+
+  describe "#initialize" do
+    it "calls the supervisor start lifecycle hooks" do
+      allow(block).to receive(:call).and_call_original
+      Ductwork.on_supervisor_start(&block)
+
+      supervisor = described_class.new
+
+      expect(block).to have_received(:call).with(supervisor)
     end
   end
 
@@ -79,6 +91,16 @@ RSpec.describe Ductwork::Processes::Supervisor do
           ::Process.kill(0, pid)
         end.to raise_error(Errno::ESRCH, "No such process")
       end
+    end
+
+    it "calls the supervisor stop lifecycle hooks" do
+      allow(block).to receive(:call).and_call_original
+      Ductwork.on_supervisor_stop(&block)
+      supervisor = described_class.new
+
+      supervisor.shutdown
+
+      expect(block).to have_received(:call).with(supervisor)
     end
   end
 end

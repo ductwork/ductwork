@@ -9,6 +9,7 @@ module Ductwork
       end
 
       def run
+        run_hooks_for(:start)
         logger.debug(
           msg: "Entering main work loop",
           role: :job_worker,
@@ -51,6 +52,13 @@ module Ductwork
           role: :job_worker,
           pipeline: pipeline
         )
+        run_hooks_for(:stop)
+      end
+
+      def run_hooks_for(event)
+        Ductwork.hooks[:worker].fetch(event, []).each do |block|
+          block.call(self)
+        end
       end
 
       def logger
