@@ -13,6 +13,8 @@ loader = Zeitwerk::Loader.for_gem
 loader.inflector.inflect("cli" => "CLI")
 loader.inflector.inflect("dsl" => "DSL")
 loader.ignore("#{__dir__}/generators")
+loader.ignore("#{__dir__}/ductwork/testing")
+loader.ignore("#{__dir__}/ductwork/testing.rb")
 loader.setup
 
 module Ductwork

@@ -31,6 +31,10 @@ Metrics/MethodLength:
 Metrics/AbcSize:
   Max: 30
 
+Metrics/BlockLength:
+  Exclude:
+    - lib/ductwork/testing/rspec.rb
+
 Naming/BlockForwarding:
   EnforcedStyle: explicit
 
