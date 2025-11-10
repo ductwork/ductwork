@@ -10,7 +10,7 @@ RSpec.describe Ductwork::CLI do
 
     described_class.start!([])
 
-    expect(config).to have_received(:logger=).with(Ductwork::Configuration::DEFAULT_LOGGER)
+    expect(config).to have_received(:logger=).with(Rails.logger)
     expect(Ductwork::Configuration).to have_received(:new)
     expect(Ductwork::Processes::SupervisorRunner).to have_received(:start!)
   end

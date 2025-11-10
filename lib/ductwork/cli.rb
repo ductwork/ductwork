@@ -8,7 +8,11 @@ module Ductwork
       def start!(args)
         options = parse_options(args)
         Ductwork.configuration = Configuration.new(**options)
-        Ductwork.configuration.logger = Ductwork::Configuration::DEFAULT_LOGGER
+        Ductwork.configuration.logger = if defined?(Rails.logger)
+                                          Rails.logger
+                                        else
+                                          Ductwork::Configuration::DEFAULT_LOGGER
+                                        end
 
         Ductwork::Processes::SupervisorRunner.start!
       end
