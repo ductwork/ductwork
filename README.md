@@ -26,7 +26,6 @@ If you're running multiple database in your rails application, you may decide to
 
 ## Configuration
 
-
 Ductwork is configured through a configuration file. The default lives at `config/ductwork.yml` As you'll learn more further down, there is a CLI option for specifying the configuration file's path. This allows you to have multiple instances of `ductwork` run different pipelines. Below are a few important configurations; for a complete list of configuration values, descriptions, and defaults see the online documentation.
 
 ### Pipelines
