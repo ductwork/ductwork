@@ -147,7 +147,7 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/ductwo
 
 ## License
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+The gem is available as open source under the terms of the [LGPLv3.0 License](https://github.com/ductwork/ductwork/blob/main/LICENSE-LGPL.txt).
 
 ## Code of Conduct
 

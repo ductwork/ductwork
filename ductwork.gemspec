@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.summary = "A pipeline framework"
   spec.description = "A pipeline framework"
   spec.homepage = "https://github.com/zoso10/ductwork"
-  spec.license = "MIT"
+  spec.license = "LGPL-3.0"
   spec.required_ruby_version = ">= 3.1.0"
 
   spec.metadata["homepage_uri"] = spec.homepage
