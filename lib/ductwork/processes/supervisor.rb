@@ -15,6 +15,7 @@ module Ductwork
 
         Signal.trap(:INT) { @running = false }
         Signal.trap(:TERM) { @running = false }
+        Signal.trap(:TTIN) { puts "No threads to dump" }
       end
 
       def add_worker(metadata: {}, &block)

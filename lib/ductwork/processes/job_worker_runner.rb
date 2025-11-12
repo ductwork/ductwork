@@ -10,6 +10,17 @@ module Ductwork
 
         Signal.trap(:INT) { running_context.shutdown! }
         Signal.trap(:TERM) { running_context.shutdown! }
+        Signal.trap(:TTIN) do
+          Thread.list.each do |thread|
+            puts thread.name
+            if thread.backtrace
+              puts thread.backtrace.join("\n")
+            else
+              puts "No backtrace to dump"
+            end
+            puts
+          end
+        end
       end
 
       def run
@@ -38,7 +49,7 @@ module Ductwork
       end
 
       def create_threads
-        worker_count.times.map do
+        worker_count.times.map do |i|
           job_worker = Ductwork::Processes::JobWorker.new(
             pipeline,
             running_context
@@ -51,6 +62,7 @@ module Ductwork
           thread = Thread.new do
             job_worker.run
           end
+          thread.name = "ductwork.job_worker_#{i}"
 
           logger.debug(
             msg: "Created new thread",

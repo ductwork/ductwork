@@ -9,6 +9,17 @@ module Ductwork
 
         Signal.trap(:INT) { running_context.shutdown! }
         Signal.trap(:TERM) { running_context.shutdown! }
+        Signal.trap(:TTIN) do
+          Thread.list.each do |thread|
+            puts thread.name
+            if thread.backtrace
+              puts thread.backtrace.join("\n")
+            else
+              puts "No backtrace to dump"
+            end
+            puts
+          end
+        end
       end
 
       def run
