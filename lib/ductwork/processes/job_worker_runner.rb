@@ -32,7 +32,7 @@ module Ductwork
         )
 
         while running?
-          # TODO: Increase of make configurable
+          # TODO: Increase or make configurable
           sleep(5)
           attempt_synchronize_threads
           report_heartbeat!
