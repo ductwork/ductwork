@@ -260,7 +260,7 @@ RSpec.describe Ductwork::Configuration do
       let(:data) do
         <<~DATA
           default: &default
-            pipeline:
+            pipeline_advancer:
               polling_timeout: 2
 
           test:
@@ -295,7 +295,7 @@ RSpec.describe Ductwork::Configuration do
       let(:data) do
         <<~DATA
           default: &default
-            pipeline:
+            pipeline_advancer:
               shutdown_timeout: 25
 
           test:

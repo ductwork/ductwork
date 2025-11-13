@@ -103,12 +103,12 @@ module Ductwork
     end
 
     def fetch_pipeline_polling_timeout
-      config.dig(:pipeline, :polling_timeout) ||
+      config.dig(:pipeline_advancer, :polling_timeout) ||
         DEFAULT_PIPELINE_POLLING_TIMEOUT
     end
 
     def fetch_pipeline_shutdown_timeout
-      config.dig(:pipeline, :shutdown_timeout) ||
+      config.dig(:pipeline_advancer, :shutdown_timeout) ||
         DEFAULT_PIPELINE_SHUTDOWN_TIMEOUT
     end
 
