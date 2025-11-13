@@ -8,6 +8,7 @@ class CreateDuctworkPipelines < ActiveRecord::Migration[8.0]
       table.string :definition_sha1, null: false
       table.timestamp :triggered_at, null: false
       table.timestamp :completed_at
+      table.timestamp :claimed_for_advancing_at
       table.string :status, null: false
       table.timestamps null: false
     end
