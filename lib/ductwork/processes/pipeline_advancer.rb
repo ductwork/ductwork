@@ -11,14 +11,16 @@ module Ductwork
       def run # rubocop:todo Metrics/AbcSize, Metrics/MethodLength
         run_hooks_for(:start)
         while running_context.running?
-          id = Ductwork::Pipeline
-               .in_progress
-               .where(klass:)
-               .where.not(steps: Ductwork::Step.where.not(status: %w[advancing completed]))
-               .order(:last_advanced_at)
-               .limit(1)
-               .pluck(:id)
-               .first
+          id = Ductwork::Record.uncached do
+            Ductwork::Pipeline
+              .in_progress
+              .where(klass: klass, claimed_for_advancing_at: nil)
+              .where.not(steps: Ductwork::Step.where.not(status: %w[advancing completed]))
+              .order(:last_advanced_at)
+              .limit(1)
+              .pluck(:id)
+              .first
+          end
 
           if id.present?
             rows_updated = Ductwork::Pipeline
