@@ -66,6 +66,7 @@ module Ductwork
           logger.debug(
             msg: "Created new thread",
             role: :pipeline_advancer_runner,
+            thread: thread.name,
             pipeline: klass
           )
 
