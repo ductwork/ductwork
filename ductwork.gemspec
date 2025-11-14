@@ -17,11 +17,12 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/main/README.md"
   spec.metadata["rubygems_mfa_required"] = "true"
+  spec.metadata["documentation_uri"] = "https://docs.getductwork.io/"
 
   gemspec = File.basename(__FILE__)
   excludes = %w[
     bin/ log/ gemfiles/ spec/ .git .github .rspec .rubocop.yml .ruby-version
-    Gemfile Appraisals LICENSE.txt CODE_OF_CONDUCT.md config.ru
+    Gemfile Appraisals CODE_OF_CONDUCT.md config.ru
   ]
   spec.files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL) do |ls|
     ls.readlines("\x0", chomp: true).reject do |f|
