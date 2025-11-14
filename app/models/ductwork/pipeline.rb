@@ -108,7 +108,7 @@ module Ductwork
               Ductwork::Job.enqueue(next_step, step.job.return_value)
             end
           elsif step_type == "combine"
-            previous_klasses = definition[:edges].select do |_, v|
+            previous_klasses = parsed_definition[:edges].select do |_, v|
               v.dig(0, :to, 0) == edge[:to].sole && v.dig(0, :type) == "combine"
             end.keys
 
