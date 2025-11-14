@@ -53,6 +53,7 @@ module Ductwork
           else
             logger.debug(
               msg: "No pipeline needs advancing",
+              pipeline: klass,
               role: :pipeline_advancer
             )
           end
@@ -66,16 +67,6 @@ module Ductwork
       private
 
       attr_reader :running_context, :klass
-
-      # NOTE: this probably should be a method on a model(s) or something
-      # because a job is always going to be enqueued when a new in-progress
-      # step is created :think:
-      def create_step_and_enqueue_job(pipeline:, klass:, step_type:, input_arg:)
-        status = :in_progress
-        started_at = Time.current
-        next_step = pipeline.steps.create!(klass:, status:, step_type:, started_at:)
-        Ductwork::Job.enqueue(next_step, input_arg)
-      end
 
       def run_hooks_for(event)
         Ductwork.hooks[:advancer].fetch(event, []).each do |block|
