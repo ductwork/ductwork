@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Ductwork
-  class Pipeline < Ductwork::Record
+  class Pipeline < Ductwork::Record # rubocop:todo Metrics/ClassLength
     has_many :steps, class_name: "Ductwork::Step", foreign_key: "pipeline_id", dependent: :destroy
 
     validates :klass, presence: true
@@ -78,89 +78,118 @@ module Ductwork
       end
     end
 
-    def advance! # rubocop:todo Metrics
-      parsed_definition = JSON.parse(definition).with_indifferent_access
+    def advance!
       step = steps.advancing.take
       edge = if step.present?
                parsed_definition.dig(:edges, step.klass, 0)
              end
 
-      Ductwork::Record.transaction do # rubocop:todo Metrics/BlockLength
+      Ductwork::Record.transaction do
         steps.advancing.update!(status: :completed, completed_at: Time.current)
 
         if edge.nil?
-          if steps.where(status: %w[in_progress pending]).none?
-            update!(status: :completed, completed_at: Time.current)
-          end
+          conditionally_complete_pipeline
         else
-          # NOTE: "chain" is used by ActiveRecord so we have to call
-          # this enum value "default" :sad:
-          step_type = edge[:type] == "chain" ? "default" : edge[:type]
-
-          if step_type.in?(%w[default divide])
-            edge[:to].each do |klass|
-              next_step = steps.create!(
-                klass: klass,
-                status: :in_progress,
-                step_type: step_type,
-                started_at: Time.current
-              )
-              Ductwork::Job.enqueue(next_step, step.job.return_value)
-            end
-          elsif step_type == "combine"
-            previous_klasses = parsed_definition[:edges].select do |_, v|
-              v.dig(0, :to, 0) == edge[:to].sole && v.dig(0, :type) == "combine"
-            end.keys
-
-            if steps.not_completed.where(klass: previous_klasses).none?
-              input_arg = Job.where(
-                step: steps.completed.where(klass: previous_klasses)
-              ).map(&:return_value)
-              create_step_and_enqueue_job(
-                klass: edge[:to].sole,
-                step_type: step_type,
-                input_arg: input_arg
-              )
-            end
-          elsif step_type == "expand"
-            step.job.return_value.each do |input_arg|
-              create_step_and_enqueue_job(
-                klass: edge[:to].sole,
-                step_type: step_type,
-                input_arg: input_arg
-              )
-            end
-          elsif step_type == "collapse"
-            if steps.not_completed.where(klass: step.klass).none?
-              input_arg = Job.where(
-                step: steps.completed.where(klass: step.klass)
-              ).map(&:return_value)
-              create_step_and_enqueue_job(
-                klass: edge[:to].sole,
-                step_type: step_type,
-                input_arg: input_arg
-              )
-            else
-              logger.debug(msg: "Not all expanded steps have completed", role: :pipeline_advancer)
-            end
-          else
-            logger.error("Invalid step type? This is wrong lol", role: :pipeline_advancer)
-          end
+          advance_to_next_step_by_type(edge, step)
         end
       end
     end
 
     private
 
-    def logger
-      Ductwork.configuration.logger
-    end
-
     def create_step_and_enqueue_job(klass:, step_type:, input_arg:)
       status = :in_progress
       started_at = Time.current
       next_step = steps.create!(klass:, status:, step_type:, started_at:)
       Ductwork::Job.enqueue(next_step, input_arg)
+    end
+
+    def parsed_definition
+      @parsed_definition ||= JSON.parse(definition).with_indifferent_access
+    end
+
+    def conditionally_complete_pipeline
+      if steps.where(status: %w[in_progress pending]).none?
+        update!(status: :completed, completed_at: Time.current)
+      end
+    end
+
+    def advance_to_next_step_by_type(edge, step)
+      # NOTE: "chain" is used by ActiveRecord so we have to call
+      # this enum value "default" :sad:
+      step_type = edge[:type] == "chain" ? "default" : edge[:type]
+
+      if step_type.in?(%w[default divide])
+        advance_to_next_steps(step_type, step, edge)
+      elsif step_type == "combine"
+        combine_next_steps(step_type, edge)
+      elsif step_type == "expand"
+        expand_to_next_steps(step_type, step, edge)
+      elsif step_type == "collapse"
+        collapse_next_steps(step_type, step, edge)
+      else
+        Ductwork.configuration.logger.error(
+          msg: "Invalid step type",
+          role: :pipeline_advancer
+        )
+      end
+    end
+
+    def advance_to_next_steps(step_type, step, edge)
+      edge[:to].each do |to_klass|
+        next_step = steps.create!(
+          klass: to_klass,
+          status: :in_progress,
+          step_type: step_type,
+          started_at: Time.current
+        )
+        Ductwork::Job.enqueue(next_step, step.job.return_value)
+      end
+    end
+
+    def combine_next_steps(step_type, edge)
+      previous_klasses = parsed_definition[:edges].select do |_, v|
+        v.dig(0, :to, 0) == edge[:to].sole && v.dig(0, :type) == "combine"
+      end.keys
+
+      if steps.not_completed.where(klass: previous_klasses).none?
+        input_arg = Job.where(
+          step: steps.completed.where(klass: previous_klasses)
+        ).map(&:return_value)
+        create_step_and_enqueue_job(
+          klass: edge[:to].sole,
+          step_type: step_type,
+          input_arg: input_arg
+        )
+      end
+    end
+
+    def expand_to_next_steps(step_type, step, edge)
+      step.job.return_value.each do |input_arg|
+        create_step_and_enqueue_job(
+          klass: edge[:to].sole,
+          step_type: step_type,
+          input_arg: input_arg
+        )
+      end
+    end
+
+    def collapse_next_steps(step_type, step, edge)
+      if steps.not_completed.where(klass: step.klass).none?
+        input_arg = Job.where(
+          step: steps.completed.where(klass: step.klass)
+        ).map(&:return_value)
+        create_step_and_enqueue_job(
+          klass: edge[:to].sole,
+          step_type: step_type,
+          input_arg: input_arg
+        )
+      else
+        Ductwork.configuration.logger.debug(
+          msg: "Not all expanded steps have completed",
+          role: :pipeline_advancer
+        )
+      end
     end
   end
 end
