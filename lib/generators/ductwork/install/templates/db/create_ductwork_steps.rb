@@ -11,5 +11,7 @@ class CreateDuctworkSteps < ActiveRecord::Migration[<%= Rails::VERSION::MAJOR %>
       table.string :status, null: false
       table.timestamps null: false
     end
+
+    add_index :ductwork_steps, %i[pipeline_id status]
   end
 end
