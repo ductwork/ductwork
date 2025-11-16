@@ -2,6 +2,7 @@
 
 ## [0.2.1] Unreleased
 
+- fix: do not splat arguments when enqueuing a job and fix related spec
 - fix: add missing `dependent: :destroy` on certain associations
 
 ## [0.2.0]

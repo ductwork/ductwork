@@ -86,7 +86,7 @@ RSpec.describe Ductwork::Job do
       expect(job.klass).to eq("MyFirstStep")
       expect(job.started_at).to be_within(1.second).of(Time.current)
       expect(job.completed_at).to be_nil
-      expect(job.input_args).to eq(JSON.dump({ args: [args] }))
+      expect(job.input_args).to eq(JSON.dump({ args: args }))
       expect(job.output_payload).to be_nil
       expect(job.step).to eq(step)
     end
@@ -111,13 +111,6 @@ RSpec.describe Ductwork::Job do
       availability = execution.availability
       expect(availability.started_at).to be_within(1.second).of(Time.current)
       expect(availability.completed_at).to be_nil
-    end
-
-    it "correctly stores splatted args" do
-      described_class.enqueue(step, *args)
-
-      job = described_class.sole
-      expect(job.input_args).to eq(JSON.dump({ args: %w[foo bar] }))
     end
   end
 

@@ -60,7 +60,7 @@ module Ductwork
       end
     end
 
-    def self.enqueue(step, *args)
+    def self.enqueue(step, args)
       Ductwork::Record.transaction do
         job = step.create_job!(
           klass: step.klass,
