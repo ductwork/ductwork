@@ -143,6 +143,10 @@ RSpec.describe Ductwork::Pipeline do
       end
     end
 
+    before do
+      Ductwork.defined_pipelines = nil
+    end
+
     it "raises if no definition block is given" do
       expect do
         klass.define
