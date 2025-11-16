@@ -56,8 +56,8 @@ module Ductwork
         step_klass = pipeline_definition.dig(:nodes, 0)
         definition = JSON.dump(pipeline_definition)
 
-        Record.transaction do
-          pipeline = create!(
+        pipeline = Record.transaction do
+          p = create!(
             klass: name.to_s,
             status: :in_progress,
             definition: definition,
@@ -73,8 +73,15 @@ module Ductwork
           )
           Ductwork::Job.enqueue(step, args)
 
-          pipeline
+          p
         end
+
+        Ductwork.configuration.logger.info(
+          msg: "Pipeline triggered",
+          pipeline_id: pipeline.id
+        )
+
+        pipeline
       end
     end
 
@@ -111,6 +118,11 @@ module Ductwork
     def conditionally_complete_pipeline
       if steps.where(status: %w[in_progress pending]).none?
         update!(status: :completed, completed_at: Time.current)
+
+        Ductwork.configuration.logger.info(
+          msg: "Pipeline completed",
+          pipeline_id: id
+        )
       end
     end
 
@@ -133,6 +145,13 @@ module Ductwork
           role: :pipeline_advancer
         )
       end
+
+      Ductwork.configuration.logger.info(
+        msg: "Pipeline advanced",
+        transition: edge[:type],
+        step_id: step.id,
+        pipeline_id: id
+      )
     end
 
     def advance_to_next_steps(step_type, step, edge)

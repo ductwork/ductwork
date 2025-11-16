@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.3.0] (Unreleased)
+
+- feat: add info-level logging for pipeline events
+
 ## [0.2.1]
 
 - fix: do not splat arguments when executing a job nor triggering a pipeline
