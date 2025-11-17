@@ -87,18 +87,18 @@ module Ductwork
     end
 
     def advance!
-      step = steps.advancing.take
-      edge = if step.present?
-               parsed_definition.dig(:edges, step.klass, 0)
+      advancing = steps.advancing
+      edge = if advancing.any?
+               parsed_definition.dig(:edges, advancing.take.klass, 0)
              end
 
       Ductwork::Record.transaction do
-        steps.advancing.update!(status: :completed, completed_at: Time.current)
+        advancing.update!(status: :completed, completed_at: Time.current)
 
         if edge.nil?
           conditionally_complete_pipeline
         else
-          advance_to_next_step_by_type(edge, step)
+          advance_to_next_step_by_type(edge, advancing)
         end
       end
     end
@@ -128,19 +128,19 @@ module Ductwork
       end
     end
 
-    def advance_to_next_step_by_type(edge, step)
+    def advance_to_next_step_by_type(edge, advancing)
       # NOTE: "chain" is used by ActiveRecord so we have to call
       # this enum value "default" :sad:
       step_type = edge[:type] == "chain" ? "default" : edge[:type]
 
       if step_type.in?(%w[default divide])
-        advance_to_next_steps(step_type, step, edge)
+        advance_to_next_steps(step_type, advancing, edge)
       elsif step_type == "combine"
-        combine_next_steps(step_type, edge)
+        combine_next_steps(step_type, advancing, edge)
       elsif step_type == "expand"
-        expand_to_next_steps(step_type, step, edge)
+        expand_to_next_steps(step_type, advancing, edge)
       elsif step_type == "collapse"
-        collapse_next_steps(step_type, step, edge)
+        collapse_next_steps(step_type, advancing, edge)
       else
         Ductwork.configuration.logger.error(
           msg: "Invalid step type",
@@ -151,13 +151,12 @@ module Ductwork
       Ductwork.configuration.logger.info(
         msg: "Pipeline advanced",
         pipeline_id: id,
-        step_id: step.id,
         transition: edge[:type],
         role: :pipeline_advancer
       )
     end
 
-    def advance_to_next_steps(step_type, step, edge)
+    def advance_to_next_steps(step_type, advancing, edge)
       edge[:to].each do |to_klass|
         next_step = steps.create!(
           klass: to_klass,
@@ -165,11 +164,11 @@ module Ductwork
           step_type: step_type,
           started_at: Time.current
         )
-        Ductwork::Job.enqueue(next_step, step.job.return_value)
+        Ductwork::Job.enqueue(next_step, advancing.take.job.return_value)
       end
     end
 
-    def combine_next_steps(step_type, edge)
+    def combine_next_steps(step_type, _advancing, edge)
       previous_klasses = parsed_definition[:edges].select do |_, v|
         v.dig(0, :to, 0) == edge[:to].sole && v.dig(0, :type) == "combine"
       end.keys
@@ -186,8 +185,8 @@ module Ductwork
       end
     end
 
-    def expand_to_next_steps(step_type, step, edge)
-      step.job.return_value.each do |input_arg|
+    def expand_to_next_steps(step_type, advancing, edge)
+      advancing.take.job.return_value.each do |input_arg|
         create_step_and_enqueue_job(
           klass: edge[:to].sole,
           step_type: step_type,
@@ -196,10 +195,13 @@ module Ductwork
       end
     end
 
-    def collapse_next_steps(step_type, step, edge)
-      if steps.not_completed.where(klass: step.klass).none?
+    def collapse_next_steps(step_type, advancing, edge)
+      klass = advancing.take.klass
+
+      # FIXME: iunno, rethink these queries
+      if steps.not_completed.where(klass:).none?
         input_arg = Job.where(
-          step: steps.completed.where(klass: step.klass)
+          step: steps.completed.where(klass:)
         ).map(&:return_value)
         create_step_and_enqueue_job(
           klass: edge[:to].sole,
