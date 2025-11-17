@@ -2,7 +2,8 @@
 
 ## [0.3.0] (Unreleased)
 
-- fix: add a new step for each active branch of the definition
+- fix: add a new step and job for each active branch in a running pipeline
+- fix: add a new node and edge for each active branch of the definition
 - feat: add info-level logging for job events
 - feat: add info-level logging for pipeline events
 

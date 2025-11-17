@@ -87,18 +87,24 @@ module Ductwork
     end
 
     def advance!
+      # NOTE: there could be A LOT of steps advancing for a single pipeline
+      # so instead of loading everything into memory and using ruby collection
+      # methods we make multiple queries. may need to revisist this once
+      # we do extensive load testing
       advancing = steps.advancing
-      edge = if advancing.any?
-               parsed_definition.dig(:edges, advancing.take.klass, 0)
-             end
+      edges = if advancing.exists?
+                parsed_definition
+                  .fetch(:edges, {})
+                  .select { |k| k.in?(advancing.pluck(:klass)) }
+              end
 
       Ductwork::Record.transaction do
         advancing.update!(status: :completed, completed_at: Time.current)
 
-        if edge.nil?
+        if edges.nil? || edges.values.all?(&:empty?)
           conditionally_complete_pipeline
         else
-          advance_to_next_step_by_type(edge, advancing)
+          advance_to_next_steps_by_type(edges, advancing)
         end
       end
     end
@@ -128,30 +134,33 @@ module Ductwork
       end
     end
 
-    def advance_to_next_step_by_type(edge, advancing)
+    def advance_to_next_steps_by_type(edges, advancing)
       # NOTE: "chain" is used by ActiveRecord so we have to call
       # this enum value "default" :sad:
-      step_type = edge[:type] == "chain" ? "default" : edge[:type]
+      advancing.find_each do |step|
+        edge = edges.dig(step.klass, -1)
+        step_type = edge[:type] == "chain" ? "default" : edge[:type]
 
-      if step_type.in?(%w[default divide])
-        advance_to_next_steps(step_type, advancing, edge)
-      elsif step_type == "combine"
-        combine_next_steps(step_type, advancing, edge)
-      elsif step_type == "expand"
-        expand_to_next_steps(step_type, advancing, edge)
-      elsif step_type == "collapse"
-        collapse_next_steps(step_type, advancing, edge)
-      else
-        Ductwork.configuration.logger.error(
-          msg: "Invalid step type",
-          role: :pipeline_advancer
-        )
+        if step_type.in?(%w[default divide])
+          advance_to_next_steps(step_type, advancing, edge)
+        elsif step_type == "combine"
+          combine_next_steps(step_type, advancing, edge)
+        elsif step_type == "expand"
+          expand_to_next_steps(step_type, advancing, edge)
+        elsif step_type == "collapse"
+          collapse_next_steps(step_type, advancing, edge)
+        else
+          Ductwork.configuration.logger.error(
+            msg: "Invalid step type",
+            role: :pipeline_advancer
+          )
+        end
       end
 
       Ductwork.configuration.logger.info(
         msg: "Pipeline advanced",
         pipeline_id: id,
-        transition: edge[:type],
+        transitions: edges.map { |_, v| v.dig(-1, :type) },
         role: :pipeline_advancer
       )
     end
