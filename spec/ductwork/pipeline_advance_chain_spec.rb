@@ -45,7 +45,7 @@ RSpec.describe Ductwork::Pipeline do
         expect(Ductwork::Job).to have_received(:enqueue).with(anything, payload)
       end
 
-      context "when the previous step was divide" do
+      context "when the pipeline has been divided" do
         let(:advancing_steps) do
           [
             create(
@@ -93,7 +93,7 @@ RSpec.describe Ductwork::Pipeline do
         end
       end
 
-      context "when the previous step was expand" do
+      context "when the pipeline has been expanded" do
         let(:advancing_steps) do
           create_list(
             :step,
