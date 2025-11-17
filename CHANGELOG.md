@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [0.3.0] (Unreleased)
+## [0.3.0]
 
 - fix: correctly create collapsing and combining steps and jobs for complex pipelines
 - fix: add a new step and job for each active branch in a running pipeline
