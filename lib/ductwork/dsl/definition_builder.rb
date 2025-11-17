@@ -14,6 +14,7 @@ module Ductwork
         }
         @divisions = 0
         @expansions = 0
+        @last_nodes = []
       end
 
       def start(klass)
@@ -29,7 +30,7 @@ module Ductwork
       def chain(klass)
         validate_classes!(klass)
         validate_definition_started!(action: "chaining")
-        add_edge_to_last_node(klass, type: :chain)
+        add_edge_to_last_nodes(klass, type: :chain)
         add_new_nodes(klass)
 
         self
@@ -38,7 +39,7 @@ module Ductwork
       def divide(to:)
         validate_classes!(to)
         validate_definition_started!(action: "dividing chain")
-        add_edge_to_last_node(*to, type: :divide)
+        add_edge_to_last_nodes(*to, type: :divide)
         add_new_nodes(*to)
 
         @divisions += 1
@@ -79,7 +80,7 @@ module Ductwork
       def expand(to:)
         validate_classes!(to)
         validate_definition_started!(action: "expanding chain")
-        add_edge_to_last_node(to, type: :expand)
+        add_edge_to_last_nodes(to, type: :expand)
         add_new_nodes(to)
 
         @expansions += 1
@@ -91,7 +92,7 @@ module Ductwork
         validate_classes!(into)
         validate_definition_started!(action: "collapsing steps")
         validate_definition_expanded!
-        add_edge_to_last_node(into, type: :collapse)
+        add_edge_to_last_nodes(into, type: :collapse)
         add_new_nodes(into)
 
         @expansions -= 1
@@ -117,7 +118,7 @@ module Ductwork
 
       private
 
-      attr_reader :definition, :divisions, :expansions
+      attr_reader :definition, :divisions, :expansions, :last_nodes
 
       def validate_classes!(klasses)
         valid = Array(klasses).all? do |klass|
@@ -162,19 +163,22 @@ module Ductwork
       end
 
       def add_new_nodes(*klasses)
-        definition[:nodes].push(*klasses.map(&:name))
+        nodes = klasses.map(&:name)
+        @last_nodes = Array(nodes)
+
+        definition[:nodes].push(*nodes)
         klasses.each do |klass|
           definition[:edges][klass.name] ||= []
         end
       end
 
-      def add_edge_to_last_node(*klasses, type:)
-        last_node = definition.dig(:nodes, -1)
-
-        definition[:edges][last_node] << {
-          to: klasses.map(&:name),
-          type: type,
-        }
+      def add_edge_to_last_nodes(*klasses, type:)
+        last_nodes.each do |last_node|
+          definition[:edges][last_node] << {
+            to: klasses.map(&:name),
+            type: type,
+          }
+        end
       end
     end
   end

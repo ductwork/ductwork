@@ -79,6 +79,24 @@ RSpec.describe Ductwork::DSL::DefinitionBuilder do
       expect(definition[:edges]["MySecondStep"]).to eq([])
     end
 
+    it "adds a new step for each active branch of the definition" do
+      definition = builder
+                   .start(MyFirstStep)
+                   .divide(to: [MySecondStep, MyThirdStep])
+                   .chain(MyFourthStep)
+                   .complete
+
+      expect(definition[:edges]["MyFirstStep"]).to eq(
+        [{ to: %w[MySecondStep MyThirdStep], type: :divide }]
+      )
+      expect(definition[:edges]["MySecondStep"]).to eq(
+        [{ to: %w[MyFourthStep], type: :chain }]
+      )
+      expect(definition[:edges]["MyThirdStep"]).to eq(
+        [{ to: %w[MyFourthStep], type: :chain }]
+      )
+    end
+
     it "raises if the argument is not a class" do
       expect do
         builder.start(MyFirstStep).chain("MySecondStep")
