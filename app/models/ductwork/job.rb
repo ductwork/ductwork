@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Ductwork
-  class Job < Ductwork::Record
+  class Job < Ductwork::Record # rubocop:todo Metrics/ClassLength
     belongs_to :step, class_name: "Ductwork::Step"
     has_many :executions, class_name: "Ductwork::Execution", foreign_key: "job_id", dependent: :destroy
 
@@ -61,13 +61,13 @@ module Ductwork
     end
 
     def self.enqueue(step, args)
-      Ductwork::Record.transaction do
-        job = step.create_job!(
+      job = Ductwork::Record.transaction do
+        j = step.create_job!(
           klass: step.klass,
           started_at: Time.current,
           input_args: JSON.dump({ args: })
         )
-        execution = job.executions.create!(
+        execution = j.executions.create!(
           started_at: Time.current,
           retry_count: 0
         )
@@ -75,8 +75,16 @@ module Ductwork
           started_at: Time.current
         )
 
-        job
+        j
       end
+
+      Ductwork.configuration.logger.info(
+        msg: "Job enqueued",
+        job_id: job.id,
+        job_klass: job.klass
+      )
+
+      job
     end
 
     def execute(pipeline)
@@ -103,12 +111,13 @@ module Ductwork
         execution_failed!(execution, run, e)
         result = "failure"
       ensure
-        logger.debug(
-          msg: "Executed job",
-          role: :job_worker,
+        logger.info(
+          msg: "Job executed",
           pipeline: pipeline,
+          job_id: id,
           job_klass: klass,
-          result: result
+          result: result,
+          role: :job_worker
         )
       end
     end
@@ -166,6 +175,16 @@ module Ductwork
           pipeline.halted!
         end
       end
+
+      logger.warn(
+        msg: "Job errored",
+        error_klass: error.class.name,
+        error_message: error.message,
+        job_id: id,
+        job_klass: klass,
+        pipeline_id: pipeline.id,
+        role: :job_worker
+      )
 
       # NOTE: perform lifecycle hook execution outside of the transaction as
       # to not unnecessarily hold it open

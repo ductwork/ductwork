@@ -2,6 +2,7 @@
 
 ## [0.3.0] (Unreleased)
 
+- feat: add info-level logging for job events
 - feat: add info-level logging for pipeline events
 
 ## [0.2.1]
