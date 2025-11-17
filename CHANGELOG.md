@@ -2,7 +2,7 @@
 
 ## [0.3.0] (Unreleased)
 
-- fix: correctly create merging steps and jobs for complex pipelines
+- fix: correctly create collapsing and combining steps and jobs for complex pipelines
 - fix: add a new step and job for each active branch in a running pipeline
 - fix: add a new node and edge for each active branch of the definition
 - feat: add info-level logging for job events
