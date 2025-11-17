@@ -48,6 +48,95 @@ RSpec.describe Ductwork::Pipeline do
 
         expect(Ductwork::Job).to have_received(:enqueue).with(anything, payload).twice
       end
+
+      context "when the pipeline has been expanded" do
+        let(:definition) do
+          {
+            nodes: %w[MyStepA MyStepB MyStepC MyStepD],
+            edges: {
+              "MyStepA" => [{ to: %w[MyStepB], type: "expand" }],
+              "MyStepB" => [{ to: %w[MyStepC MyStepD], type: "divide" }],
+              "MyStepC" => [],
+              "MyStepD" => [],
+            },
+          }.to_json
+        end
+        let(:advancing_steps) do
+          create_list(
+            :step,
+            2,
+            status: :advancing,
+            step_type: "divide",
+            klass: "MyStepB",
+            pipeline: pipeline
+          )
+        end
+
+        before do
+          step.completed!
+          advancing_steps.each do |s|
+            create(:job, output_payload: output_payload, step: s)
+          end
+        end
+
+        it "creates a new step and job for each step in the active branch" do
+          expect do
+            pipeline.advance!
+          end.to change(Ductwork::Step, :count).by(4)
+            .and change(Ductwork::Job, :count).by(4)
+          klasses = Ductwork::Step.pluck(:klass).last(4)
+          expect(klasses).to eq(%w[MyStepC MyStepD MyStepC MyStepD])
+        end
+      end
+
+      context "when the pipeline has been divided" do
+        let(:definition) do
+          {
+            nodes: %w[MyStepA MyStepB MyStepC MyStepD MyStepE],
+            edges: {
+              "MyStepA" => [{ to: %w[MyStepB MyStepC], type: "divide" }],
+              "MyStepB" => [{ to: %w[MyStepD MyStepE], type: "divide" }],
+              "MyStepC" => [{ to: %w[MyStepD MyStepE], type: "divide" }],
+              "MyStepD" => [],
+              "MyStepE" => [],
+            },
+          }.to_json
+        end
+        let(:advancing_steps) do
+          [
+            create(
+              :step,
+              status: :advancing,
+              step_type: "divide",
+              klass: "MyStepB",
+              pipeline: pipeline
+            ),
+            create(
+              :step,
+              status: :advancing,
+              step_type: "divide",
+              klass: "MyStepC",
+              pipeline: pipeline
+            ),
+          ]
+        end
+
+        before do
+          step.completed!
+          advancing_steps.each do |s|
+            create(:job, output_payload: output_payload, step: s)
+          end
+        end
+
+        it "creates a new step and job for each step in the active branch" do
+          expect do
+            pipeline.advance!
+          end.to change(Ductwork::Step, :count).by(4)
+            .and change(Ductwork::Job, :count).by(4)
+          klasses = Ductwork::Step.pluck(:klass).last(4)
+          expect(klasses).to eq(%w[MyStepD MyStepE MyStepD MyStepE])
+        end
+      end
     end
   end
 end
