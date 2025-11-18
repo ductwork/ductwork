@@ -103,7 +103,7 @@ end
 
 **Important:** Return values must be JSON-serializable.
 
-See [Defining Pipelines](https://docs.getductwork.io/getting_started/defining-pipelines.html) for detailed documentation.
+See [Defining Pipelines](https://docs.getductwork.io/getting-started/defining-pipelines.html) for detailed documentation.
 
 ### 4. Run Ductwork
 
