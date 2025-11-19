@@ -104,5 +104,18 @@ RSpec.describe Ductwork::DSL::DefinitionBuilder do
         "Must expand pipeline definition before collapsing steps"
       )
     end
+
+    it "raises an error when the pipeline is most recently divided" do
+      expect do
+        builder
+          .start(MyFirstStep)
+          .expand(to: MySecondStep)
+          .divide(to: [MyThirdStep, MyFourthStep])
+          .collapse(into: MyFifthStep)
+      end.to raise_error(
+        described_class::CollapseError,
+        "Ambiguous collapse on most recently divided definition"
+      )
+    end
   end
 end

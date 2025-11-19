@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.3.1] (Unreleased)
+
+- fix: raise when trying to collapse a most recently divided pipeline and vice versa
+
 ## [0.3.0]
 
 - fix: correctly create collapsing and combining steps and jobs for complex pipelines

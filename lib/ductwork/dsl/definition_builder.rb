@@ -12,8 +12,7 @@ module Ductwork
           nodes: [],
           edges: {},
         }
-        @divisions = 0
-        @expansions = 0
+        @divergences = []
         @last_nodes = []
       end
 
@@ -42,7 +41,7 @@ module Ductwork
         add_edge_to_last_nodes(*to, type: :divide)
         add_new_nodes(*to)
 
-        @divisions += 1
+        divergences.push(:divide)
 
         if block_given?
           branches = to.map do |klass|
@@ -59,9 +58,9 @@ module Ductwork
       def combine(into:)
         validate_classes!(into)
         validate_definition_started!(action: "combining steps")
-        validate_definition_divided!
+        validate_can_combine!
 
-        @divisions -= 1
+        divergences.pop
 
         last_nodes = definition[:nodes].reverse.select do |node|
           definition[:edges][node].empty?
@@ -83,7 +82,7 @@ module Ductwork
         add_edge_to_last_nodes(to, type: :expand)
         add_new_nodes(to)
 
-        @expansions += 1
+        divergences.push(:expand)
 
         self
       end
@@ -91,11 +90,11 @@ module Ductwork
       def collapse(into:)
         validate_classes!(into)
         validate_definition_started!(action: "collapsing steps")
-        validate_definition_expanded!
+        validate_can_collapse!
         add_edge_to_last_nodes(into, type: :collapse)
         add_new_nodes(into)
 
-        @expansions -= 1
+        divergences.pop
 
         self
       end
@@ -118,7 +117,7 @@ module Ductwork
 
       private
 
-      attr_reader :definition, :divisions, :expansions, :last_nodes
+      attr_reader :definition, :last_nodes, :divergences
 
       def validate_classes!(klasses)
         valid = Array(klasses).all? do |klass|
@@ -150,15 +149,19 @@ module Ductwork
         end
       end
 
-      def validate_definition_divided!
-        if divisions.zero?
+      def validate_can_combine!
+        if divergences.empty?
           raise CombineError, "Must divide pipeline definition before combining steps"
+        elsif divergences[-1] != :divide
+          raise CombineError, "Ambiguous combine on most recently expanded definition"
         end
       end
 
-      def validate_definition_expanded!
-        if expansions.zero?
+      def validate_can_collapse!
+        if divergences.empty?
           raise CollapseError, "Must expand pipeline definition before collapsing steps"
+        elsif divergences[-1] != :expand
+          raise CollapseError, "Ambiguous collapse on most recently divided definition"
         end
       end
 

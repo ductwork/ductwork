@@ -176,5 +176,18 @@ RSpec.describe Ductwork::DSL::DefinitionBuilder do
         "Must divide pipeline definition before combining steps"
       )
     end
+
+    it "raises an error when the pipeline is most recently expanded" do
+      expect do
+        builder
+          .start(MyFirstStep)
+          .divide(to: [MyThirdStep, MyFourthStep])
+          .expand(to: MySecondStep)
+          .combine(into: MyFifthStep)
+      end.to raise_error(
+        described_class::CombineError,
+        "Ambiguous combine on most recently expanded definition"
+      )
+    end
   end
 end
