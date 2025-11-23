@@ -28,7 +28,7 @@ RSpec.describe Ductwork::Configuration do
     let(:config_file) { create_temp_file }
 
     it "returns the pipelines from the config file at the given path" do
-      rails = double(env: "development") # rubocop:disable RSpec/VerifiedDoubles
+      rails = double(env: "development")
       stub_const("Rails", rails)
 
       config = described_class.new(path: config_file.path)
@@ -37,7 +37,7 @@ RSpec.describe Ductwork::Configuration do
     end
 
     it "returns the pipelines from the default config file if no path given" do
-      rails = double(env: "production") # rubocop:disable RSpec/VerifiedDoubles
+      rails = double(env: "production")
       stub_const("Rails", rails)
       create_default_config_file
 

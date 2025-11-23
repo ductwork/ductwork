@@ -2,6 +2,7 @@
 
 ## [0.3.1] (Unreleased)
 
+- chore: bump dependencies and update necessary files
 - chore: update email address in gemspec
 - chore: move `logger` out of config to top-level `Ductwork` module
 - chore: promote `Ductwork::Pipeline#parsed_definition` to a public method

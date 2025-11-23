@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class CreateDuctworkProcesses < ActiveRecord::Migration[8.0]
+class CreateDuctworkProcesses < ActiveRecord::Migration[8.1]
   def change
     create_table :ductwork_processes do |table|
       table.integer :pid, null: false
