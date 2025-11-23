@@ -6,7 +6,7 @@ Gem::Specification.new do |spec|
   spec.name = "ductwork"
   spec.version = Ductwork::VERSION
   spec.authors = ["Tyler Ewing"]
-  spec.email = ["tewing10@gmail.com"]
+  spec.email = ["contact@getductwork.io"]
   spec.summary = "A Ruby pipeline framework"
   spec.description = "Ductwork lets you build complex pipelines quickly and " \
                      "easily using intuitive Ruby tooling and a natural DSL."
