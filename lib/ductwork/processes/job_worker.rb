@@ -10,13 +10,13 @@ module Ductwork
 
       def run
         run_hooks_for(:start)
-        logger.debug(
+        Ductwork.logger.debug(
           msg: "Entering main work loop",
           role: :job_worker,
           pipeline: pipeline
         )
         while running_context.running?
-          logger.debug(
+          Ductwork.logger.debug(
             msg: "Attempting to claim job",
             role: :job_worker,
             pipeline: pipeline
@@ -30,7 +30,7 @@ module Ductwork
               job.execute(pipeline)
             end
           else
-            logger.debug(
+            Ductwork.logger.debug(
               msg: "No job to claim, looping",
               role: :job_worker,
               pipeline: pipeline
@@ -47,7 +47,7 @@ module Ductwork
       attr_reader :pipeline, :running_context
 
       def shutdown
-        logger.debug(
+        Ductwork.logger.debug(
           msg: "Shutting down",
           role: :job_worker,
           pipeline: pipeline
@@ -61,10 +61,6 @@ module Ductwork
             block.call(self)
           end
         end
-      end
-
-      def logger
-        Ductwork.configuration.logger
       end
     end
   end

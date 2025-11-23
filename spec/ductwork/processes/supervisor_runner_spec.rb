@@ -3,10 +3,10 @@
 RSpec.describe Ductwork::Processes::SupervisorRunner do
   describe ".start!" do
     it "creates workers for each configured pipeline" do
+      Ductwork.logger = spy
       Ductwork.configuration = instance_double(
         Ductwork::Configuration,
-        pipelines: %w[PipelineA PipelineB],
-        logger: spy
+        pipelines: %w[PipelineA PipelineB]
       )
       supervisor = instance_double(
         Ductwork::Processes::Supervisor,

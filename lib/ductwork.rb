@@ -19,7 +19,7 @@ loader.setup
 
 module Ductwork
   class << self
-    attr_accessor :app_executor, :configuration
+    attr_accessor :app_executor, :configuration, :logger
     attr_writer :defined_pipelines, :hooks
 
     def wrap_with_app_executor(&block)

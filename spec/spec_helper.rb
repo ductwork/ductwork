@@ -37,7 +37,7 @@ RSpec.configure do |config|
 
   config.before do
     Ductwork.configuration = Ductwork::Configuration.new
-    Ductwork.configuration.logger = ::Logger.new("log/test.log", 10, 1_024_000)
+    Ductwork.logger = ::Logger.new("log/test.log", 10, 1_024_000)
   end
 
   config.after do

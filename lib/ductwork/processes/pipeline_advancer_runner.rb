@@ -25,7 +25,7 @@ module Ductwork
 
       def run
         create_process!
-        logger.debug(
+        Ductwork.logger.debug(
           msg: "Entering main work loop",
           role: :pipeline_advancer_runner
         )
@@ -51,7 +51,7 @@ module Ductwork
             klass
           )
 
-          logger.debug(
+          Ductwork.logger.debug(
             msg: "Creating new thread",
             role: :pipeline_advancer_runner,
             pipeline: klass
@@ -63,7 +63,7 @@ module Ductwork
           end
           thread.name = "ductwork.pipeline_advancer.#{klass}"
 
-          logger.debug(
+          Ductwork.logger.debug(
             msg: "Created new thread",
             role: :pipeline_advancer_runner,
             thread: thread.name,
@@ -75,12 +75,12 @@ module Ductwork
       end
 
       def attempt_synchronize_threads
-        logger.debug(
+        Ductwork.logger.debug(
           msg: "Attempting to synchronize threads",
           role: :pipeline_advancer_runner
         )
         threads.each { |thread| thread.join(0.1) }
-        logger.debug(
+        Ductwork.logger.debug(
           msg: "Synchronizing threads timed out",
           role: :pipeline_advancer_runner
         )
@@ -97,11 +97,11 @@ module Ductwork
       end
 
       def report_heartbeat!
-        logger.debug(msg: "Reporting heartbeat", role: :pipeline_advancer_runner)
+        Ductwork.logger.debug(msg: "Reporting heartbeat", role: :pipeline_advancer_runner)
         Ductwork.wrap_with_app_executor do
           Ductwork::Process.report_heartbeat!
         end
-        logger.debug(msg: "Reported heartbeat", role: :pipeline_advancer_runner)
+        Ductwork.logger.debug(msg: "Reported heartbeat", role: :pipeline_advancer_runner)
       end
 
       def shutdown
@@ -113,7 +113,7 @@ module Ductwork
       end
 
       def log_shutting_down
-        logger.debug(msg: "Shutting down", role: :pipeline_advancer_runner)
+        Ductwork.logger.debug(msg: "Shutting down", role: :pipeline_advancer_runner)
       end
 
       def stop_running_context
@@ -124,7 +124,7 @@ module Ductwork
         timeout = Ductwork.configuration.pipeline_shutdown_timeout
         deadline = Time.current + timeout
 
-        logger.debug(
+        Ductwork.logger.debug(
           msg: "Attempting graceful shutdown",
           role: :pipeline_advancer_runner
         )
@@ -143,7 +143,7 @@ module Ductwork
         threads.each do |thread|
           if thread.alive?
             thread.kill
-            logger.debug(
+            Ductwork.logger.debug(
               msg: "Killed thread",
               role: :pipeline_advancer_runner,
               thread: thread.name
@@ -159,10 +159,6 @@ module Ductwork
             machine_identifier: Ductwork::MachineIdentifier.fetch
           ).delete
         end
-      end
-
-      def logger
-        Ductwork.configuration.logger
       end
     end
   end

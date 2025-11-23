@@ -17,7 +17,6 @@ module Ductwork
     DEFAULT_LOGGER = ::Logger.new($stdout)
     PIPELINES_WILDCARD = "*"
 
-    attr_accessor :logger
     attr_writer :job_worker_polling_timeout, :job_worker_shutdown_timeout,
                 :job_worker_max_retry,
                 :logger_level,

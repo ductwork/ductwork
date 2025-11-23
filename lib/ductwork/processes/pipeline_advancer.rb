@@ -28,7 +28,7 @@ module Ductwork
                            .update_all(claimed_for_advancing_at: Time.current)
 
             if rows_updated == 1
-              logger.debug(
+              Ductwork.logger.debug(
                 msg: "Pipeline claimed",
                 pipeline: klass,
                 role: :pipeline_advancer
@@ -37,13 +37,13 @@ module Ductwork
               pipeline = Ductwork::Pipeline.find(id)
               pipeline.advance!
 
-              logger.debug(
+              Ductwork.logger.debug(
                 msg: "Pipeline advanced",
                 pipeline: klass,
                 role: :pipeline_advancer
               )
             else
-              logger.debug(
+              Ductwork.logger.debug(
                 msg: "Did not claim pipeline, avoided race condition",
                 pipeline: klass,
                 role: :pipeline_advancer
@@ -57,7 +57,7 @@ module Ductwork
               last_advanced_at: Time.current
             )
           else
-            logger.debug(
+            Ductwork.logger.debug(
               msg: "No pipeline needs advancing",
               pipeline: klass,
               id: id,
@@ -81,10 +81,6 @@ module Ductwork
             block.call(self)
           end
         end
-      end
-
-      def logger
-        Ductwork.configuration.logger
       end
     end
   end

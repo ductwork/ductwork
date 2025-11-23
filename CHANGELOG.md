@@ -2,8 +2,9 @@
 
 ## [0.3.1] (Unreleased)
 
-- fix: raise when trying to collapse a most recently divided pipeline and vice versa
+- chore: move `logger` out of config to top-level `Ductwork` module
 - chore: promote `Ductwork::Pipeline#parsed_definition` to a public method
+- fix: raise when trying to collapse a most recently divided pipeline and vice versa
 
 ## [0.3.0]
 

@@ -76,7 +76,7 @@ module Ductwork
           p
         end
 
-        Ductwork.configuration.logger.info(
+        Ductwork.logger.info(
           msg: "Pipeline triggered",
           pipeline_id: pipeline.id,
           role: :application
@@ -126,7 +126,7 @@ module Ductwork
       if steps.where(status: %w[in_progress pending]).none?
         update!(status: :completed, completed_at: Time.current)
 
-        Ductwork.configuration.logger.info(
+        Ductwork.logger.info(
           msg: "Pipeline completed",
           pipeline_id: id,
           role: :pipeline_advancer
@@ -167,7 +167,7 @@ module Ductwork
         elsif step_type == "expand"
           expand_to_next_steps(step_type, advancing, edge)
         else
-          Ductwork.configuration.logger.error(
+          Ductwork.logger.error(
             msg: "Invalid step type",
             step_type: step_type,
             pipeline_id: id,
@@ -193,7 +193,7 @@ module Ductwork
       if steps.where(status: %w[pending in_progress], klass: edges.keys).none?
         combine_next_steps(edges, advancing)
       else
-        Ductwork.configuration.logger.debug(
+        Ductwork.logger.debug(
           msg: "Not all divided steps have completed; not combining",
           pipeline_id: id,
           role: :pipeline_advancer
@@ -232,7 +232,7 @@ module Ductwork
       if steps.where(status: %w[pending in_progress], klass: step_klass).none?
         collapse_next_steps(edge[:to].sole, advancing)
       else
-        Ductwork.configuration.logger.debug(
+        Ductwork.logger.debug(
           msg: "Not all expanded steps have completed; not collapsing",
           pipeline_id: id,
           role: :pipeline_advancer
@@ -255,7 +255,7 @@ module Ductwork
     end
 
     def log_pipeline_advanced(edges)
-      Ductwork.configuration.logger.info(
+      Ductwork.logger.info(
         msg: "Pipeline advanced",
         pipeline_id: id,
         transitions: edges.map { |_, v| v.dig(-1, :type) },

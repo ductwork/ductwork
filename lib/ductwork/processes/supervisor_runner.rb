@@ -6,10 +6,9 @@ module Ductwork
       def self.start!
         supervisor = Ductwork::Processes::Supervisor.new
         pipelines_to_advance = Ductwork.configuration.pipelines
-        logger = Ductwork.configuration.logger
 
         supervisor.add_worker(metadata: { pipelines: pipelines_to_advance }) do
-          logger.debug(
+          Ductwork.logger.debug(
             msg: "Starting Pipeline Advancer process",
             role: :supervisor_runner
           )
@@ -19,7 +18,7 @@ module Ductwork
 
         pipelines_to_advance.each do |pipeline|
           supervisor.add_worker(metadata: { pipeline: }) do
-            logger.debug(
+            Ductwork.logger.debug(
               msg: "Starting Job Worker Runner process",
               role: :supervisor_runner,
               pipeline: pipeline

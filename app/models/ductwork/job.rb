@@ -39,7 +39,7 @@ module Ductwork
         end
 
         if rows_updated == 1
-          Ductwork.configuration.logger.debug(
+          Ductwork.logger.debug(
             msg: "Job claimed",
             role: :job_worker,
             process_id: process_id,
@@ -49,7 +49,7 @@ module Ductwork
             .joins(executions: :availability)
             .find_by(ductwork_availabilities: { id:, process_id: })
         else
-          Ductwork.configuration.logger.debug(
+          Ductwork.logger.debug(
             msg: "Did not claim job, avoided race condition",
             role: :job_worker,
             process_id: process_id,
@@ -78,7 +78,7 @@ module Ductwork
         j
       end
 
-      Ductwork.configuration.logger.info(
+      Ductwork.logger.info(
         msg: "Job enqueued",
         job_id: job.id,
         job_klass: job.klass
@@ -90,7 +90,7 @@ module Ductwork
     def execute(pipeline)
       # i don't _really_ like this, but it should be fine for now...
       execution = executions.order(:created_at).last
-      logger.debug(
+      Ductwork.logger.debug(
         msg: "Executing job",
         role: :job_worker,
         pipeline: pipeline,
@@ -111,7 +111,7 @@ module Ductwork
         execution_failed!(execution, run, e)
         result = "failure"
       ensure
-        logger.info(
+        Ductwork.logger.info(
           msg: "Job executed",
           pipeline: pipeline,
           job_id: id,
@@ -129,10 +129,6 @@ module Ductwork
     end
 
     private
-
-    def logger
-      Ductwork.configuration.logger
-    end
 
     def execution_succeeded!(execution, run, output_payload)
       payload = JSON.dump({ payload: output_payload })
@@ -176,7 +172,7 @@ module Ductwork
         end
       end
 
-      logger.warn(
+      Ductwork.logger.warn(
         msg: "Job errored",
         error_klass: error.class.name,
         error_message: error.message,
