@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [0.3.1] (Unreleased)
+## [0.3.1]
 
 - chore: bump dependencies and update necessary files
 - chore: update email address in gemspec
