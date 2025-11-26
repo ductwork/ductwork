@@ -2,6 +2,7 @@
 
 ## [0.4.0] (Unreleased)
 
+- feat: add pipeline-level `job_worker.polling_timeout` configuration
 - feat: check pipeline and step-level max retry configurations when retrying a job
 - feat: add pipeline and step-level `job_worker.max_retry` configurations
 - feat: add ability to set `job_worker.count` config manually

@@ -80,8 +80,18 @@ module Ductwork
       end
     end
 
-    def job_worker_polling_timeout
-      @job_worker_polling_timeout ||= fetch_job_worker_polling_timeout
+    def job_worker_polling_timeout(pipeline = nil)
+      pipeline ||= :default
+      default = DEFAULT_JOB_WORKER_POLLING_TIMEOUT
+      base_config = config.dig(:job_worker, :polling_timeout)
+
+      if instance_variable_defined?(:@job_worker_polling_timeout)
+        @job_worker_polling_timeout
+      elsif base_config.is_a?(Hash)
+        base_config[pipeline.to_sym] || base_config[:default] || default
+      else
+        base_config || default
+      end
     end
 
     def job_worker_shutdown_timeout
@@ -141,11 +151,6 @@ module Ductwork
     def fetch_job_worker_max_retry
       config.dig(:job_worker, :max_retry) ||
         DEFAULT_JOB_WORKER_MAX_RETRY
-    end
-
-    def fetch_job_worker_polling_timeout
-      config.dig(:job_worker, :polling_timeout) ||
-        DEFAULT_JOB_WORKER_POLLING_TIMEOUT
     end
 
     def fetch_job_worker_shutdown_timeout
