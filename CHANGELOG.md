@@ -2,6 +2,7 @@
 
 ## [0.4.0] (Unreleased)
 
+- chore: move specs under directory
 - feat: allow setting `pipeline_advancer.steps_max_depth` configuration manually
 - feat: raise `Ductwork::Pipeline::StepDepthError` error if return payload count exceeds the configuration
 - feat: add `pipeline_advancer.steps.max_depth` configuration
