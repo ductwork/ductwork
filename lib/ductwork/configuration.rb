@@ -62,8 +62,22 @@ module Ductwork
       end
     end
 
-    def job_worker_max_retry
-      @job_worker_max_retry ||= fetch_job_worker_max_retry
+    def job_worker_max_retry(pipeline: nil, step: nil) # rubocop:disable Metrics
+      return @job_worker_max_retry if instance_variable_defined?(:@job_worker_max_retry)
+
+      pipeline ||= :default
+      step ||= :default
+      base_config = config.dig(:job_worker, :max_retry)
+
+      if base_config.is_a?(Hash) && base_config[pipeline.to_sym].is_a?(Hash)
+        pipeline_config = config.dig(:job_worker, :max_retry, pipeline.to_sym)
+
+        pipeline_config[step.to_sym] || pipeline_config[:default] || DEFAULT_JOB_WORKER_MAX_RETRY
+      elsif base_config.is_a?(Hash)
+        base_config[pipeline.to_sym] || base_config[:default] || DEFAULT_JOB_WORKER_MAX_RETRY
+      else
+        base_config || DEFAULT_JOB_WORKER_MAX_RETRY
+      end
     end
 
     def job_worker_polling_timeout

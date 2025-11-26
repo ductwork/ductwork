@@ -2,6 +2,7 @@
 
 ## [0.4.0] (Unreleased)
 
+- feat: add pipeline and step-level `job_worker.max_retry` configurations
 - feat: add ability to set `job_worker.count` config manually
 - chore: move configuration specs under their own directory
 - feat: halt pipeline instead of erroring if max step depth is exceeded
