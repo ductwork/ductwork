@@ -145,6 +145,9 @@ module Ductwork
     def execution_failed!(execution, run, error) # rubocop:disable Metrics/AbcSize
       halted = false
       pipeline = step.pipeline
+      max_retry = Ductwork
+                  .configuration
+                  .job_worker_max_retry(pipeline: pipeline.klass, step: klass)
 
       Ductwork::Record.transaction do
         execution.update!(completed_at: Time.current)
@@ -156,7 +159,7 @@ module Ductwork
           error_backtrace: error.backtrace
         )
 
-        if execution.retry_count < Ductwork.configuration.job_worker_max_retry
+        if execution.retry_count < max_retry
           new_execution = executions.create!(
             retry_count: execution.retry_count + 1,
             started_at: FAILED_EXECUTION_TIMEOUT.from_now

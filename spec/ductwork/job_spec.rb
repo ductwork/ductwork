@@ -226,8 +226,9 @@ RSpec.describe Ductwork::Job do
             definition: { metadata: { on_halt: { klass: "MyHaltStep" } } }.to_json
           )
           pipeline.in_progress!
-          create(:execution, retry_count: 3, job: step.job)
+          create(:execution, retry_count: 2, job: step.job)
           allow(MyHaltStep).to receive(:new).and_return(on_halt_step)
+          Ductwork.configuration.job_worker_max_retry = 2
         end
 
         it "marks the pipeline as halted" do
