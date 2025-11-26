@@ -148,11 +148,6 @@ module Ductwork
 
     attr_reader :config
 
-    def fetch_job_worker_max_retry
-      config.dig(:job_worker, :max_retry) ||
-        DEFAULT_JOB_WORKER_MAX_RETRY
-    end
-
     def fetch_job_worker_shutdown_timeout
       config.dig(:job_worker, :shutdown_timeout) ||
         DEFAULT_JOB_WORKER_SHUTDOWN_TIMEOUT
