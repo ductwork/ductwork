@@ -54,7 +54,7 @@ RSpec.describe Ductwork::Pipeline do
       end
 
       it "raises if the return value is larger than the max depth config" do
-        allow(Ductwork.configuration).to receive(:steps_max_depth).and_return(2)
+        Ductwork.configuration.steps_max_depth = 2
 
         expect do
           pipeline.advance!

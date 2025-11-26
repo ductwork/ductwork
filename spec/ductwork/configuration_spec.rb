@@ -422,6 +422,17 @@ RSpec.describe Ductwork::Configuration do
         expect(max_depth).to eq(42)
       end
 
+      it "returns the manually set value" do
+        config = described_class.new
+        config.steps_max_depth = 5
+
+        pipeline_max_depth = config.steps_max_depth(pipeline: "MyPipelineA")
+        max_depth = config.steps_max_depth
+
+        expect(pipeline_max_depth).to eq(5)
+        expect(max_depth).to eq(5)
+      end
+
       context "when there is pipeline-level configuration" do
         let(:data) do
           <<~DATA

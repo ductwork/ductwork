@@ -22,6 +22,7 @@ module Ductwork
                 :job_worker_max_retry,
                 :logger_level,
                 :pipeline_polling_timeout, :pipeline_shutdown_timeout,
+                :steps_max_depth,
                 :supervisor_polling_timeout, :supervisor_shutdown_timeout
 
     def initialize(path: DEFAULT_FILE_PATH)
@@ -88,6 +89,8 @@ module Ductwork
     end
 
     def steps_max_depth(pipeline: nil, step: nil) # rubocop:disable Metrics
+      return @steps_max_depth if instance_variable_defined?(:@steps_max_depth)
+
       pipeline ||= :default
       step ||= :default
       base_config = config.dig(:pipeline_advancer, :steps, :max_depth)
