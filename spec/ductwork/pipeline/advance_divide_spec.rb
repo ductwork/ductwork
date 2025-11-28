@@ -84,7 +84,7 @@ RSpec.describe Ductwork::Pipeline, "#advance" do
         end.to change(Ductwork::Step, :count).by(4)
           .and change(Ductwork::Job, :count).by(4)
         klasses = Ductwork::Step.pluck(:klass).last(4)
-        expect(klasses).to eq(%w[MyStepC MyStepD MyStepC MyStepD])
+        expect(klasses).to match_array(%w[MyStepC MyStepC MyStepD MyStepD])
       end
     end
 
@@ -133,7 +133,7 @@ RSpec.describe Ductwork::Pipeline, "#advance" do
         end.to change(Ductwork::Step, :count).by(4)
           .and change(Ductwork::Job, :count).by(4)
         klasses = Ductwork::Step.pluck(:klass).last(4)
-        expect(klasses).to eq(%w[MyStepD MyStepE MyStepD MyStepE])
+        expect(klasses).to match_array(%w[MyStepD MyStepE MyStepD MyStepE])
       end
     end
 

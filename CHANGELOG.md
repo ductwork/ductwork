@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.5.0] (Unreleased)
+
+- feat: add missing composite indexes on `ductwork_steps` table
+
 ## [0.4.0]
 
 - chore: change job worker thread name format
