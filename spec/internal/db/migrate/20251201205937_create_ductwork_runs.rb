@@ -8,5 +8,7 @@ class CreateDuctworkRuns < ActiveRecord::Migration[8.1]
       table.timestamp :completed_at
       table.timestamps null: false
     end
+
+    add_index :ductwork_runs, :execution_id, unique: true
   end
 end

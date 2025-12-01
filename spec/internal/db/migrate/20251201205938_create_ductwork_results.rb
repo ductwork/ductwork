@@ -10,5 +10,7 @@ class CreateDuctworkResults < ActiveRecord::Migration[8.1]
       table.text :error_backtrace
       table.timestamps null: false
     end
+
+    add_index :ductwork_results, :execution_id, unique: true
   end
 end
