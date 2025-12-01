@@ -44,6 +44,13 @@ module Ductwork
                 pipeline: klass,
                 role: :pipeline_advancer
               )
+
+              # release the pipeline and set last advanced at so it doesnt block.
+              # we're not using a queue so we have to use a db timestamp
+              pipeline.update!(
+                claimed_for_advancing_at: nil,
+                last_advanced_at: Time.current
+              )
             else
               Ductwork.logger.debug(
                 msg: "Did not claim pipeline, avoided race condition",
@@ -52,13 +59,6 @@ module Ductwork
                 role: :pipeline_advancer
               )
             end
-
-            # release the pipeline and set last advanced at so it doesnt block.
-            # we're not using a queue so we have to use a db timestamp
-            Ductwork::Pipeline.find(id).update!(
-              claimed_for_advancing_at: nil,
-              last_advanced_at: Time.current
-            )
           else
             Ductwork.logger.debug(
               msg: "No pipeline needs advancing",

@@ -2,6 +2,7 @@
 
 ## [0.5.0] (Unreleased)
 
+- fix: release pipeline claim only if successfully claimed
 - chore: add pipeline ID to misc log lines
 - feat: add missing composite indexes on `ductwork_steps` table
 
