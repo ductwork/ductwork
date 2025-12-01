@@ -2,6 +2,7 @@
 
 ## [0.5.0] (Unreleased)
 
+- fix: add condition to query to return correct pipelines that need advancing
 - fix: release pipeline claim only if successfully claimed
 - chore: add pipeline ID to misc log lines
 - feat: add missing composite indexes on `ductwork_steps` table

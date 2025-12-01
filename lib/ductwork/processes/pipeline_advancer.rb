@@ -15,6 +15,7 @@ module Ductwork
             Ductwork::Pipeline
               .in_progress
               .where(klass: klass, claimed_for_advancing_at: nil)
+              .where(steps: Ductwork::Step.where(status: :advancing))
               .where.not(steps: Ductwork::Step.where.not(status: %w[advancing completed]))
               .order(:last_advanced_at)
               .limit(1)
