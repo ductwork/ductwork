@@ -10,5 +10,7 @@ class CreateDuctworkExecutions < ActiveRecord::Migration[8.1]
       table.integer :process_id
       table.timestamps null: false
     end
+
+    add_index :ductwork_executions, %i[job_id created_at]
   end
 end

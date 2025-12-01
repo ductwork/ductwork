@@ -2,6 +2,7 @@
 
 ## [0.5.0] (Unreleased)
 
+- feat: add missing composite index on `ductwork_executions` table for `Ductwork::Job.claim_latest` method
 - feat: add missing composite index on `ductwork_availabilities` table for `Ductwork::Job.claim_latest` method
 - feat: use array instead of ActiveRecord relation when advancing pipelines - this has major performance benefits but comes with memory-usage implications (see comments)
 - fix: add condition to query to return correct pipelines that need advancing
