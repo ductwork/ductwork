@@ -7,8 +7,8 @@ class CreateDuctworkJobs < ActiveRecord::Migration[8.1]
       table.string :klass, null: false
       table.timestamp :started_at, null: false
       table.timestamp :completed_at
-      table.string :input_args, null: false
-      table.string :output_payload
+      table.text :input_args, null: false
+      table.text :output_payload
       table.timestamps null: false
     end
 
