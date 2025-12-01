@@ -2,6 +2,7 @@
 
 ## [0.5.0] (Unreleased)
 
+- feat: use array instead of ActiveRecord relation when advancing pipelines - this has major performance benefits but comes with memory-usage implications (see comments)
 - fix: add condition to query to return correct pipelines that need advancing
 - fix: release pipeline claim only if successfully claimed
 - chore: add pipeline ID to misc log lines
