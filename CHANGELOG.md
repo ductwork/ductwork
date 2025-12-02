@@ -2,6 +2,7 @@
 
 ## [0.5.0] (Unreleased)
 
+- core: add "waiting" status to `Step` model
 - core: add "waiting" status to `Pipeline` model
 - fix: change `jobs.input_args` and `jobs.output_payload` column type to `text`
 - fix: change `pipelines.definition` column type to `text` - this prevents larger definitions from being clipped if there is a size limit on the string column
