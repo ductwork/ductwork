@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [0.5.0] (Unreleased)
+## [0.5.0]
 
 - core: add "waiting" status to `Step` model
 - core: add "waiting" status to `Pipeline` model
