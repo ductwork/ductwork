@@ -2,6 +2,7 @@
 
 ## [0.6.1] (Unreleased)
 
+- chore: update misc development dependencies
 - fix: eager load pipelines and steps directory after rails initialization - the lazy load hook originally being used would fire before the `rails.main` autoloader had fully setup; when trying to eager load the directories a `Zeitwerk::SetupRequired` error would be raised
 
 ## [0.6.0]
