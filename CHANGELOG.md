@@ -2,6 +2,7 @@
 
 ## [0.6.0] (Unreleased)
 
+- feat: expose `Ductwork.eager_load` method for eager loading code via `zeitwerk`
 - chore: let `zeitwerk` autoload models from `lib/models` directory instead of letting rails autoload them from the `app/models` directory via the rails engine
 - feat: add `started_at` column to `ductwork_pipelines` table - for now, this will only be used in Pro features.
 

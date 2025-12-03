@@ -9,19 +9,14 @@ require "zeitwerk"
 
 require "ductwork/engine"
 
-loader = Zeitwerk::Loader.for_gem
-loader.inflector.inflect("cli" => "CLI")
-loader.inflector.inflect("dsl" => "DSL")
-loader.collapse("#{__dir__}/ductwork/models")
-loader.ignore("#{__dir__}/generators")
-loader.ignore("#{__dir__}/ductwork/testing")
-loader.ignore("#{__dir__}/ductwork/testing.rb")
-loader.setup
-
 module Ductwork
   class << self
-    attr_accessor :app_executor, :configuration, :logger
+    attr_accessor :app_executor, :configuration, :loader, :logger
     attr_writer :defined_pipelines, :hooks
+
+    def eager_load
+      loader.eager_load
+    end
 
     def wrap_with_app_executor(&block)
       if app_executor.present?
@@ -76,3 +71,14 @@ module Ductwork
     end
   end
 end
+
+loader = Zeitwerk::Loader.for_gem
+loader.inflector.inflect("cli" => "CLI")
+loader.inflector.inflect("dsl" => "DSL")
+loader.collapse("#{__dir__}/ductwork/models")
+loader.ignore("#{__dir__}/generators")
+loader.ignore("#{__dir__}/ductwork/testing")
+loader.ignore("#{__dir__}/ductwork/testing.rb")
+loader.setup
+
+Ductwork.loader = loader

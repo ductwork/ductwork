@@ -7,6 +7,22 @@ RSpec.describe Ductwork do
     expect(Ductwork::VERSION).not_to be_nil
   end
 
+  describe ".loader" do
+    it "sets the code loader attribute when loading" do
+      expect(described_class.loader).to be_present
+    end
+  end
+
+  describe ".eager_load" do
+    it "calls eager load on the code loader" do
+      allow(described_class.loader).to receive(:eager_load)
+
+      described_class.eager_load
+
+      expect(described_class.loader).to have_received(:eager_load)
+    end
+  end
+
   describe ".wrap_with_app_executor" do
     it "yields if no app executor is configured" do
       expect do |block|
