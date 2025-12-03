@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.7.0] (Unreleased)
+
+- feat: set `Pipeline` and `Step` models status to "in-progress" when claiming latest job
+
 ## [0.6.1]
 
 - chore: update misc development dependencies

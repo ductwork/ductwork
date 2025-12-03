@@ -70,6 +70,19 @@ RSpec.describe Ductwork::Job do
         described_class.claim_latest(klass)
       end.not_to change { future_availability.reload.completed_at }.from(nil)
     end
+
+    it "changes waiting pipeline and step statuses to in-progress" do
+      step = execution.job.step
+      pipeline = step.pipeline
+
+      step.update!(status: "waiting")
+      pipeline.update!(status: "waiting")
+
+      expect do
+        described_class.claim_latest(klass)
+      end.to change { pipeline.reload.status }.from("waiting").to("in_progress")
+        .and change { step.reload.status }.from("waiting").to("in_progress")
+    end
   end
 
   describe ".enqueue" do

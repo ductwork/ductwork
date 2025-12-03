@@ -11,7 +11,7 @@ module Ductwork
 
     FAILED_EXECUTION_TIMEOUT = 10.seconds
 
-    def self.claim_latest(klass) # rubocop:todo Metrics/MethodLength
+    def self.claim_latest(klass) # rubocop:todo Metrics
       process_id = ::Process.pid
       id = Ductwork::Availability
            .joins(execution: { job: { step: :pipeline } })
@@ -45,9 +45,16 @@ module Ductwork
             process_id: process_id,
             availability_id: id
           )
-          Ductwork::Job
-            .joins(executions: :availability)
-            .find_by(ductwork_availabilities: { id:, process_id: })
+          job = Ductwork::Job
+                .joins(executions: :availability)
+                .find_by(ductwork_availabilities: { id:, process_id: })
+
+          Ductwork::Record.transaction do
+            job.step.in_progress!
+            job.step.pipeline.in_progress!
+          end
+
+          job
         else
           Ductwork.logger.debug(
             msg: "Did not claim job, avoided race condition",
