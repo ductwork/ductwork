@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.7.2] (Unreleased)
+
+- chore: small DRY refactor in pipeline advancement
+
 ## [0.7.1]
 
 - chore: isolate on halt execution in `Ductwork::Job#execution_failed!`
