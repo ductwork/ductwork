@@ -9,6 +9,8 @@ class CreateDuctworkSteps < ActiveRecord::Migration[<%= Rails::VERSION::MAJOR %>
       table.timestamp :started_at
       table.timestamp :completed_at
       table.string :status, null: false
+      table.integer :delay_seconds
+      table.integer :timeout_seconds
       table.timestamps null: false
     end
 

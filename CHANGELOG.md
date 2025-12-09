@@ -2,6 +2,7 @@
 
 ## [0.8.0] (Unreleased)
 
+- feat: add `delay_seconds` and `timeout_seconds` columns to `ductwork_steps` table
 - feat: set pipeline status to `advancing` once pipeline is claimed and advancing starts
 - chore: add `advancing` status enum value to `Pipeline`
 
