@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [0.8.0] (Unreleased)
+## [0.8.0]
 
 - chore: re-organize `Ductwork::CLI` class
 - feat!: better name `ductwork_steps.step_type` to `to_transition` - the column rename is a breaking change but not bumping major version since the gem is still pre-1.0
