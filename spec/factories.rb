@@ -33,7 +33,7 @@ FactoryBot.define do
     klass { "MyFirstStep" }
     started_at { Time.current }
     status { Ductwork::Step.statuses.keys.sample }
-    step_type { Ductwork::Step.step_types.keys.sample }
+    to_transition { Ductwork::Step.to_transitions.keys.sample }
     pipeline
   end
 end

@@ -7,7 +7,7 @@ module Ductwork
 
     validates :klass, presence: true
     validates :status, presence: true
-    validates :step_type, presence: true
+    validates :to_transition, presence: true
 
     enum :status,
          pending: "pending",
@@ -17,7 +17,7 @@ module Ductwork
          failed: "failed",
          completed: "completed"
 
-    enum :step_type,
+    enum :to_transition,
          start: "start",
          default: "default", # `chain` is used by AR
          divide: "divide",

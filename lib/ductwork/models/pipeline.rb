@@ -72,7 +72,7 @@ module Ductwork
           step = p.steps.create!(
             klass: step_klass,
             status: :in_progress,
-            step_type: :start,
+            to_transition: :start,
             started_at: Time.current
           )
           Ductwork::Job.enqueue(step, args)
@@ -119,10 +119,10 @@ module Ductwork
       started_at = Time.current
       # NOTE: "chain" is used by ActiveRecord so we have to call
       # this enum value "default" :sad:
-      step_type = edge[:type] == "chain" ? "default" : edge[:type]
+      to_transition = edge[:type] == "chain" ? "default" : edge[:type]
       klass ||= edge.fetch(:to).sole
 
-      next_step = steps.create!(klass:, status:, step_type:, started_at:)
+      next_step = steps.create!(klass:, status:, to_transition:, started_at:)
       Ductwork::Job.enqueue(next_step, input_arg)
     end
 
@@ -175,17 +175,17 @@ module Ductwork
     end
 
     def advance_non_merging_steps(step_klass, edge, advancing_ids)
-      step_type = edge[:type]
+      to_transition = edge[:type]
 
       steps.where(id: advancing_ids, klass: step_klass).find_each do |step|
-        if step_type.in?(%w[chain divide])
+        if to_transition.in?(%w[chain divide])
           advance_to_next_steps(step.id, edge)
-        elsif step_type == "expand"
+        elsif to_transition == "expand"
           expand_to_next_steps(step.id, edge)
         else
           Ductwork.logger.error(
-            msg: "Invalid step type",
-            step_type: step_type,
+            msg: "Invalid To Transition",
+            to_transition: to_transition,
             pipeline_id: id,
             role: :pipeline_advancer
           )

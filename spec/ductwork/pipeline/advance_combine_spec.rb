@@ -43,7 +43,7 @@ RSpec.describe Ductwork::Pipeline, "#advance" do
       step = Ductwork::Step.last
       expect(step).to be_in_progress
       expect(step.klass).to eq("MyStepD")
-      expect(step.step_type).to eq("combine")
+      expect(step.to_transition).to eq("combine")
     end
 
     it "passes the output payload as input arguments to the next step" do
@@ -63,7 +63,7 @@ RSpec.describe Ductwork::Pipeline, "#advance" do
             :step,
             3,
             status: :advancing,
-            step_type: :combine,
+            to_transition: :combine,
             klass: "MyStepC",
             pipeline: pipeline
           ),
@@ -71,7 +71,7 @@ RSpec.describe Ductwork::Pipeline, "#advance" do
             :step,
             3,
             status: :advancing,
-            step_type: :combine,
+            to_transition: :combine,
             klass: "MyStepD",
             pipeline: pipeline
           ),
@@ -79,7 +79,7 @@ RSpec.describe Ductwork::Pipeline, "#advance" do
             :step,
             3,
             status: :advancing,
-            step_type: :combine,
+            to_transition: :combine,
             klass: "MyStepE",
             pipeline: pipeline
           ),
