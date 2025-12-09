@@ -2,6 +2,7 @@
 
 ## [0.8.0] (Unreleased)
 
+- feat: set pipeline status to `advancing` once pipeline is claimed and advancing starts
 - chore: add `advancing` status enum value to `Pipeline`
 
 ## [0.7.2]

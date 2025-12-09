@@ -26,7 +26,10 @@ module Ductwork
           if id.present?
             rows_updated = Ductwork::Pipeline
                            .where(id: id, claimed_for_advancing_at: nil)
-                           .update_all(claimed_for_advancing_at: Time.current)
+                           .update_all(
+                             claimed_for_advancing_at: Time.current,
+                             status: "advancing"
+                           )
 
             if rows_updated == 1
               Ductwork.logger.debug(
@@ -50,7 +53,8 @@ module Ductwork
               # we're not using a queue so we have to use a db timestamp
               pipeline.update!(
                 claimed_for_advancing_at: nil,
-                last_advanced_at: Time.current
+                last_advanced_at: Time.current,
+                status: "in_progress"
               )
             else
               Ductwork.logger.debug(
