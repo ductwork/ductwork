@@ -4,45 +4,57 @@ require "optparse"
 
 module Ductwork
   class CLI
-    class << self
-      def start!(args)
-        options = parse_options(args)
-        Ductwork.configuration = Configuration.new(**options)
-        Ductwork.logger = if Ductwork.configuration.logger_source == "rails"
-                            Rails.logger
-                          else
-                            Ductwork::Configuration::DEFAULT_LOGGER
-                          end
-        Ductwork.logger.level = Ductwork.configuration.logger_level
+    def self.start!(args)
+      new(args).start!
+    end
 
-        Ductwork::Processes::SupervisorRunner.start!
+    def initialize(args)
+      @args = args
+      @options = {}
+    end
+
+    def start!
+      option_parser.parse!(args)
+      auto_configure
+      supervisor_runner.start!
+    end
+
+    private
+
+    attr_reader :args, :options
+
+    def option_parser
+      OptionParser.new do |op|
+        op.banner = "ductwork [options]"
+
+        op.on("-c", "--config PATH", "path to YAML config file") do |arg|
+          options[:path] = arg
+        end
+
+        op.on("-h", "--help", "Prints this help") do
+          puts op
+          exit
+        end
+
+        op.on("-v", "--version", "Prints the version") do
+          puts "Ductwork #{Ductwork::VERSION}"
+          exit
+        end
       end
+    end
 
-      private
+    def auto_configure
+      Ductwork.configuration = Configuration.new(**options)
+      Ductwork.logger = if Ductwork.configuration.logger_source == "rails"
+                          Rails.logger
+                        else
+                          Ductwork::Configuration::DEFAULT_LOGGER
+                        end
+      Ductwork.logger.level = Ductwork.configuration.logger_level
+    end
 
-      def parse_options(args)
-        options = {}
-
-        OptionParser.new do |op|
-          op.banner = "ductwork [options]"
-
-          op.on("-c", "--config PATH", "path to YAML config file") do |arg|
-            options[:path] = arg
-          end
-
-          op.on("-h", "--help", "Prints this help") do
-            puts op
-            exit
-          end
-
-          op.on("-v", "--version", "Prints the version") do
-            puts "Ductwork #{Ductwork::VERSION}"
-            exit
-          end
-        end.parse!(args)
-
-        options
-      end
+    def supervisor_runner
+      Ductwork::Processes::SupervisorRunner
     end
   end
 end

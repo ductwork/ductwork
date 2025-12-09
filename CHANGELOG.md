@@ -2,6 +2,7 @@
 
 ## [0.8.0] (Unreleased)
 
+- chore: re-organize `Ductwork::CLI` class
 - feat!: better name `ductwork_steps.step_type` to `to_transition` - the column rename is a breaking change but not bumping major version since the gem is still pre-1.0
 - feat: add `delay_seconds` and `timeout_seconds` columns to `ductwork_steps` table
 - feat: set pipeline status to `advancing` once pipeline is claimed and advancing starts
