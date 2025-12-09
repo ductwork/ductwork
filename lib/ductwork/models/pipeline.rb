@@ -16,6 +16,7 @@ module Ductwork
          pending: "pending",
          in_progress: "in_progress",
          waiting: "waiting",
+         advancing: "advancing",
          halted: "halted",
          completed: "completed"
 

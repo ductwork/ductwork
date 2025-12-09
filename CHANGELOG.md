@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.8.0] (Unreleased)
+
+- chore: add `advancing` status enum value to `Pipeline`
+
 ## [0.7.2]
 
 - chore: small DRY refactor in pipeline advancement
