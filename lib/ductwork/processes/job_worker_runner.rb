@@ -51,17 +51,15 @@ module Ductwork
 
       def create_threads
         worker_count.times.map do |i|
-          job_worker = Ductwork::Processes::JobWorker.new(
-            pipeline,
-            running_context
-          )
           Ductwork.logger.debug(
             msg: "Creating new thread",
             role: :job_worker_runner,
             pipeline: pipeline
           )
           thread = Thread.new do
-            job_worker.run
+            Ductwork::Processes::JobWorker
+              .new(pipeline, running_context)
+              .run
           end
           thread.name = "ductwork.job_worker.#{i}"
 
