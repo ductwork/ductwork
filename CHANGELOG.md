@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [0.9.0] (Unreleased)
+## [0.9.0]
 
 - feat: add health check to job worker runner process - this is a basic check if a thread is healthy via `Thread#alive?` and restarts the thread if it is dead
 
