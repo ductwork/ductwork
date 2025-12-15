@@ -77,17 +77,23 @@ module Ductwork
 
       def check_thread_health
         Ductwork.logger.debug(
-          msg: "Attempting to synchronize threads",
+          msg: "Checking thread health",
           role: :job_worker_runner,
           pipeline: pipeline
         )
         job_workers.each do |job_worker|
           if !job_worker.alive?
             job_worker.restart
+
+            Ductwork.logger.debug(
+              msg: "Restarted thread",
+              role: :job_worker_runner,
+              pipeline: pipeline
+            )
           end
         end
         Ductwork.logger.debug(
-          msg: "Synchronizing threads timed out",
+          msg: "Checked thread health",
           role: :job_worker_runner,
           pipeline: pipeline
         )

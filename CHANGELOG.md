@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.10.0] (Unreleased)
+
+- chore: update thread health-check logging
+
 ## [0.9.2]
 
 - fix: correctly set last node to node id instead of class name
