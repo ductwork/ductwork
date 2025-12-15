@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [0.9.1] (Unreleased)
+## [0.9.1]
 
 - fix!: assign unique node names (klass name and stage) in pipeline definition DAG - this is a BREAKING CHANGE because the pipeline definition structure has changed
 
