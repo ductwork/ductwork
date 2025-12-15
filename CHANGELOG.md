@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [0.10.0] (Unreleased)
+## [0.10.0]
 
 - chore: update thread health-check logging
 
