@@ -2,6 +2,7 @@
 
 ## [0.11.2] (Unreleased)
 
+- fix: flip inverted deadline check in pipeline advancer runner
 - fix: reference `thread` variable from `job_worker`, not top-level
 - fix: remove unnecessary, erroneous line in definition builder
 

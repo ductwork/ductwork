@@ -125,7 +125,7 @@ module Ductwork
         )
         while Time.current < deadline && threads.any?(&:alive?)
           threads.each do |thread|
-            break if Time.current < deadline
+            break if Time.current > deadline
 
             # TODO: Maybe make this configurable. If there's a ton of workers
             # it may not even get to the "later" ones depending on the timeout
