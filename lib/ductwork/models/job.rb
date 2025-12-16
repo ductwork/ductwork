@@ -163,7 +163,7 @@ module Ductwork
           result_type: "failure",
           error_klass: error.class.to_s,
           error_message: error.message,
-          error_backtrace: error.backtrace
+          error_backtrace: error.backtrace.join("\n")
         )
 
         if execution.retry_count < max_retry

@@ -2,6 +2,7 @@
 
 ## [0.11.2] (Unreleased)
 
+- fix: join error backtrace lines before persisting in `text` column
 - fix: use computed `max_retry` when determining job retry
 - fix: protect against a possible null `status` when advancing a pipeline
 - fix: correct spelling of `last_heartbeat_at` variable
