@@ -2,6 +2,7 @@
 
 ## [0.11.2] (Unreleased)
 
+- fix: use computed `max_retry` when determining job retry
 - fix: protect against a possible null `status` when advancing a pipeline
 - fix: correct spelling of `last_heartbeat_at` variable
 - fix: flip inverted deadline check in job worker runner

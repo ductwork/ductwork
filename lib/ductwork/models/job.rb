@@ -174,7 +174,7 @@ module Ductwork
           new_execution.create_availability!(
             started_at: FAILED_EXECUTION_TIMEOUT.from_now
           )
-        elsif execution.retry_count >= Ductwork.configuration.job_worker_max_retry
+        elsif execution.retry_count >= max_retry
           halted = true
 
           step.update!(status: :failed)
