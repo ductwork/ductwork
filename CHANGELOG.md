@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [0.11.2] (Unreleased)
+## [0.11.2]
 
 - fix: join error backtrace lines before persisting in `text` column
 - fix: use computed `max_retry` when determining job retry
