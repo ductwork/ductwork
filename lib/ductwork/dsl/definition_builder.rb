@@ -180,7 +180,6 @@ module Ductwork
           to = klasses.map { |klass| "#{klass.name}.#{stages.length}" }
           definition[:edges][last_node][:to] = to
           definition[:edges][last_node][:type] = type
-          definition[:edges][last_node][:klass] ||= klass
         end
       end
 

@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.11.2] (Unreleased)
+
+- fix: remove unnecessary, erroneous line in definition builder
+
 ## [0.11.1]
 
 - fix: use info-level for job worker restart log messages
