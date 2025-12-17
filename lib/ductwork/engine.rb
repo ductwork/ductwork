@@ -2,6 +2,8 @@
 
 module Ductwork
   class Engine < ::Rails::Engine
+    isolate_namespace Ductwork
+
     initializer "ductwork.app_executor", before: :run_prepare_callbacks do |app|
       Ductwork.app_executor = app.executor
     end

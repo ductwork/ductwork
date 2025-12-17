@@ -34,6 +34,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = %w[app config lib]
 
   rails_version_constraint = [">= 7.1", "< 8.2"]
+  spec.add_dependency "actionpack", rails_version_constraint
   spec.add_dependency "activerecord", rails_version_constraint
   spec.add_dependency "activesupport", rails_version_constraint
   spec.add_dependency "railties", rails_version_constraint

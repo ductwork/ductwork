@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.13.0] (Unreleased)
+
+- feat: isolate `Ductwork` namespace - this is in prep for a hosted web dashboard
+
 ## [0.12.0]
 
 - chore: replace usages of `Pipeline#halted!` with `Pipeline#halt!`

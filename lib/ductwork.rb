@@ -2,6 +2,7 @@
 
 require "active_record"
 require "active_support"
+require "action_controller"
 require "logger"
 require "rails/engine"
 require "securerandom"
