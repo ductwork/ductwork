@@ -9,10 +9,6 @@ module ConfigurationFileHelper
         config_file.close
         config_file.unlink
       end
-
-      if File.directory?("config")
-        FileUtils.rm_rf("config")
-      end
     end
   end
 
@@ -24,10 +20,8 @@ module ConfigurationFileHelper
   end
 
   def create_default_config_file
-    if !File.directory?("config")
-      FileUtils.mkdir_p("config")
-    end
-
+    # NOTE: this is kinda terrible as we're double-purpose-ing the `config`
+    # directory. it's used for the routes and now it's also used for test files
     File.new("config/ductwork.yml", "w").tap do |file|
       file.write(data)
       file.rewind
