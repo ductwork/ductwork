@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [0.12.0] (Unreleased)
+## [0.12.0]
 
 - chore: replace usages of `Pipeline#halted!` with `Pipeline#halt!`
 - feat: create `Ductwork::Pipeline#halt!` method
