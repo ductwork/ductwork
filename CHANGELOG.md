@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [0.13.1] (Unreleased)
+## [0.13.1]
 
 - fix: order step executions by started at
 
