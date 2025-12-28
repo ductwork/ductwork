@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.14.0] (Unreleased)
+
+- feat: add support for ruby v4.0
+
 ## [0.13.1]
 
 - fix: order step executions by started at

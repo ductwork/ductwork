@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ductwork (0.13.1)
+    ductwork (0.14.0)
       actionpack (>= 7.1, < 8.2)
       activerecord (>= 7.1, < 8.2)
       activesupport (>= 7.1, < 8.2)
@@ -85,6 +85,7 @@ GEM
     loofah (2.25.0)
       crass (~> 1.0.2)
       nokogiri (>= 1.12.0)
+    mini_portile2 (2.8.9)
     minitest (6.0.0)
       prism (~> 1.5)
     nokogiri (1.19.0-x86_64-linux-gnu)
@@ -184,6 +185,8 @@ GEM
       rubocop-rspec (~> 3.5)
     ruby-progressbar (1.13.0)
     securerandom (0.4.1)
+    sqlite3 (2.8.1)
+      mini_portile2 (~> 2.8.0)
     sqlite3 (2.8.1-x86_64-linux-gnu)
     stringio (3.2.0)
     thor (1.4.0)
