@@ -29,8 +29,16 @@ module Ductwork
         # Load steps and pipelines so definition validation runs and bugs
         # can be caught simply by booting the app or running tests
         loader = Rails.autoloaders.main
-        loader.eager_load_dir(Rails.root.join("app/steps"))
-        loader.eager_load_dir(Rails.root.join("app/pipelines"))
+        step_directory = Rails.root.join("app/steps")
+        pipeline_directory = Rails.root.join("app/pipelines")
+
+        if step_directory.exist?
+          loader.eager_load_dir(step_directory)
+        end
+
+        if pipeline_directory.exist?
+          loader.eager_load_dir(pipeline_directory)
+        end
       end
     end
   end

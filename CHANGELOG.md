@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.14.1] (Unreleased)
+
+- fix: check if steps and pipelines directories exist before eager loading
+
 ## [0.14.0]
 
 - feat: add support for ruby v4.0
