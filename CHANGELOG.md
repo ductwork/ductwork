@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [0.14.1] (Unreleased)
+## [0.14.1]
 
 - fix: check if steps and pipelines directories exist before eager loading
 
