@@ -268,6 +268,9 @@ module Ductwork
       if max_depth != -1 && return_value.count > max_depth
         halt!
       else
+        # TODO: Brainstorm on using `insert_all` instead of iterating.
+        # Performance is bad when the return value has a lot of elements
+        # and we create a step and job individually
         Array(return_value).each do |input_arg|
           create_step_and_enqueue_job(edge:, input_arg:)
         end
