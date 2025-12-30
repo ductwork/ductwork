@@ -38,7 +38,7 @@ module Ductwork
           Ductwork::Tuple.insert(attributes, unique_by:)
         end
 
-        if result.affected_rows.zero?
+        if result.rows.none?
           raise Ductwork::Context::OverwriteError, "Can only set value once"
         end
       end
