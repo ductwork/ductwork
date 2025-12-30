@@ -68,22 +68,18 @@ module Ductwork
     end
 
     def self.enqueue(step, args)
-      job = Ductwork::Record.transaction do
-        j = step.create_job!(
-          klass: step.klass,
-          started_at: Time.current,
-          input_args: JSON.dump({ args: })
-        )
-        execution = j.executions.create!(
-          started_at: Time.current,
-          retry_count: 0
-        )
-        execution.create_availability!(
-          started_at: Time.current
-        )
-
-        j
-      end
+      job = step.create_job!(
+        klass: step.klass,
+        started_at: Time.current,
+        input_args: JSON.dump({ args: })
+      )
+      execution = job.executions.create!(
+        started_at: Time.current,
+        retry_count: 0
+      )
+      execution.create_availability!(
+        started_at: Time.current
+      )
 
       Ductwork.logger.info(
         msg: "Job enqueued",
