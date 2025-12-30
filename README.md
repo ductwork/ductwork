@@ -7,6 +7,8 @@ A Ruby pipeline framework.
 
 Ductwork lets you build complex pipelines quickly and easily using intuitive Ruby tooling and a natural DSL. No need to learn complicated unified object models or stand up separate runner instances—just write Ruby code and let Ductwork handle the orchestration.
 
+There is also a paid [Ductwork Pro](https://www.getductwork.io/) version with more features and support. See the [Pricing](https://www.getductwork.io/#pricing) page to buy a license.
+
 **[Full Documentation](https://docs.getductwork.io/)**
 
 ## Installation
