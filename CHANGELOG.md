@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [0.15.0] (Unreleased)
+## [0.15.0]
 
 - chore: remove unnecessary transaction in job enqueueing method
 - feat: expose pipeline and step classes validation method instead of running in a rails initializer
