@@ -43,6 +43,9 @@ Naming/BlockForwarding:
 Naming/MemoizedInstanceVariableName:
   EnforcedStyleForLeadingUnderscores: optional
 
+Naming/PredicateMethod:
+  AllowBangMethods: true
+
 RSpec/ExampleLength:
   Max: 50
 
