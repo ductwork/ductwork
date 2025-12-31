@@ -61,3 +61,32 @@ RSpec::Matchers.define(:have_triggered_pipelines) do |*expected|
     "expected to trigger pipelines: #{pipeline_names} but did not"
   end
 end
+
+module Ductwork
+  module Testing
+    module RSpec
+      def pipeline_for(klass, **attrs)
+        definition = klass.pipeline_definition.to_json
+        definition_sha1 = OpenSSL::Digest::SHA256.hexdigest(definition)
+        status = attrs[:status] || "in_progress"
+        triggered_at = attrs[:triggered_at] || Time.current
+        started_at = attrs[:started_at] || Time.current
+        last_advanced_at = attrs[:last_advanced_at] || Time.current
+
+        Ductwork::Pipeline.create!(
+          klass:,
+          definition:,
+          definition_sha1:,
+          status:,
+          triggered_at:,
+          started_at:,
+          last_advanced_at:
+        )
+      end
+    end
+  end
+end
+
+RSpec.configure do |config|
+  config.include Ductwork::Testing::RSpec
+end

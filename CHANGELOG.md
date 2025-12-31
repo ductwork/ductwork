@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.16.0] (Unreleased)
+
+- feat: add RSpec testing helper for easily creating pipelines
+
 ## [0.15.1]
 
 - fix: pass pipeline ID directly to step builder method instead of passing step object

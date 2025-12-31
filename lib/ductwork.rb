@@ -95,6 +95,7 @@ end
 loader = Zeitwerk::Loader.for_gem
 loader.inflector.inflect("cli" => "CLI")
 loader.inflector.inflect("dsl" => "DSL")
+loader.inflector.inflect("rspec" => "RSpec")
 loader.collapse("#{__dir__}/ductwork/models")
 loader.ignore("#{__dir__}/generators")
 loader.ignore("#{__dir__}/ductwork/testing")
