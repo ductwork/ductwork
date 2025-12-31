@@ -2,6 +2,7 @@
 
 ## [0.16.0] (Unreleased)
 
+- feat: add RSpec testing helper for setting context state
 - feat: add RSpec testing helper for easily creating pipelines
 
 ## [0.15.1]

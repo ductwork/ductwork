@@ -83,6 +83,13 @@ module Ductwork
           last_advanced_at:
         )
       end
+
+      def set_pipeline_context(pipeline, **key_values)
+        ctx = Ductwork::Context.new(pipeline.id)
+        key_values.each do |key, value|
+          ctx.set(key.to_s, value)
+        end
+      end
     end
   end
 end
