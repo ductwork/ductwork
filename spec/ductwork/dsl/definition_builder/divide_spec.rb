@@ -18,18 +18,20 @@ RSpec.describe Ductwork::DSL::DefinitionBuilder, "#divide" do
   end
 
   it "adds new branches and steps to the definition" do
+    allow(SecureRandom).to receive(:hex).and_return("0", "1", "2")
+
     definition = builder
       .start(MyFirstStep)
       .divide(to: [MySecondStep, MyThirdStep])
       .complete
 
-    expect(definition[:nodes]).to eq(%w[MyFirstStep.0 MySecondStep.1 MyThirdStep.1])
+    expect(definition[:nodes]).to eq(%w[MyFirstStep.0 MySecondStep.1 MyThirdStep.2])
     expect(definition[:edges].length).to eq(3)
     expect(definition[:edges]["MyFirstStep.0"]).to eq(
-      { to: %w[MySecondStep.1 MyThirdStep.1], type: :divide, klass: "MyFirstStep" }
+      { to: %w[MySecondStep.1 MyThirdStep.2], type: :divide, klass: "MyFirstStep" }
     )
     expect(definition[:edges]["MySecondStep.1"]).to eq({ klass: "MySecondStep" })
-    expect(definition[:edges]["MyThirdStep.1"]).to eq({ klass: "MyThirdStep" })
+    expect(definition[:edges]["MyThirdStep.2"]).to eq({ klass: "MyThirdStep" })
   end
 
   it "yields the new branches if a block is given" do

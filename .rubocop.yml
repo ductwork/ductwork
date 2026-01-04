@@ -49,6 +49,9 @@ Naming/PredicateMethod:
 RSpec/ExampleLength:
   Max: 50
 
+RSpec/IndexedLet:
+  Enabled: false
+
 RSpec/MultipleExpectations:
   Max: 15
 

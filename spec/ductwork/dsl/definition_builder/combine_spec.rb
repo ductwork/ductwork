@@ -21,6 +21,8 @@ RSpec.describe Ductwork::DSL::DefinitionBuilder, "#combine" do
   end
 
   it "merges the branches together into a new step with method chaining" do
+    allow(SecureRandom).to receive(:hex).and_return("0", "1", "2", "3")
+
     definition = builder
       .start(MyFirstStep)
       .divide(to: [MySecondStep, MyThirdStep])
@@ -28,22 +30,24 @@ RSpec.describe Ductwork::DSL::DefinitionBuilder, "#combine" do
       .complete
 
     expect(definition[:nodes]).to eq(
-      %w[MyFirstStep.0 MySecondStep.1 MyThirdStep.1 MyFourthStep.2]
+      %w[MyFirstStep.0 MySecondStep.1 MyThirdStep.2 MyFourthStep.3]
     )
     expect(definition[:edges].length).to eq(4)
     expect(definition[:edges]["MyFirstStep.0"]).to eq(
-      { to: %w[MySecondStep.1 MyThirdStep.1], type: :divide, klass: "MyFirstStep" }
+      { to: %w[MySecondStep.1 MyThirdStep.2], type: :divide, klass: "MyFirstStep" }
     )
     expect(definition[:edges]["MySecondStep.1"]).to eq(
-      { to: %w[MyFourthStep.2], type: :combine, klass: "MySecondStep" }
+      { to: %w[MyFourthStep.3], type: :combine, klass: "MySecondStep" }
     )
-    expect(definition[:edges]["MyThirdStep.1"]).to eq(
-      { to: %w[MyFourthStep.2], type: :combine, klass: "MyThirdStep" }
+    expect(definition[:edges]["MyThirdStep.2"]).to eq(
+      { to: %w[MyFourthStep.3], type: :combine, klass: "MyThirdStep" }
     )
-    expect(definition[:edges]["MyFourthStep.2"]).to eq({ klass: "MyFourthStep" })
+    expect(definition[:edges]["MyFourthStep.3"]).to eq({ klass: "MyFourthStep" })
   end
 
   it "merges multiple branches together into a new step" do
+    allow(SecureRandom).to receive(:hex).and_return("0", "1", "2", "3", "4")
+
     definition = builder
       .start(MyFirstStep)
       .divide(to: [MySecondStep, MyThirdStep, MyFourthStep])
@@ -51,46 +55,48 @@ RSpec.describe Ductwork::DSL::DefinitionBuilder, "#combine" do
       .complete
 
     expect(definition[:nodes]).to eq(
-      %w[MyFirstStep.0 MySecondStep.1 MyThirdStep.1 MyFourthStep.1 MyFifthStep.2]
+      %w[MyFirstStep.0 MySecondStep.1 MyThirdStep.2 MyFourthStep.3 MyFifthStep.4]
     )
     expect(definition[:edges].length).to eq(5)
     expect(definition[:edges]["MySecondStep.1"]).to eq(
-      { to: %w[MyFifthStep.2], type: :combine, klass: "MySecondStep" }
+      { to: %w[MyFifthStep.4], type: :combine, klass: "MySecondStep" }
     )
-    expect(definition[:edges]["MyThirdStep.1"]).to eq(
-      { to: %w[MyFifthStep.2], type: :combine, klass: "MyThirdStep" }
+    expect(definition[:edges]["MyThirdStep.2"]).to eq(
+      { to: %w[MyFifthStep.4], type: :combine, klass: "MyThirdStep" }
     )
-    expect(definition[:edges]["MyFourthStep.1"]).to eq(
-      { to: %w[MyFifthStep.2], type: :combine, klass: "MyFourthStep" }
+    expect(definition[:edges]["MyFourthStep.3"]).to eq(
+      { to: %w[MyFifthStep.4], type: :combine, klass: "MyFourthStep" }
     )
   end
 
   it "merges the branches together into a new step when given a block" do
+    allow(SecureRandom).to receive(:hex).and_return("0", "1", "2", "3", "4")
+
     definition = builder.start(MyFirstStep).divide(to: [MySecondStep, MyThirdStep, MyFourthStep]) do |b1, b2, b3|
       b1.combine(b2, b3, into: MyFifthStep)
     end.complete
 
     expect(definition[:nodes]).to eq(
-      %w[MyFirstStep.0 MySecondStep.1 MyThirdStep.1 MyFourthStep.1 MyFifthStep.2]
+      %w[MyFirstStep.0 MySecondStep.1 MyThirdStep.2 MyFourthStep.3 MyFifthStep.4]
     )
     expect(definition[:edges].length).to eq(5)
     expect(definition[:edges]["MyFirstStep.0"]).to eq(
       {
-        to: %w[MySecondStep.1 MyThirdStep.1 MyFourthStep.1],
+        to: %w[MySecondStep.1 MyThirdStep.2 MyFourthStep.3],
         type: :divide,
         klass: "MyFirstStep",
       }
     )
     expect(definition[:edges]["MySecondStep.1"]).to eq(
-      { to: %w[MyFifthStep.2], type: :combine, klass: "MySecondStep" }
+      { to: %w[MyFifthStep.4], type: :combine, klass: "MySecondStep" }
     )
-    expect(definition[:edges]["MyThirdStep.1"]).to eq(
-      { to: %w[MyFifthStep.2], type: :combine, klass: "MyThirdStep" }
+    expect(definition[:edges]["MyThirdStep.2"]).to eq(
+      { to: %w[MyFifthStep.4], type: :combine, klass: "MyThirdStep" }
     )
-    expect(definition[:edges]["MyFourthStep.1"]).to eq(
-      { to: %w[MyFifthStep.2], type: :combine, klass: "MyFourthStep" }
+    expect(definition[:edges]["MyFourthStep.3"]).to eq(
+      { to: %w[MyFifthStep.4], type: :combine, klass: "MyFourthStep" }
     )
-    expect(definition[:edges]["MyFifthStep.2"]).to eq({ klass: "MyFifthStep" })
+    expect(definition[:edges]["MyFifthStep.4"]).to eq({ klass: "MyFifthStep" })
   end
 
   it "raises if the argument is not a class" do

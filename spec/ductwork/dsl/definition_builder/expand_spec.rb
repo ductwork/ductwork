@@ -10,6 +10,8 @@ RSpec.describe Ductwork::DSL::DefinitionBuilder, "#expand" do
   end
 
   it "adds a step to the definition" do
+    allow(SecureRandom).to receive(:hex).and_return("0", "1")
+
     definition = builder.start(MyFirstStep).expand(to: MySecondStep).complete
 
     expect(definition[:nodes]).to eq(%w[MyFirstStep.0 MySecondStep.1])

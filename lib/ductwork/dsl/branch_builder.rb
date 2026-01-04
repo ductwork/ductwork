@@ -7,37 +7,35 @@ module Ductwork
 
       attr_reader :last_node
 
-      def initialize(klass:, definition:, stages:)
-        @last_node = "#{klass.name}.#{stages.length - 1}"
+      def initialize(last_node:, definition:)
+        @last_node = last_node
         @definition = definition
-        @stages = stages
         @expansions = 0
       end
 
       def chain(next_klass)
-        next_klass_name = "#{next_klass.name}.#{stages.length}"
+        next_klass_name = node_name(next_klass)
         definition[:edges][last_node][:to] = [next_klass_name]
         definition[:edges][last_node][:type] = :chain
         definition[:nodes].push(next_klass_name)
         definition[:edges][next_klass_name] ||= { klass: next_klass.name }
-        stages.push(1)
         @last_node = next_klass_name
 
         self
       end
 
-      def divide(to:) # rubocop:todo Metrics/AbcSize
-        next_klass_names = to.map { |klass| "#{klass.name}.#{stages.length}" }
-        definition[:edges][last_node][:to] = next_klass_names
+      def divide(to:)
+        next_nodes = to.map do |klass|
+          node = node_name(klass)
+          definition[:edges][node] ||= { klass: klass.name }
+          node
+        end
+        definition[:edges][last_node][:to] = next_nodes
         definition[:edges][last_node][:type] = :divide
-        definition[:nodes].push(*next_klass_names)
-        stages.push(1)
+        definition[:nodes].push(*next_nodes)
 
-        sub_branches = to.map do |klass|
-          next_klass_name = "#{klass.name}.#{stages.length - 1}"
-          definition[:edges][next_klass_name] ||= { klass: klass.name }
-
-          Ductwork::DSL::BranchBuilder.new(klass:, definition:, stages:)
+        sub_branches = next_nodes.map do |last_node|
+          Ductwork::DSL::BranchBuilder.new(last_node:, definition:)
         end
 
         yield sub_branches
@@ -45,8 +43,8 @@ module Ductwork
         self
       end
 
-      def combine(*branch_builders, into:) # rubocop:todo Metrics/AbcSize
-        next_klass_name = "#{into.name}.#{stages.length}"
+      def combine(*branch_builders, into:)
+        next_klass_name = node_name(into)
         definition[:edges][last_node][:to] = [next_klass_name]
         definition[:edges][last_node][:type] = :combine
 
@@ -56,18 +54,16 @@ module Ductwork
         end
         definition[:nodes].push(next_klass_name)
         definition[:edges][next_klass_name] ||= { klass: into.name }
-        stages.push(1)
 
         self
       end
 
       def expand(to:)
-        next_klass_name = "#{to.name}.#{stages.length}"
+        next_klass_name = node_name(to)
         definition[:edges][last_node][:to] = [next_klass_name]
         definition[:edges][last_node][:type] = :expand
         definition[:nodes].push(next_klass_name)
         definition[:edges][next_klass_name] ||= { klass: to.name }
-        stages.push(1)
         @last_node = next_klass_name
         @expansions += 1
 
@@ -80,13 +76,12 @@ module Ductwork
                 "Must expand pipeline definition before collapsing steps"
         end
 
-        next_klass_name = "#{into.name}.#{stages.length}"
+        next_klass_name = node_name(into)
         definition[:edges][last_node][:to] = [next_klass_name]
         definition[:edges][last_node][:type] = :collapse
 
         definition[:nodes].push(next_klass_name)
         definition[:edges][next_klass_name] ||= { klass: into.name }
-        stages.push(1)
         @last_node = next_klass_name
         @expansions -= 1
 
@@ -95,7 +90,11 @@ module Ductwork
 
       private
 
-      attr_reader :definition, :expansions, :stages
+      attr_reader :definition, :expansions
+
+      def node_name(klass)
+        "#{klass.name}.#{SecureRandom.hex(4)}"
+      end
     end
   end
 end

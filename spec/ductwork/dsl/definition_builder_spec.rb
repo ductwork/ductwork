@@ -11,9 +11,10 @@ RSpec.describe Ductwork::DSL::DefinitionBuilder do
     end
 
     it "adds the on halt klass to the definition as metadata" do
+      allow(SecureRandom).to receive(:hex).and_return("a1b2c3d4")
       definition = builder.start(MyFirstStep).on_halt(MyHaltStep).complete
 
-      expect(definition[:nodes]).to eq(["MyFirstStep.0"])
+      expect(definition[:nodes]).to eq(["MyFirstStep.a1b2c3d4"])
       expect(definition[:metadata]).to eq(on_halt: { klass: "MyHaltStep" })
     end
 
@@ -60,14 +61,15 @@ RSpec.describe Ductwork::DSL::DefinitionBuilder do
     end
 
     it "returns the definition" do
+      allow(SecureRandom).to receive(:hex).and_return("a1b2c3d4")
       builder.start(MyFirstStep)
 
       definition = builder.complete
 
       expect(definition).to eq(
         metadata: {},
-        nodes: %w[MyFirstStep.0],
-        edges: { "MyFirstStep.0" => { klass: "MyFirstStep" } }
+        nodes: %w[MyFirstStep.a1b2c3d4],
+        edges: { "MyFirstStep.a1b2c3d4" => { klass: "MyFirstStep" } }
       )
     end
   end

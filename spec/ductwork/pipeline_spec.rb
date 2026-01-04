@@ -250,6 +250,7 @@ RSpec.describe Ductwork::Pipeline do
     end
 
     it "creates the initial step record" do
+      allow(SecureRandom).to receive(:hex).and_return("a1b2c3d4")
       pipeline = nil
 
       expect do
@@ -257,7 +258,7 @@ RSpec.describe Ductwork::Pipeline do
       end.to change(Ductwork::Step, :count).by(1)
       step = pipeline.steps.reload.first
       expect(step).to be_start
-      expect(step.node).to eq("MyFirstStep.0")
+      expect(step.node).to eq("MyFirstStep.a1b2c3d4")
       expect(step.klass).to eq("MyFirstStep")
       expect(step.started_at).to be_present
     end

@@ -15,14 +15,17 @@ module Ductwork
         }
         @divergences = []
         @last_nodes = []
-        @stages = []
       end
 
       def start(klass)
         validate_classes!(klass)
         validate_start_once!
-        add_new_nodes(klass)
-        increment_position
+
+        node = node_name(klass)
+        definition[:nodes].push(node)
+        definition[:edges][node] = { klass: klass.name }
+
+        @last_nodes = [node]
 
         self
       end
@@ -31,24 +34,32 @@ module Ductwork
         validate_classes!(klass)
         validate_definition_started!(action: "chaining")
         add_edge_to_last_nodes(klass, type: :chain)
-        add_new_nodes(klass)
-        increment_position
 
         self
       end
 
-      def divide(to:)
+      def divide(to:) # rubocop:todo Metrics/AbcSize
         validate_classes!(to)
         validate_definition_started!(action: "dividing chain")
-        add_edge_to_last_nodes(*to, type: :divide)
-        add_new_nodes(*to)
-        increment_position
+        to_nodes = to.map do |to|
+          node = node_name(to)
+          definition[:edges][node] ||= { klass: to.name }
+          node
+        end
+        last_nodes.each do |last_node|
+          definition[:edges][last_node][:to] = to_nodes
+          definition[:edges][last_node][:type] = :divide
+        end
+
+        @last_nodes = Array(to_nodes)
+
+        definition[:nodes].push(*to_nodes)
         divergences.push(:divide)
 
         if block_given?
-          branches = to.map do |klass|
+          branches = last_nodes.map do |last_node|
             Ductwork::DSL::BranchBuilder
-              .new(klass:, definition:, stages:)
+              .new(last_node:, definition:)
           end
 
           yield branches
@@ -57,22 +68,26 @@ module Ductwork
         self
       end
 
-      def combine(into:)
+      def combine(into:) # rubocop:todo Metrics/AbcSize
         validate_classes!(into)
         validate_definition_started!(action: "combining steps")
         validate_can_combine!
 
         divergences.pop
 
+        into_node = node_name(into)
+        definition[:edges][into_node] ||= { klass: into.name }
         last_nodes = definition[:nodes].reverse.select do |node|
           definition.dig(:edges, node, :to).blank?
         end
-        last_nodes.each do |node|
-          definition[:edges][node][:to] = ["#{into.name}.#{stages.length}"]
-          definition[:edges][node][:type] = :combine
+        last_nodes.each do |last_node|
+          definition[:edges][last_node][:to] = [into_node]
+          definition[:edges][last_node][:type] = :combine
         end
-        add_new_nodes(into)
-        increment_position
+
+        @last_nodes = Array(into_node)
+
+        definition[:nodes].push(into_node)
 
         self
       end
@@ -81,8 +96,6 @@ module Ductwork
         validate_classes!(to)
         validate_definition_started!(action: "expanding chain")
         add_edge_to_last_nodes(to, type: :expand)
-        add_new_nodes(to)
-        increment_position
         divergences.push(:expand)
 
         self
@@ -93,8 +106,6 @@ module Ductwork
         validate_definition_started!(action: "collapsing steps")
         validate_can_collapse!
         add_edge_to_last_nodes(into, type: :collapse)
-        add_new_nodes(into)
-        increment_position
         divergences.pop
 
         self
@@ -116,7 +127,7 @@ module Ductwork
 
       private
 
-      attr_reader :definition, :last_nodes, :divergences, :stages
+      attr_reader :definition, :last_nodes, :divergences
 
       def validate_classes!(klasses)
         valid = Array(klasses).all? do |klass|
@@ -164,27 +175,24 @@ module Ductwork
         end
       end
 
-      def add_new_nodes(*klasses)
-        nodes = klasses.map { |klass| "#{klass.name}.#{stages.length}" }
-        @last_nodes = Array(nodes)
-
-        definition[:nodes].push(*nodes)
-        klasses.each do |klass|
-          node = "#{klass.name}.#{stages.length}"
-          definition[:edges][node] ||= { klass: klass.name }
-        end
-      end
-
       def add_edge_to_last_nodes(*klasses, type:)
+        to_nodes = klasses.map do |klass|
+          node = node_name(klass)
+          definition[:edges][node] ||= { klass: klass.name }
+          node
+        end
         last_nodes.each do |last_node|
-          to = klasses.map { |klass| "#{klass.name}.#{stages.length}" }
-          definition[:edges][last_node][:to] = to
+          definition[:edges][last_node][:to] = to_nodes
           definition[:edges][last_node][:type] = type
         end
+
+        @last_nodes = Array(to_nodes)
+
+        definition[:nodes].push(*to_nodes)
       end
 
-      def increment_position
-        stages.push(1)
+      def node_name(klass)
+        "#{klass.name}.#{SecureRandom.hex(4)}"
       end
     end
   end

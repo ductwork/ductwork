@@ -5,6 +5,8 @@
 # definitions to uncover any bugs and drive impementation
 RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
   it "correctly chains steps after dividing" do
+    allow(SecureRandom).to receive(:hex).and_return(*%w[0 1 2 3 4 5])
+
     definition = Class.new(Ductwork::Pipeline) do
       define do |pipeline|
         pipeline.start(MyFirstStep)
@@ -17,27 +19,29 @@ RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
     end.pipeline_definition
 
     expect(definition[:nodes]).to eq(
-      %w[MyFirstStep.0 MySecondStep.1 MyThirdStep.1 MyFourthStep.2 MyFifthStep.3 MySixthStep.4]
+      %w[MyFirstStep.0 MySecondStep.1 MyThirdStep.2 MyFourthStep.3 MyFifthStep.4 MySixthStep.5]
     )
     expect(definition[:edges]["MyFirstStep.0"]).to eq(
-      { to: %w[MySecondStep.1 MyThirdStep.1], type: :divide, klass: "MyFirstStep" }
+      { to: %w[MySecondStep.1 MyThirdStep.2], type: :divide, klass: "MyFirstStep" }
     )
     expect(definition[:edges]["MySecondStep.1"]).to eq(
-      { to: %w[MyFourthStep.2], type: :chain, klass: "MySecondStep" }
+      { to: %w[MyFourthStep.3], type: :chain, klass: "MySecondStep" }
     )
-    expect(definition[:edges]["MyThirdStep.1"]).to eq(
-      { to: %w[MyFifthStep.3], type: :chain, klass: "MyThirdStep" }
+    expect(definition[:edges]["MyThirdStep.2"]).to eq(
+      { to: %w[MyFifthStep.4], type: :chain, klass: "MyThirdStep" }
     )
-    expect(definition[:edges]["MyFourthStep.2"]).to eq(
-      { to: %w[MySixthStep.4], type: :combine, klass: "MyFourthStep" }
+    expect(definition[:edges]["MyFourthStep.3"]).to eq(
+      { to: %w[MySixthStep.5], type: :combine, klass: "MyFourthStep" }
     )
-    expect(definition[:edges]["MyFifthStep.3"]).to eq(
-      { to: %w[MySixthStep.4], type: :combine, klass: "MyFifthStep" }
+    expect(definition[:edges]["MyFifthStep.4"]).to eq(
+      { to: %w[MySixthStep.5], type: :combine, klass: "MyFifthStep" }
     )
-    expect(definition[:edges]["MySixthStep.4"]).to eq({ klass: "MySixthStep" })
+    expect(definition[:edges]["MySixthStep.5"]).to eq({ klass: "MySixthStep" })
   end
 
   it "correctly handles combining multiple branches" do
+    allow(SecureRandom).to receive(:hex).and_return(*%w[0 1 2 3 4 5])
+
     definition = Class.new(Ductwork::Pipeline) do
       define do |pipeline|
         pipeline.start(MyFirstStep)
@@ -50,27 +54,29 @@ RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
     end.pipeline_definition
 
     expect(definition[:nodes]).to eq(
-      %w[MyFirstStep.0 MySecondStep.1 MyThirdStep.1 MyFourthStep.2 MyFifthStep.2 MySixthStep.3]
+      %w[MyFirstStep.0 MySecondStep.1 MyThirdStep.2 MyFourthStep.3 MyFifthStep.4 MySixthStep.5]
     )
     expect(definition[:edges]["MyFirstStep.0"]).to eq(
-      { to: %w[MySecondStep.1 MyThirdStep.1], type: :divide, klass: "MyFirstStep" }
+      { to: %w[MySecondStep.1 MyThirdStep.2], type: :divide, klass: "MyFirstStep" }
     )
     expect(definition[:edges]["MySecondStep.1"]).to eq(
-      { to: %w[MyFourthStep.2 MyFifthStep.2], type: :divide, klass: "MySecondStep" }
+      { to: %w[MyFourthStep.3 MyFifthStep.4], type: :divide, klass: "MySecondStep" }
     )
-    expect(definition[:edges]["MyThirdStep.1"]).to eq(
-      { to: %w[MySixthStep.3], type: :combine, klass: "MyThirdStep" }
+    expect(definition[:edges]["MyThirdStep.2"]).to eq(
+      { to: %w[MySixthStep.5], type: :combine, klass: "MyThirdStep" }
     )
-    expect(definition[:edges]["MyFourthStep.2"]).to eq(
-      { to: %w[MySixthStep.3], type: :combine, klass: "MyFourthStep" }
+    expect(definition[:edges]["MyFourthStep.3"]).to eq(
+      { to: %w[MySixthStep.5], type: :combine, klass: "MyFourthStep" }
     )
-    expect(definition[:edges]["MyFifthStep.2"]).to eq(
-      { to: %w[MySixthStep.3], type: :combine, klass: "MyFifthStep" }
+    expect(definition[:edges]["MyFifthStep.4"]).to eq(
+      { to: %w[MySixthStep.5], type: :combine, klass: "MyFifthStep" }
     )
-    expect(definition[:edges]["MySixthStep.3"]).to eq({ klass: "MySixthStep" })
+    expect(definition[:edges]["MySixthStep.5"]).to eq({ klass: "MySixthStep" })
   end
 
   it "correctly handles expanding and collapsing sub-branches" do
+    allow(SecureRandom).to receive(:hex).and_return(*%w[0 1 2 3 4 5])
+
     definition = Class.new(Ductwork::Pipeline) do
       define do |pipeline|
         pipeline.start(MyFirstStep)
@@ -84,25 +90,27 @@ RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
     end.pipeline_definition
 
     expect(definition[:nodes]).to eq(
-      %w[MyFirstStep.0 MySecondStep.1 MyThirdStep.1 MyFourthStep.2 MyFifthStep.3 MySixthStep.4]
+      %w[MyFirstStep.0 MySecondStep.1 MyThirdStep.2 MyFourthStep.3 MyFifthStep.4 MySixthStep.5]
     )
     expect(definition[:edges]["MyFirstStep.0"]).to eq(
-      { to: %w[MySecondStep.1 MyThirdStep.1], type: :divide, klass: "MyFirstStep" }
+      { to: %w[MySecondStep.1 MyThirdStep.2], type: :divide, klass: "MyFirstStep" }
     )
     expect(definition[:edges]["MySecondStep.1"]).to eq(
-      { to: %w[MyFourthStep.2], type: :chain, klass: "MySecondStep" }
+      { to: %w[MyFourthStep.3], type: :chain, klass: "MySecondStep" }
     )
-    expect(definition[:edges]["MyThirdStep.1"]).to eq({ klass: "MyThirdStep" })
-    expect(definition[:edges]["MyFourthStep.2"]).to eq(
-      { to: %w[MyFifthStep.3], type: :expand, klass: "MyFourthStep" }
+    expect(definition[:edges]["MyThirdStep.2"]).to eq({ klass: "MyThirdStep" })
+    expect(definition[:edges]["MyFourthStep.3"]).to eq(
+      { to: %w[MyFifthStep.4], type: :expand, klass: "MyFourthStep" }
     )
-    expect(definition[:edges]["MyFifthStep.3"]).to eq(
-      { to: %w[MySixthStep.4], type: :collapse, klass: "MyFifthStep" }
+    expect(definition[:edges]["MyFifthStep.4"]).to eq(
+      { to: %w[MySixthStep.5], type: :collapse, klass: "MyFifthStep" }
     )
-    expect(definition[:edges]["MySixthStep.4"]).to eq({ klass: "MySixthStep" })
+    expect(definition[:edges]["MySixthStep.5"]).to eq({ klass: "MySixthStep" })
   end
 
   it "correctly handles reusing the same step class" do
+    allow(SecureRandom).to receive(:hex).and_return(*%w[0 1 2 3])
+
     definition = Class.new(Ductwork::Pipeline) do
       define do |pipeline|
         pipeline
@@ -130,6 +138,8 @@ RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
   end
 
   it "correctly handles chaining while expanded before collapsing" do
+    allow(SecureRandom).to receive(:hex).and_return(*%w[0 1 2 3 4])
+
     definition = Class.new(Ductwork::Pipeline) do
       define do |pipeline|
         pipeline
