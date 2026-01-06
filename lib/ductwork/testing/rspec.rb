@@ -62,6 +62,27 @@ RSpec::Matchers.define(:have_triggered_pipelines) do |*expected|
   end
 end
 
+RSpec::Matchers.define(:have_set_context) do |expected|
+  supports_block_expectations
+
+  match do |block|
+    ctx = Ductwork::Context.new(pipeline_id)
+    before_values = expected.map { |k, _| ctx.get(k.to_s) }
+
+    block.call
+
+    after_context = expected.to_h { |k, _| [k, ctx.get(k.to_s)] }
+
+    before_values.all?(&:nil?) && after_context == expected
+  end
+
+  chain :for_pipeline, :pipeline_id
+
+  failure_message do
+    "Context does not match expected result"
+  end
+end
+
 module Ductwork
   module Testing
     module RSpec

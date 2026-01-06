@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.18.0] (Unreleased)
+
+- feat: add RSpec matcher for asserting pipeline context
+
 ## [0.17.0]
 
 - feat: assign step node names unique hex values in the pipeline definition
