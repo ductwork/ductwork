@@ -29,7 +29,7 @@ RSpec.describe Ductwork::Configuration, "#role" do
     let(:data) do
       <<~DATA
         default: &default
-          role: worker
+          role: all
 
         test:
           <<: *default
@@ -41,9 +41,9 @@ RSpec.describe Ductwork::Configuration, "#role" do
     end
 
     it "returns the value regardless of configuration" do
-      config = described_class.new(role: "supervisor")
+      config = described_class.new(role: "worker")
 
-      expect(config.role).to eq("supervisor")
+      expect(config.role).to eq("worker")
     end
 
     it "raises if passed an invalid role" do
