@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.19.0] (Unreleased)
+
+- feat: add "role" configuration - to be used to set the role of the entire ductwork running instance
+
 ## [0.18.0]
 
 - fix: show countdown for pipelines/steps scheduled in the future

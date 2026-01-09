@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Ductwork
-  class Configuration
+  class Configuration # rubocop:todo Metrics/ClassLength
     DEFAULT_ENV = :default
     DEFAULT_FILE_PATH = "config/ductwork.yml"
     DEFAULT_JOB_WORKER_COUNT = 5 # threads
@@ -12,11 +12,15 @@ module Ductwork
     DEFAULT_LOGGER_SOURCE = "default" # `Logger` instance writing to STDOUT
     DEFAULT_PIPELINE_POLLING_TIMEOUT = 1 # second
     DEFAULT_PIPELINE_SHUTDOWN_TIMEOUT = 20 # seconds
+    DEFAULT_ROLE = "all" # supervisor, pipeline advancer, and job workers
     DEFAULT_STEPS_MAX_DEPTH = -1 # unlimited count
     DEFAULT_SUPERVISOR_POLLING_TIMEOUT = 1 # second
     DEFAULT_SUPERVISOR_SHUTDOWN_TIMEOUT = 30 # seconds
     DEFAULT_LOGGER = ::Logger.new($stdout)
     PIPELINES_WILDCARD = "*"
+    VALID_ROLES = %w[all supervisor advancer worker].freeze
+
+    class InvalidRoleError < StandardError; end
 
     attr_writer :job_worker_count, :job_worker_polling_timeout,
                 :job_worker_shutdown_timeout, :job_worker_max_retry,
@@ -25,13 +29,23 @@ module Ductwork
                 :steps_max_depth,
                 :supervisor_polling_timeout, :supervisor_shutdown_timeout
 
-    def initialize(path: DEFAULT_FILE_PATH)
+    def initialize(path: DEFAULT_FILE_PATH, role: nil)
       full_path = Pathname.new(path)
       data = ActiveSupport::ConfigurationFile.parse(full_path).deep_symbolize_keys
       env = defined?(Rails) ? Rails.env.to_sym : DEFAULT_ENV
-      @config = data[env]
+      @config = if role.present?
+                  data[env].merge(role:)
+                else
+                  data[env]
+                end
     rescue Errno::ENOENT
       @config = {}
+    end
+
+    def role
+      r = config[:role] || DEFAULT_ROLE
+      validate_role!(r)
+      r
     end
 
     def pipelines
@@ -184,6 +198,12 @@ module Ductwork
     def fetch_supervisor_shutdown_timeout
       config.dig(:supervisor, :shutdown_timeout) ||
         DEFAULT_SUPERVISOR_SHUTDOWN_TIMEOUT
+    end
+
+    def validate_role!(role)
+      if VALID_ROLES.exclude?(role)
+        raise InvalidRoleError, "Must use a valid role"
+      end
     end
   end
 end

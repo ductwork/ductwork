@@ -45,6 +45,7 @@ module Ductwork
     end
 
     def auto_configure
+      options[:role] = ENV.fetch("DUCTWORK_ROLE", nil)
       Ductwork.configuration = Configuration.new(**options)
       Ductwork.logger = if Ductwork.configuration.logger_source == "rails"
                           Rails.logger
