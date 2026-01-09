@@ -18,7 +18,7 @@ module Ductwork
     DEFAULT_SUPERVISOR_SHUTDOWN_TIMEOUT = 30 # seconds
     DEFAULT_LOGGER = ::Logger.new($stdout)
     PIPELINES_WILDCARD = "*"
-    VALID_ROLES = %w[all supervisor advancer worker].freeze
+    VALID_ROLES = %w[all advancer worker].freeze
 
     class InvalidRoleError < StandardError; end
 
