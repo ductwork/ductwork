@@ -46,7 +46,7 @@ default: &default
   pipelines: "*"
 ```
 
-See the [Configuration Guide](https://docs.getductwork.io/advanced/configuration.html) for all available options including thread counts, timeouts, and database settings.
+See the [Configuration Guide](https://docs.getductwork.io/getting-started/configuration.html) for all available options including thread counts, timeouts, and database settings.
 
 ## Usage
 
