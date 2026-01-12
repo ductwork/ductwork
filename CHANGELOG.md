@@ -2,6 +2,7 @@
 
 ## [0.19.0] (Unreleased)
 
+- chore: bump rails-related dependencies to v8.1.2
 - chore: remove ruby v3.2.9 from CI testing matrix - support is ending in March '26 but it's being removed now to better support edge rails
 - feat: loosen rails version constraint to allow rails edge
 - feat: respect "role" configuration when booting - ie. run main process as supervisor, pipeline advancer, or job worker
