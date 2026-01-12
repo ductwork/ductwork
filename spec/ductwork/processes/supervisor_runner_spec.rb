@@ -1,13 +1,9 @@
 # frozen_string_literal: true
 
 RSpec.describe Ductwork::Processes::SupervisorRunner do
-  describe ".start!" do
+  describe "#run" do
     it "creates workers for each configured pipeline" do
-      Ductwork.logger = spy
-      Ductwork.configuration = instance_double(
-        Ductwork::Configuration,
-        pipelines: %w[PipelineA PipelineB]
-      )
+      pipelines = %w[PipelineA PipelineB]
       supervisor = instance_double(
         Ductwork::Processes::Supervisor,
         add_worker: nil,
@@ -15,7 +11,7 @@ RSpec.describe Ductwork::Processes::SupervisorRunner do
       )
       allow(Ductwork::Processes::Supervisor).to receive(:new).and_return(supervisor)
 
-      described_class.start!
+      described_class.new(*pipelines).run
 
       expect(Ductwork::Processes::Supervisor).to have_received(:new)
       expect(supervisor).to have_received(:add_worker)

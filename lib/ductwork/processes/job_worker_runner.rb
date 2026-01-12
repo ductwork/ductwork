@@ -3,8 +3,8 @@
 module Ductwork
   module Processes
     class JobWorkerRunner
-      def initialize(pipeline)
-        @pipeline = pipeline
+      def initialize(*pipelines)
+        @pipelines = pipelines
         @running_context = Ductwork::RunningContext.new
         @job_workers = []
 
@@ -30,7 +30,7 @@ module Ductwork
         Ductwork.logger.debug(
           msg: "Entering main work loop",
           role: :job_worker_runner,
-          pipeline: pipeline
+          pipelines: pipelines
         )
 
         while running?
@@ -45,7 +45,7 @@ module Ductwork
 
       private
 
-      attr_reader :pipeline, :running_context, :job_workers
+      attr_reader :pipelines, :running_context, :job_workers
 
       def create_process_record!
         Ductwork.wrap_with_app_executor do
@@ -58,16 +58,18 @@ module Ductwork
       end
 
       def start_job_workers
-        Ductwork.configuration.job_worker_count(pipeline).times do |i|
-          job_worker = Ductwork::Processes::JobWorker.new(pipeline, i)
-          job_workers.push(job_worker)
-          job_worker.start
+        pipelines.each do |pipeline|
+          Ductwork.configuration.job_worker_count(pipeline).times do |i|
+            job_worker = Ductwork::Processes::JobWorker.new(pipeline, i)
+            job_workers.push(job_worker)
+            job_worker.start
 
-          Ductwork.logger.debug(
-            msg: "Created new job worker",
-            role: :job_worker_runner,
-            pipeline: pipeline
-          )
+            Ductwork.logger.debug(
+              msg: "Created new job worker",
+              role: :job_worker_runner,
+              pipeline: pipeline
+            )
+          end
         end
       end
 
@@ -79,23 +81,23 @@ module Ductwork
         Ductwork.logger.debug(
           msg: "Checking thread health",
           role: :job_worker_runner,
-          pipeline: pipeline
+          pipelines: pipelines
         )
         job_workers.each do |job_worker|
           if !job_worker.alive?
             job_worker.restart
 
             Ductwork.logger.info(
-              msg: "Restarted thread",
+              msg: "Restarted job worker",
               role: :job_worker_runner,
-              pipeline: pipeline
+              pipeline: job_worker.pipeline
             )
           end
         end
         Ductwork.logger.debug(
           msg: "Checked thread health",
           role: :job_worker_runner,
-          pipeline: pipeline
+          pipelines: pipelines
         )
       end
 

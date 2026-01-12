@@ -17,7 +17,7 @@ module Ductwork
       option_parser.parse!(args)
       auto_configure
       puts banner
-      supervisor_runner.start!
+      launch_processes
     end
 
     private
@@ -73,8 +73,8 @@ module Ductwork
       BANNER
     end
 
-    def supervisor_runner
-      Ductwork::Processes::SupervisorRunner
+    def launch_processes
+      Ductwork::Processes::Launcher.start_processes!
     end
   end
 end

@@ -3,7 +3,7 @@
 module Ductwork
   module Processes
     class JobWorker
-      attr_reader :thread, :last_heartbeat_at, :job
+      attr_reader :thread, :last_heartbeat_at, :job, :pipeline
 
       def initialize(pipeline, id)
         @pipeline = pipeline
@@ -30,7 +30,7 @@ module Ductwork
 
       private
 
-      attr_reader :pipeline, :id, :running_context
+      attr_reader :id, :running_context
 
       def work_loop
         run_hooks_for(:start)

@@ -39,7 +39,7 @@ module Ductwork
                   data[env]
                 end
     rescue Errno::ENOENT
-      @config = {}
+      @config = { role: }.compact
     end
 
     def role
