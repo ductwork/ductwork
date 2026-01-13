@@ -26,10 +26,10 @@ module Ductwork
          expand: "expand",
          collapse: "collapse"
 
-    def self.build_for_execution(pipeline_id, *args, **kwargs)
+    def self.build_for_execution(pipeline_id, *, **)
       instance = allocate
       instance.instance_variable_set(:@pipeline_id, pipeline_id)
-      instance.send(:initialize, *args, **kwargs)
+      instance.send(:initialize, *, **)
       instance
     end
 
