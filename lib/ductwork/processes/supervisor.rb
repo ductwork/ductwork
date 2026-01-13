@@ -6,13 +6,13 @@ module Ductwork
       attr_reader :workers
 
       def initialize
-        @running = true
+        @running_context = Ductwork::RunningContext.new
         @workers = []
 
         run_hooks_for(:start)
 
-        Signal.trap(:INT) { @running = false }
-        Signal.trap(:TERM) { @running = false }
+        Signal.trap(:INT) { @running_context.shutdown! }
+        Signal.trap(:TERM) { @running_context.shutdown! }
         Signal.trap(:TTIN) { puts "No threads to dump" }
       end
 
@@ -31,7 +31,7 @@ module Ductwork
       def run
         Ductwork.logger.debug(msg: "Entering main work loop", role: :supervisor, pid: ::Process.pid)
 
-        while running
+        while running_context.running?
           sleep(Ductwork.configuration.supervisor_polling_timeout)
           check_workers
         end
@@ -40,7 +40,7 @@ module Ductwork
       end
 
       def shutdown
-        @running = false
+        @running_context.shutdown!
 
         Ductwork.logger.debug(msg: "Beginning shutdown", role: :supervisor)
         terminate_gracefully
@@ -51,7 +51,7 @@ module Ductwork
 
       private
 
-      attr_reader :running
+      attr_reader :running_context
 
       def check_workers
         Ductwork.logger.debug(msg: "Checking workers are alive", role: :supervisor)
