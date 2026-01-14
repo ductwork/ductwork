@@ -2,6 +2,7 @@
 
 ## [0.20.0] (Unreleased)
 
+- chore: refactor to `Ductwork::Processes::JobWorker#name`
 - chore: use `RunningContext` instance instead of a boolean in the Supervisor - this running context will likely be shared to all child runners when running in "all thread" mode
 - chore!: officially drop support for ruby 3.1 - BREAKING CHANGE: while this is a breaking change, this shouldn't affect anyone since ruby 3.1 has been EOL for a bit; this is more of a formality
 - chore: update `bundler`

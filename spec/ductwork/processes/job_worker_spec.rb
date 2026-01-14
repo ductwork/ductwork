@@ -75,6 +75,14 @@ RSpec.describe Ductwork::Processes::JobWorker do
     end
   end
 
+  describe "#name" do
+    it "returns the thread name" do
+      job_worker = described_class.new(pipeline, id)
+
+      expect(job_worker.name).to eq("ductwork.job_worker.#{id}")
+    end
+  end
+
   def shutdown(job_worker)
     job_worker.stop
     sleep(0.1)

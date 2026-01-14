@@ -144,7 +144,7 @@ module Ductwork
             Ductwork.logger.debug(
               msg: "Killed thread",
               role: :job_worker_runner,
-              thread: job_worker.thread.name
+              thread: job_worker.name
             )
           end
         end

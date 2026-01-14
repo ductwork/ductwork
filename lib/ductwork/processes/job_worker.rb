@@ -15,7 +15,7 @@ module Ductwork
 
       def start
         @thread = Thread.new { work_loop }
-        @thread.name = "ductwork.job_worker.#{id}"
+        @thread.name = name
       end
 
       alias restart start
@@ -26,6 +26,10 @@ module Ductwork
 
       def stop
         running_context.shutdown!
+      end
+
+      def name
+        "ductwork.job_worker.#{id}"
       end
 
       private
