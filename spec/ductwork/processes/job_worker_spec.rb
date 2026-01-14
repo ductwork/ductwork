@@ -56,7 +56,7 @@ RSpec.describe Ductwork::Processes::JobWorker do
       expect(job_worker).not_to be_alive
     end
 
-    it "returns false if the thread is nul" do
+    it "returns false if the thread is null" do
       job_worker = described_class.new(pipeline, id)
 
       expect(job_worker).not_to be_alive

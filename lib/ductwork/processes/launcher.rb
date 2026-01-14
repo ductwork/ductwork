@@ -9,13 +9,17 @@ module Ductwork
 
       def initialize
         @pipelines = Ductwork.configuration.pipelines
-        @runner_klass = case Ductwork.configuration.role
-                        when "all"
-                          supervisor_runner
-                        when "advancer"
-                          pipeline_advancer_runner
-                        when "worker"
-                          job_worker_runner
+        @runner_klass = if Ductwork.configuration.forking == "default"
+                          case Ductwork.configuration.role
+                          when "all"
+                            process_supervisor_runner
+                          when "advancer"
+                            pipeline_advancer_runner
+                          when "worker"
+                            job_worker_runner
+                          end
+                        else
+                          thread_supervisor_runner
                         end
       end
 
@@ -29,8 +33,12 @@ module Ductwork
 
       attr_reader :pipelines, :runner_klass
 
-      def supervisor_runner
-        Ductwork::Processes::SupervisorRunner
+      def thread_supervisor_runner
+        Ductwork::Processes::ThreadSupervisorRunner
+      end
+
+      def process_supervisor_runner
+        Ductwork::Processes::ProcessSupervisorRunner
       end
 
       def pipeline_advancer_runner

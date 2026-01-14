@@ -2,7 +2,7 @@
 
 module Ductwork
   module Processes
-    class Supervisor
+    class ProcessSupervisor
       attr_reader :workers
 
       def initialize
@@ -40,9 +40,9 @@ module Ductwork
       end
 
       def shutdown
-        @running_context.shutdown!
-
+        running_context.shutdown!
         Ductwork.logger.debug(msg: "Beginning shutdown", role: :supervisor)
+
         terminate_gracefully
         wait_for_workers_to_exit
         terminate_immediately

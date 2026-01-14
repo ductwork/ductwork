@@ -10,12 +10,12 @@ RSpec.describe Ductwork::Processes::Launcher do
       let(:role) { "all" }
 
       it "starts the supervisor" do
-        runner = instance_double(Ductwork::Processes::SupervisorRunner, run: nil)
-        allow(Ductwork::Processes::SupervisorRunner).to receive(:new).and_return(runner)
+        runner = instance_double(Ductwork::Processes::ProcessSupervisorRunner, run: nil)
+        allow(Ductwork::Processes::ProcessSupervisorRunner).to receive(:new).and_return(runner)
 
         described_class.start_processes!
 
-        expect(Ductwork::Processes::SupervisorRunner).to have_received(:new)
+        expect(Ductwork::Processes::ProcessSupervisorRunner).to have_received(:new)
         expect(runner).to have_received(:run)
       end
     end
