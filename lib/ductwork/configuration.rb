@@ -81,22 +81,14 @@ module Ductwork
       end
     end
 
-    def job_worker_max_retry(pipeline: nil, step: nil) # rubocop:disable Metrics
+    def job_worker_max_retry(pipeline: nil, step: nil)
       return @job_worker_max_retry if instance_variable_defined?(:@job_worker_max_retry)
 
       pipeline ||= :default
       step ||= :default
       base_config = config.dig(:job_worker, :max_retry)
 
-      if base_config.is_a?(Hash) && base_config[pipeline.to_sym].is_a?(Hash)
-        pipeline_config = config.dig(:job_worker, :max_retry, pipeline.to_sym)
-
-        pipeline_config[step.to_sym] || pipeline_config[:default] || DEFAULT_JOB_WORKER_MAX_RETRY
-      elsif base_config.is_a?(Hash)
-        base_config[pipeline.to_sym] || base_config[:default] || DEFAULT_JOB_WORKER_MAX_RETRY
-      else
-        base_config || DEFAULT_JOB_WORKER_MAX_RETRY
-      end
+      fetch_nested_config_value(base_config, pipeline, step, DEFAULT_JOB_WORKER_MAX_RETRY)
     end
 
     def job_worker_polling_timeout(pipeline = nil)
@@ -143,26 +135,14 @@ module Ductwork
       @pipeline_shutdown_timeout ||= fetch_pipeline_shutdown_timeout
     end
 
-    def steps_max_depth(pipeline: nil, step: nil) # rubocop:disable Metrics
+    def steps_max_depth(pipeline: nil, step: nil)
       return @steps_max_depth if instance_variable_defined?(:@steps_max_depth)
 
       pipeline ||= :default
       step ||= :default
       base_config = config.dig(:pipeline_advancer, :steps, :max_depth)
 
-      if base_config.is_a?(Hash) && base_config[pipeline.to_sym].is_a?(Hash)
-        pipeline_config = config.dig(:pipeline_advancer, :steps, :max_depth, pipeline.to_sym)
-
-        pipeline_config[step.to_sym] ||
-          pipeline_config[:default] ||
-          DEFAULT_STEPS_MAX_DEPTH
-      elsif base_config.is_a?(Hash)
-        base_config[pipeline.to_sym] ||
-          base_config[:default] ||
-          DEFAULT_STEPS_MAX_DEPTH
-      else
-        base_config || DEFAULT_STEPS_MAX_DEPTH
-      end
+      fetch_nested_config_value(base_config, pipeline, step, DEFAULT_STEPS_MAX_DEPTH)
     end
 
     def supervisor_polling_timeout
@@ -203,6 +183,20 @@ module Ductwork
     def fetch_supervisor_shutdown_timeout
       config.dig(:supervisor, :shutdown_timeout) ||
         DEFAULT_SUPERVISOR_SHUTDOWN_TIMEOUT
+    end
+
+    def fetch_nested_config_value(base_config, pipeline, step, default) # rubocop:disable Metrics/CyclomaticComplexity
+      unless base_config.is_a?(Hash)
+        return base_config || default
+      end
+
+      pipeline_key = pipeline.to_sym
+      step_key = step.to_sym
+
+      pipeline_config = base_config[pipeline_key]
+      return pipeline_config || base_config[:default] || default unless pipeline_config.is_a?(Hash)
+
+      pipeline_config[step_key] || pipeline_config[:default] || default
     end
 
     def validate_role!(role)
