@@ -6,7 +6,7 @@ module Ductwork
       def initialize(*klasses)
         @klasses = klasses
         @running_context = Ductwork::RunningContext.new
-        @threads = create_threads
+        @advancers = []
 
         Signal.trap(:INT) { running_context.shutdown! }
         Signal.trap(:TERM) { running_context.shutdown! }
@@ -25,54 +25,63 @@ module Ductwork
 
       def run
         create_process!
+        start_pipeline_advancers
+
         Ductwork.logger.debug(
           msg: "Entering main work loop",
-          role: :pipeline_advancer_runner
+          role: :pipeline_advancer_runner,
+          pipelines: klasses
         )
 
         while running_context.running?
           # TODO: Increase or make configurable
           sleep(5)
-          attempt_synchronize_threads
+          check_thread_health
           report_heartbeat!
         end
 
-        shutdown
+        shutdown!
       end
 
       private
 
-      attr_reader :klasses, :running_context, :threads
+      attr_reader :klasses, :running_context, :advancers
 
-      def create_threads
-        klasses.map do |klass|
-          thread = Thread.new do
-            Ductwork::Processes::PipelineAdvancer
-              .new(running_context, klass)
-              .run
-          end
-          thread.name = "ductwork.pipeline_advancer.#{klass}"
+      def start_pipeline_advancers
+        klasses.each do |klass|
+          advancer = Ductwork::Processes::PipelineAdvancer.new(klass)
+          advancers.push(advancer)
+          advancer.start
 
           Ductwork.logger.debug(
-            msg: "Created new thread",
+            msg: "Created new pipeline advancer",
             role: :pipeline_advancer_runner,
-            thread: thread.name,
             pipeline: klass
           )
-
-          thread
         end
       end
 
-      def attempt_synchronize_threads
+      def check_thread_health
         Ductwork.logger.debug(
-          msg: "Attempting to synchronize threads",
-          role: :pipeline_advancer_runner
+          msg: "Checking threads health",
+          role: :pipeline_advancer_runner,
+          pipelines: klasses
         )
-        threads.each { |thread| thread.join(0.1) }
+        advancers.each do |advancer|
+          if !advancer.alive?
+            advancer.restart
+
+            Ductwork.logger.info(
+              msg: "Restarted pipeline advancer",
+              role: :pipeline_advancer_runner,
+              pipeline: advancer.pipeline
+            )
+          end
+        end
         Ductwork.logger.debug(
-          msg: "Synchronizing threads timed out",
-          role: :pipeline_advancer_runner
+          msg: "Checked thread health",
+          role: :pipeline_advancer_runner,
+          pipelines: klasses
         )
       end
 
@@ -94,9 +103,10 @@ module Ductwork
         Ductwork.logger.debug(msg: "Reported heartbeat", role: :pipeline_advancer_runner)
       end
 
-      def shutdown
+      def shutdown!
         log_shutting_down
         stop_running_context
+        advancers.each(&:stop)
         await_threads_graceful_shutdown
         kill_remaining_threads
         delete_process!
@@ -118,25 +128,25 @@ module Ductwork
           msg: "Attempting graceful shutdown",
           role: :pipeline_advancer_runner
         )
-        while Time.current < deadline && threads.any?(&:alive?)
-          threads.each do |thread|
+        while Time.current < deadline && advancers.any?(&:alive?)
+          advancers.each do |advancer|
             break if Time.current > deadline
 
             # TODO: Maybe make this configurable. If there's a ton of workers
             # it may not even get to the "later" ones depending on the timeout
-            thread.join(1)
+            advancer.join(1)
           end
         end
       end
 
       def kill_remaining_threads
-        threads.each do |thread|
-          if thread.alive?
-            thread.kill
+        advancers.each do |advancer|
+          if advancer.alive?
+            advancer.kill
             Ductwork.logger.debug(
               msg: "Killed thread",
               role: :pipeline_advancer_runner,
-              thread: thread.name
+              thread: advancer.name
             )
           end
         end

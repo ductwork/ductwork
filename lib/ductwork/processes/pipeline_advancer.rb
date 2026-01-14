@@ -3,13 +3,55 @@
 module Ductwork
   module Processes
     class PipelineAdvancer
-      def initialize(running_context, klass)
-        @running_context = running_context
+      attr_reader :thread, :last_heartbeat_at, :pipeline
+
+      def initialize(klass)
         @klass = klass
+        @running_context = Ductwork::RunningContext.new
+        @last_heartbeat_at = Time.current
+        @thread = nil
       end
 
-      def run # rubocop:todo Metrics/AbcSize, Metrics/MethodLength
+      def start
+        @thread = Thread.new { work_loop }
+        @thread.name = name
+      end
+
+      alias restart start
+
+      def alive?
+        thread&.alive? || false
+      end
+
+      def stop
+        running_context.shutdown!
+      end
+
+      def kill
+        stop
+        thread&.kill
+      end
+
+      def join(limit)
+        thread&.join(limit)
+      end
+
+      def name
+        "ductwork.pipeline_advancer.#{klass}"
+      end
+
+      private
+
+      attr_reader :running_context, :klass
+
+      def work_loop # rubocop:todo Metrics
         run_hooks_for(:start)
+
+        Ductwork.logger.debug(
+          msg: "Entering main work loop",
+          role: :pipeline_advancer,
+          pipeline: klass
+        )
 
         while running_context.running?
           id = Ductwork.wrap_with_app_executor do
@@ -43,7 +85,7 @@ module Ductwork
               )
 
               pipeline = Ductwork.wrap_with_app_executor do
-                pipeline = Ductwork::Pipeline.find(id)
+                @pipeline = Ductwork::Pipeline.find(id)
                 pipeline.advance!
 
                 Ductwork.logger.debug(
@@ -82,15 +124,19 @@ module Ductwork
             )
           end
 
+          @last_heartbeat_at = Time.current
+
           sleep(polling_timeout)
         end
 
+        Ductwork.logger.debug(
+          msg: "Shutting down",
+          role: :pipeline_advancer,
+          pipeline: klass
+        )
+
         run_hooks_for(:stop)
       end
-
-      private
-
-      attr_reader :running_context, :klass
 
       def run_hooks_for(event)
         Ductwork.hooks[:advancer].fetch(event, []).each do |block|
