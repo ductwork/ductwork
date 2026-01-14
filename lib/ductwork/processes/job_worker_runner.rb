@@ -140,7 +140,7 @@ module Ductwork
       def kill_remaining_job_workers
         job_workers.each do |job_worker|
           if job_worker.alive?
-            job_worker.thread.kill
+            job_worker.kill
             Ductwork.logger.debug(
               msg: "Killed thread",
               role: :job_worker_runner,

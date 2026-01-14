@@ -28,6 +28,11 @@ module Ductwork
         running_context.shutdown!
       end
 
+      def kill
+        stop
+        thread&.kill
+      end
+
       def name
         "ductwork.job_worker.#{id}"
       end

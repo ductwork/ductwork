@@ -83,6 +83,17 @@ RSpec.describe Ductwork::Processes::JobWorker do
     end
   end
 
+  describe "#kill" do
+    it "delegates to the thread" do
+      job_worker = described_class.new(pipeline, id)
+      job_worker.start
+
+      job_worker.kill
+
+      expect(job_worker).not_to be_alive
+    end
+  end
+
   def shutdown(job_worker)
     job_worker.stop
     sleep(0.1)
