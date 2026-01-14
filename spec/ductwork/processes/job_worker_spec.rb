@@ -71,15 +71,7 @@ RSpec.describe Ductwork::Processes::JobWorker do
       job_worker.stop
       sleep(0.1)
 
-      expect(job_worker.thread).not_to be_alive
-    end
-  end
-
-  describe "#name" do
-    it "returns the thread name" do
-      job_worker = described_class.new(pipeline, id)
-
-      expect(job_worker.name).to eq("ductwork.job_worker.#{id}")
+      expect(job_worker).not_to be_alive
     end
   end
 
@@ -89,8 +81,17 @@ RSpec.describe Ductwork::Processes::JobWorker do
       job_worker.start
 
       job_worker.kill
+      sleep(0.1)
 
       expect(job_worker).not_to be_alive
+    end
+  end
+
+  describe "#name" do
+    it "returns the thread name" do
+      job_worker = described_class.new(pipeline, id)
+
+      expect(job_worker.name).to eq("ductwork.job_worker.#{id}")
     end
   end
 

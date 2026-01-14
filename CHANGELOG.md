@@ -2,6 +2,7 @@
 
 ## [0.20.0] (Unreleased)
 
+- chore: refactor to `Ductwork::Processes::JobWorker#join`
 - chore: refactor to `Ductwork::Processes::JobWorker#kill`
 - chore: refactor to `Ductwork::Processes::JobWorker#name`
 - chore: use `RunningContext` instance instead of a boolean in the Supervisor - this running context will likely be shared to all child runners when running in "all thread" mode

@@ -132,7 +132,7 @@ module Ductwork
 
             # TODO: Maybe make this configurable. If there's a ton of workers
             # it may not even get to the "later" ones depending on the timeout
-            job_worker.thread.join(1)
+            job_worker.join(1)
           end
         end
       end

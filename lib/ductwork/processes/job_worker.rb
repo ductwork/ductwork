@@ -33,6 +33,10 @@ module Ductwork
         thread&.kill
       end
 
+      def join(limit)
+        thread&.join(limit)
+      end
+
       def name
         "ductwork.job_worker.#{id}"
       end
