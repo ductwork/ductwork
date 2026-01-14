@@ -38,7 +38,7 @@ module Ductwork
       end
 
       def name
-        "ductwork.job_worker.#{id}"
+        "ductwork.job_worker.#{pipeline}.#{id}"
       end
 
       private

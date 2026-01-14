@@ -16,7 +16,7 @@ RSpec.describe Ductwork::Processes::JobWorker do
         job_worker.start
       end.to change(job_worker, :thread).from(nil).to(be_a(Thread))
       expect(job_worker.thread).to be_alive
-      expect(job_worker.thread.name).to eq("ductwork.job_worker.#{id}")
+      expect(job_worker.thread.name).to eq("ductwork.job_worker.#{pipeline}.#{id}")
 
       shutdown(job_worker)
     end
@@ -91,7 +91,7 @@ RSpec.describe Ductwork::Processes::JobWorker do
     it "returns the thread name" do
       job_worker = described_class.new(pipeline, id)
 
-      expect(job_worker.name).to eq("ductwork.job_worker.#{id}")
+      expect(job_worker.name).to eq("ductwork.job_worker.#{pipeline}.#{id}")
     end
   end
 

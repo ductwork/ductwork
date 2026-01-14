@@ -2,6 +2,7 @@
 
 ## [0.20.0] (Unreleased)
 
+- chore: use more descriptive thread names for job workers
 - chore: refactor to `Ductwork::Processes::JobWorker#join`
 - chore: refactor to `Ductwork::Processes::JobWorker#kill`
 - chore: refactor to `Ductwork::Processes::JobWorker#name`
