@@ -16,7 +16,7 @@ module Ductwork
 
         pipelines.each do |pipeline|
           supervisor.add_worker(metadata: { pipeline: }) do
-            log_starting_job_worker
+            log_starting_job_worker(pipeline)
             job_worker_runner.new(*pipeline).run
           end
         end
@@ -39,7 +39,7 @@ module Ductwork
         Ductwork::Processes::PipelineAdvancerRunner
       end
 
-      def log_starting_job_worker
+      def log_starting_job_worker(pipeline)
         Ductwork.logger.debug(
           msg: "Starting Job Worker Runner process",
           role: :supervisor_runner,

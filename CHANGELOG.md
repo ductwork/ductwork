@@ -2,6 +2,7 @@
 
 ## [0.20.0] (Unreleased)
 
+- feat: support a "thread-only" mode instead of forking processes
 - chore: use more descriptive thread names for job workers
 - chore: refactor to `Ductwork::Processes::JobWorker#join`
 - chore: refactor to `Ductwork::Processes::JobWorker#kill`

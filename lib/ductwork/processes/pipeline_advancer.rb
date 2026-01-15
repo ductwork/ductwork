@@ -84,7 +84,7 @@ module Ductwork
                 role: :pipeline_advancer
               )
 
-              pipeline = Ductwork.wrap_with_app_executor do
+              @pipeline = Ductwork.wrap_with_app_executor do
                 @pipeline = Ductwork::Pipeline.find(id)
                 pipeline.advance!
 

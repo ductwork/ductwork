@@ -3,9 +3,11 @@
 module Ductwork
   module Processes
     class ThreadSupervisor
+      attr_reader :workers
+
       def initialize
         @running_context = Ductwork::RunningContext.new
-        @threads = []
+        @workers = []
 
         run_hooks_for(:start)
 
@@ -24,25 +26,29 @@ module Ductwork
         end
       end
 
+      # TODO: maybe change the whole supervisor interface because this is clunky
       def add_worker(metadata: {}, &block)
-        thread = Thread.new do
-          block.call(metadata)
-        end
-        thread.name = metadata[:id]
-        threads << { metadata:, block: }
+        worker = block.call(metadata)
+        workers << worker
+        worker.start
 
         Ductwork.logger.debug(
-          msg: "Started supervised thread with metadata #{metadata}",
-          id: metadata[:id]
+          msg: "Started supervised thread",
+          role: :thread_supervisor,
+          name: worker.name
         )
       end
 
       def run
-        Ductwork.logger.debug(msg: "Entering main work loop", role: :supervisor, pid: ::Process.pid)
+        Ductwork.logger.debug(
+          msg: "Entering main work loop",
+          role: :thread_supervisor,
+          pid: ::Process.pid
+        )
 
         while running_context.running?
           sleep(Ductwork.configuration.supervisor_polling_timeout)
-          check_threads
+          check_worker_health
         end
 
         shutdown
@@ -50,22 +56,78 @@ module Ductwork
 
       private
 
-      attr_reader :running_context, :threads
+      attr_reader :running_context
 
-      def check_threads
-        Ductwork.logger.debug(msg: "Checking threads are alive", role: :supervisor)
+      def check_worker_health
+        Ductwork.logger.debug(
+          msg: "Checking workers are alive",
+          role: :thread_supervisor
+        )
 
-        threads.each do |thread|
-          if !thread.alive?
-            # TODO: restart but, like, don't spawn "child" threads
+        workers.each do |worker|
+          if !worker.alive?
+            worker.restart
+
+            Ductwork.logger.info(
+              msg: "Restarted supervised thread",
+              role: :thread_supervisor,
+              name: worker.name
+            )
           end
         end
+
+        Ductwork.logger.debug(
+          msg: "Checked workers are alive",
+          role: :thread_supervisor
+        )
       end
 
       def shutdown
         running_context.shutdown!
-        Ductwork.logger.debug(msg: "Beginning shutdown", role: :supervisor)
+        log_beginning_shutdown
+        workers.each(&:stop)
+        await_threads_graceful_shutdown
+        kill_remaining_threads
         run_hooks_for(:stop)
+      end
+
+      def log_beginning_shutdown
+        Ductwork.logger.debug(
+          msg: "Beginning shutdown",
+          role: :thread_supervisor
+        )
+      end
+
+      def await_threads_graceful_shutdown
+        timeout = Ductwork.configuration.supervisor_shutdown_timeout
+        deadline = Time.current + timeout
+
+        Ductwork.logger.debug(
+          msg: "Attempting graceful shutdown",
+          role: :thread_supervisor
+        )
+        while Time.current < deadline && workers.any?(&:alive?)
+          workers.each do |worker|
+            break if Time.current > deadline
+
+            # TODO: Maybe make this configurable. If there's a ton of workers
+            # it may not even get to the "later" ones depending on the timeout
+            worker.join(1)
+          end
+        end
+      end
+
+      def kill_remaining_threads
+        workers.each do |worker|
+          if worker.alive?
+            worker.kill
+            Ductwork.logger.debug(
+              msg: "Killed supervised thread",
+              role: :thread_supervisor,
+              thread: worker.name
+            )
+          end
+        end
       end
 
       def run_hooks_for(event)
