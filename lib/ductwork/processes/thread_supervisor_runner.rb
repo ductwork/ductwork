@@ -39,7 +39,7 @@ module Ductwork
       def log_created_pipeline_advancer(pipeline)
         Ductwork.logger.debug(
           msg: "Created new pipeline advancer",
-          role: :pipeline_advancer_runner,
+          role: :thread_supervisor_runner,
           pipeline: pipeline
         )
       end
@@ -51,7 +51,7 @@ module Ductwork
       def log_created_job_worker(pipeline, index)
         Ductwork.logger.debug(
           msg: "Created new job worker",
-          role: :job_worker_runner,
+          role: :thread_supervisor_runner,
           pipeline: pipeline,
           index: index
         )

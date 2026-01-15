@@ -31,7 +31,7 @@ module Ductwork
       def log_starting_pipline_advancer
         Ductwork.logger.debug(
           msg: "Starting Pipeline Advancer process",
-          role: :supervisor_runner
+          role: :process_supervisor_runner
         )
       end
 
@@ -42,7 +42,7 @@ module Ductwork
       def log_starting_job_worker(pipeline)
         Ductwork.logger.debug(
           msg: "Starting Job Worker Runner process",
-          role: :supervisor_runner,
+          role: :process_supervisor_runner,
           pipeline: pipeline
         )
       end

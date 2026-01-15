@@ -29,7 +29,11 @@ module Ductwork
       end
 
       def run
-        Ductwork.logger.debug(msg: "Entering main work loop", role: :supervisor, pid: ::Process.pid)
+        Ductwork.logger.debug(
+          msg: "Entering main work loop",
+          role: :process_supervisor,
+          pid: ::Process.pid
+        )
 
         while running_context.running?
           sleep(Ductwork.configuration.supervisor_polling_timeout)
@@ -41,7 +45,10 @@ module Ductwork
 
       def shutdown
         running_context.shutdown!
-        Ductwork.logger.debug(msg: "Beginning shutdown", role: :supervisor)
+        Ductwork.logger.debug(
+          msg: "Beginning shutdown",
+          role: :process_supervisor
+        )
 
         terminate_gracefully
         wait_for_workers_to_exit
@@ -54,7 +61,10 @@ module Ductwork
       attr_reader :running_context
 
       def check_workers
-        Ductwork.logger.debug(msg: "Checking workers are alive", role: :supervisor)
+        Ductwork.logger.debug(
+          msg: "Checking workers are alive",
+          role: :process_supervisor
+        )
 
         workers.each do |worker|
           if process_dead?(worker[:pid])
@@ -65,21 +75,24 @@ module Ductwork
             worker[:pid] = new_pid
             Ductwork.logger.debug(
               msg: "Restarted process (#{old_pid}) as (#{new_pid})",
-              role: :supervisor,
+              role: :process_supervisor,
               old_pid: old_pid,
               new_pid: new_pid
             )
           end
         end
 
-        Ductwork.logger.debug(msg: "All workers are alive or revived", role: :supervisor)
+        Ductwork.logger.debug(
+          msg: "All workers are alive or revived",
+          role: :process_supervisor
+        )
       end
 
       def terminate_gracefully
         workers.each do |worker|
           Ductwork.logger.debug(
             msg: "Sending TERM signal to process (#{worker[:pid]})",
-            role: :supervisor,
+            role: :process_supervisor,
             pid: worker[:pid],
             signal: :TERM
           )
@@ -97,7 +110,7 @@ module Ductwork
               workers[index] = nil
               Ductwork.logger.debug(
                 msg: "Child process (#{worker[:pid]}) stopped successfully",
-                role: :supervisor,
+                role: :process_supervisor,
                 pid: worker[:pid]
               )
             end
@@ -110,7 +123,7 @@ module Ductwork
         workers.each_with_index do |worker, index|
           Ductwork.logger.debug(
             msg: "Sending KILL signal to process (#{worker[:pid]})",
-            role: :supervisor,
+            role: :process_supervisor,
             pid: worker[:pid],
             signal: :KILL
           )
@@ -119,7 +132,7 @@ module Ductwork
           workers[index] = nil
           Ductwork.logger.debug(
             msg: "Child process (#{worker[:pid]}) killed after timeout",
-            role: :supervisor,
+            role: :process_supervisor,
             pid: worker[:pid]
           )
         rescue Errno::ESRCH, Errno::ECHILD
