@@ -15,7 +15,7 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
         pipeline_advancer.start
       end.to change(pipeline_advancer, :thread).from(nil).to(be_a(Thread))
       expect(pipeline_advancer.thread).to be_alive
-      expect(pipeline_advancer.thread.name).to eq("ductwork.pipeline_advancer.#{klass}")
+      expect(pipeline_advancer.thread.name).to eq("ductwork.pipeline_advancer.#{klass}.0")
 
       shutdown(pipeline_advancer)
     end
@@ -91,7 +91,13 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
     it "returns the name" do
       pipeline_advancer = described_class.new(klass)
 
-      expect(pipeline_advancer.name).to eq("ductwork.pipeline_advancer.#{klass}")
+      expect(pipeline_advancer.name).to eq("ductwork.pipeline_advancer.#{klass}.0")
+    end
+
+    it "returns the name with the optional index" do
+      pipeline_advancer = described_class.new(klass, 42)
+
+      expect(pipeline_advancer.name).to eq("ductwork.pipeline_advancer.#{klass}.42")
     end
   end
 

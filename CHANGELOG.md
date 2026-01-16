@@ -2,6 +2,7 @@
 
 ## [0.20.0] (Unreleased)
 
+- feat: add optional index argument to pipeline advancer to be used in thread name
 - fix: use correct "role" in log messages
 - feat: support a "thread-only" mode instead of forking processes
 - chore: use more descriptive thread names for job workers

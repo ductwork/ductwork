@@ -5,8 +5,9 @@ module Ductwork
     class PipelineAdvancer
       attr_reader :thread, :last_heartbeat_at, :pipeline
 
-      def initialize(klass)
+      def initialize(klass, index = nil)
         @klass = klass
+        @index = index || 0
         @running_context = Ductwork::RunningContext.new
         @last_heartbeat_at = Time.current
         @thread = nil
@@ -37,12 +38,12 @@ module Ductwork
       end
 
       def name
-        "ductwork.pipeline_advancer.#{klass}"
+        "ductwork.pipeline_advancer.#{klass}.#{index}"
       end
 
       private
 
-      attr_reader :running_context, :klass
+      attr_reader :klass, :index, :running_context
 
       def work_loop # rubocop:todo Metrics
         run_hooks_for(:start)
