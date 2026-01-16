@@ -67,7 +67,8 @@ module Ductwork
             Ductwork.logger.debug(
               msg: "Created new job worker",
               role: :job_worker_runner,
-              pipeline: pipeline
+              pipeline: pipeline,
+              thread: job_worker.name
             )
           end
         end
@@ -90,7 +91,8 @@ module Ductwork
             Ductwork.logger.info(
               msg: "Restarted job worker",
               role: :job_worker_runner,
-              pipeline: job_worker.pipeline
+              pipeline: job_worker.pipeline,
+              thread: job_worker.name
             )
           end
         end

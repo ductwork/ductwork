@@ -35,7 +35,7 @@ module Ductwork
         Ductwork.logger.debug(
           msg: "Started supervised thread",
           role: :thread_supervisor,
-          name: worker.name
+          thread: worker.name
         )
       end
 
@@ -71,7 +71,7 @@ module Ductwork
             Ductwork.logger.info(
               msg: "Restarted supervised thread",
               role: :thread_supervisor,
-              name: worker.name
+              thread: worker.name
             )
           end
         end

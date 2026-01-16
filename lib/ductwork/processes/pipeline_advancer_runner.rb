@@ -56,7 +56,8 @@ module Ductwork
           Ductwork.logger.debug(
             msg: "Created new pipeline advancer",
             role: :pipeline_advancer_runner,
-            pipeline: klass
+            pipeline: klass,
+            thread: advancer.name
           )
         end
       end
@@ -74,7 +75,8 @@ module Ductwork
             Ductwork.logger.info(
               msg: "Restarted pipeline advancer",
               role: :pipeline_advancer_runner,
-              pipeline: advancer.pipeline
+              pipeline: advancer.pipeline,
+              thread: advancer.name
             )
           end
         end
