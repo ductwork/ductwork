@@ -72,7 +72,7 @@ module Ductwork
           if !advancer.alive?
             advancer.restart
 
-            Ductwork.logger.info(
+            Ductwork.logger.warn(
               msg: "Restarted pipeline advancer",
               role: :pipeline_advancer_runner,
               pipeline: advancer.pipeline,

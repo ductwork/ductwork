@@ -68,7 +68,7 @@ module Ductwork
           if !worker.alive?
             worker.restart
 
-            Ductwork.logger.info(
+            Ductwork.logger.warn(
               msg: "Restarted supervised thread",
               role: :thread_supervisor,
               thread: worker.name

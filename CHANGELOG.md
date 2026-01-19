@@ -2,6 +2,7 @@
 
 ## [0.20.0] (Unreleased)
 
+- chore: change log level to warn for thread restart messages
 - chore: add thread name to log messages
 - feat: add optional index argument to pipeline advancer to be used in thread name
 - fix: use correct "role" in log messages
