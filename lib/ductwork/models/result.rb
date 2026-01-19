@@ -8,6 +8,7 @@ module Ductwork
 
     enum :result_type,
          success: "success",
-         failure: "failure"
+         failure: "failure",
+         timed_out: "timed_out"
   end
 end
