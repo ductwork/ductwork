@@ -8,6 +8,13 @@ RSpec.describe Ductwork::MachineIdentifier do
       expect(described_class.fetch).to eq(machine_id)
     end
 
+    it "uses hostname if machine id is not present" do
+      hostname = Socket.gethostname
+      allow(File).to receive(:read).and_return(" ")
+
+      expect(described_class.fetch).to eq(hostname)
+    end
+
     it "falls back to hostname" do
       hostname = Socket.gethostname
       allow(File).to receive(:read).and_raise(Errno::ENOENT, "File not found")

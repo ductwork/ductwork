@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.20.1] (Unreleased)
+
+- fix: fallback to hostname if machine id file is blank - came across this in heroku
+
 ## [0.20.0]
 
 - feat: add "timed_out" enum value to execution result model

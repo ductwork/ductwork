@@ -3,7 +3,7 @@
 module Ductwork
   class MachineIdentifier
     def self.fetch
-      File.read("/etc/machine-id").strip
+      File.read("/etc/machine-id").strip.presence || Socket.gethostname
     rescue Errno::ENOENT
       Socket.gethostname
     end
