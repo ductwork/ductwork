@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [0.20.1] (Unreleased)
+## [0.20.1]
 
 - fix: fallback to hostname if machine id file is blank - came across this in heroku
 
