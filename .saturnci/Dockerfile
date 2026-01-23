@@ -5,6 +5,7 @@ RUN apt-get update -qq && \
     build-essential \
     git \
     libsqlite3-dev \
+    libyaml-dev \
     sqlite3 \
     && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* \
     && echo "saturnci-test" > /etc/machine-id
