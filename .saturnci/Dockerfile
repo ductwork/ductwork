@@ -6,7 +6,8 @@ RUN apt-get update -qq && \
     git \
     libsqlite3-dev \
     sqlite3 \
-    && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/* \
+    && echo "saturnci-test" > /etc/machine-id
 
 WORKDIR /code
 
