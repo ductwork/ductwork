@@ -1,0 +1,10 @@
+services:
+  saturn_test_app:
+    build:
+      context: ..
+      dockerfile: .saturnci/Dockerfile
+    environment:
+      - RAILS_ENV=test
+    volumes:
+      - ..:/code
+    working_dir: /code
