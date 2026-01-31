@@ -25,6 +25,8 @@ jobs:
       with:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: false
+    - name: Bundle install
+      run: bundle install
     - name: Appraisals install
       run: bundle exec appraisal install
     - name: Run specs
