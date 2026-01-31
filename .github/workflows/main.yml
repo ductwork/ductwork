@@ -11,6 +11,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Ruby ${{ matrix.ruby }}
+    env:
+      GEM_HOME: $HOME/.gem
+      PATH: $HOME/.gem/bin:$PATH
     strategy:
       matrix:
         ruby:
@@ -26,9 +29,6 @@ jobs:
         ruby-version: ${{ matrix.ruby }}
         bundler-cache: true
     - name: Appraisals install
-      env:
-        GEM_HOME: $HOME/.gem
-        PATH: $HOME/.gem/bin:$PATH
       run: bundle exec appraisal install
     - name: Run specs
       run: bundle exec appraisal rake spec
