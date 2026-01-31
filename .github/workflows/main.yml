@@ -11,9 +11,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
     name: Ruby ${{ matrix.ruby }}
-    env:
-      GEM_HOME: $HOME/.gem
-      PATH: $HOME/.gem/bin:$PATH
     strategy:
       matrix:
         ruby:
@@ -22,7 +19,7 @@ jobs:
           - '3.3.10'
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
