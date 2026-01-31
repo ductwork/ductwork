@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [0.20.2] (Unreleased)
+## [0.20.2]
 
 - fix: complete pipeline when there are no steps to expand to
 
