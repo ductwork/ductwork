@@ -163,4 +163,17 @@ RSpec.describe Ductwork::Pipeline, "#advance" do
       )
     end
   end
+
+  context "when there are no steps to expand to" do
+    let(:payload) { %w[] }
+
+    it "completes the pipeline" do
+      be_almost_now = be_within(1.second).of(Time.current)
+
+      expect do
+        pipeline.advance!
+      end.to change(pipeline, :status).from("in_progress").to("completed")
+        .and change(pipeline, :completed_at).from(nil).to(be_almost_now)
+    end
+  end
 end

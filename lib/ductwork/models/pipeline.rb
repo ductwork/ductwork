@@ -267,6 +267,8 @@ module Ductwork
 
       if max_depth != -1 && return_value.count > max_depth
         halt!
+      elsif return_value.none?
+        complete!
       else
         # TODO: Brainstorm on using `insert_all` instead of iterating.
         # Performance is bad when the return value has a lot of elements

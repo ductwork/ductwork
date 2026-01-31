@@ -1,7 +1,7 @@
 PATH
   remote: ..
   specs:
-    ductwork (0.20.0)
+    ductwork (0.20.2)
       actionpack (>= 7.1, < 8.3)
       activerecord (>= 7.1, < 8.3)
       activesupport (>= 7.1, < 8.3)

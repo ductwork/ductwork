@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.20.2] (Unreleased)
+
+- fix: complete pipeline when there are no steps to expand to
+
 ## [0.20.1]
 
 - fix: fallback to hostname if machine id file is blank - came across this in heroku
