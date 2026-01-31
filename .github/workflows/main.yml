@@ -20,11 +20,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v6
+    - name: Use local gem home
+      run: |
+        echo "GEM_HOME=$HOME/.gems" >> $GITHUB_ENV
+        echo "GEM_PATH=$HOME/.gems" >> $GITHUB_ENV
+        echo "$HOME/.gems/bin" >> $GITHUB_PATH
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
         ruby-version: ${{ matrix.ruby }}
-        bundler-cache: false
+        bundler-cache: true
     - name: Bundle install
       run: bundle install
     - name: Appraisals install
