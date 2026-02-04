@@ -162,7 +162,8 @@ module Ductwork
           error_backtrace: error.backtrace.join("\n")
         )
 
-        if execution.retry_count < max_retry
+        case execution.retry_count
+        in count if count < max_retry
           new_execution = executions.create!(
             retry_count: execution.retry_count + 1,
             started_at: FAILED_EXECUTION_TIMEOUT.from_now
@@ -170,7 +171,7 @@ module Ductwork
           new_execution.create_availability!(
             started_at: FAILED_EXECUTION_TIMEOUT.from_now
           )
-        elsif execution.retry_count >= max_retry
+        in _
           halted = true
 
           step.update!(status: :failed)
