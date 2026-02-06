@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.20.3] (Unreleased)
+
+- fix: use pipeline class name in log message
+
 ## [0.20.2]
 
 - fix: complete pipeline when there are no steps to expand to

@@ -75,7 +75,7 @@ module Ductwork
             Ductwork.logger.warn(
               msg: "Restarted pipeline advancer",
               role: :pipeline_advancer_runner,
-              pipeline: advancer.pipeline,
+              pipeline: advancer.pipeline.class.to_s,
               thread: advancer.name
             )
           end
