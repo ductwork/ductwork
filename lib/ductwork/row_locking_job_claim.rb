@@ -20,19 +20,12 @@ module Ductwork
           availability_id: id
         )
         update_state
-      elsif rows_updated == -1
+      else
         Ductwork.logger.debug(
           msg: "No available job to claim",
           role: :job_worker,
           process_id: process_id,
           pipeline: klass
-        )
-      else
-        Ductwork.logger.debug(
-          msg: "Did not claim job, avoided race condition",
-          role: :job_worker,
-          process_id: process_id,
-          availability_id: id
         )
       end
 
@@ -59,7 +52,7 @@ module Ductwork
             .where(id: id, completed_at: nil)
             .update_all(completed_at: Time.current, process_id: process_id)
         else
-          -1
+          0
         end
       end
     end
