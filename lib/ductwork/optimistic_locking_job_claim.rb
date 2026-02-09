@@ -69,7 +69,7 @@ module Ductwork
     def find_job
       Ductwork::Job
         .joins(executions: :availability)
-        .find_by(ductwork_availabilities: { id:, process_id: })
+        .find_by!(ductwork_availabilities: { id:, process_id: })
     end
 
     def update_state
@@ -78,7 +78,8 @@ module Ductwork
           .joins(:availability)
           .where(completed_at: nil)
           .where(ductwork_availabilities: { id: })
-          .update_all(process_id:)
+          .sole
+          .update!(process_id:)
         job.step.in_progress!
         job.step.pipeline.in_progress!
       end
