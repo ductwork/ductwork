@@ -20,8 +20,6 @@ module Ductwork
           availability_id: id
         )
         update_state
-
-        job
       elsif rows_updated == -1
         Ductwork.logger.debug(
           msg: "No available job to claim",
@@ -29,8 +27,6 @@ module Ductwork
           process_id: process_id,
           pipeline: klass
         )
-
-        nil
       else
         Ductwork.logger.debug(
           msg: "Did not claim job, avoided race condition",
@@ -38,8 +34,6 @@ module Ductwork
           process_id: process_id,
           availability_id: id
         )
-
-        nil
       end
 
       job
