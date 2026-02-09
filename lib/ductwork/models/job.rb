@@ -14,11 +14,9 @@ module Ductwork
     def self.claim_latest(klass) # rubocop:todo Metrics
       process_id = ::Process.pid
       id = Ductwork::Availability
-           .joins(execution: { job: { step: :pipeline } })
            .where("ductwork_availabilities.started_at <= ?", Time.current)
-           .where(completed_at: nil)
-           .where(ductwork_pipelines: { klass: })
-           .order(:created_at)
+           .where(completed_at: nil, pipeline_klass: klass)
+           .order(:started_at)
            .limit(1)
            .pluck(:id)
            .first
@@ -78,7 +76,8 @@ module Ductwork
         retry_count: 0
       )
       execution.create_availability!(
-        started_at: Time.current
+        started_at: Time.current,
+        pipeline_klass: step.pipeline.klass
       )
 
       Ductwork.logger.info(
@@ -168,7 +167,8 @@ module Ductwork
             started_at: FAILED_EXECUTION_TIMEOUT.from_now
           )
           new_execution.create_availability!(
-            started_at: FAILED_EXECUTION_TIMEOUT.from_now
+            started_at: FAILED_EXECUTION_TIMEOUT.from_now,
+            pipeline_klass: pipeline.klass
           )
         elsif execution.retry_count >= max_retry
           halted = true

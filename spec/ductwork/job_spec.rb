@@ -39,6 +39,10 @@ RSpec.describe Ductwork::Job do
     let(:execution) { availability.execution }
     let(:klass) { execution.job.step.pipeline.klass }
 
+    before do
+      availability.update!(pipeline_klass: klass)
+    end
+
     it "updates the the availability record" do
       be_almost_now = be_within(1.second).of(Time.current)
 

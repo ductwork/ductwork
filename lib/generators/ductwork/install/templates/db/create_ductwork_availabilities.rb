@@ -7,13 +7,14 @@ class CreateDuctworkAvailabilities < ActiveRecord::Migration[<%= Rails::VERSION:
       table.timestamp :started_at, null: false
       table.timestamp :completed_at
       table.integer :process_id
+      table.string :pipeline_klass, null: false
       table.timestamps null: false
     end
 
     add_index :ductwork_availabilities, :execution_id, unique: true
     add_index :ductwork_availabilities, %i[id process_id]
     add_index :ductwork_availabilities,
-              %i[completed_at started_at created_at],
+              %i[pipeline_klass completed_at started_at],
               name: "index_ductwork_availabilities_on_claim_latest"
   end
 end

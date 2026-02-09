@@ -1,0 +1,9 @@
+Description:
+    Updates ductwork with necessary files and changes
+
+Example:
+    bin/rails generate ductwork:update
+
+    This will perform the following:
+        Adds migrations
+

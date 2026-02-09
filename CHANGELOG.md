@@ -1,7 +1,8 @@
 # Ductwork Changelog
 
-## [0.20.3] (Unreleased)
+## [0.21.0] (Unreleased)
 
+- feat: denormalize pipeline klass column on `ductwork_availabilities` - be sure to run `bin/rails g ductwork:update` to get the latest migration
 - fix: use pipeline class name in log message
 
 ## [0.20.2]

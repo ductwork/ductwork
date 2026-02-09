@@ -25,6 +25,12 @@ Run the Rails generator to create the binstub, configuration file, and migration
 bin/rails generate ductwork:install
 ```
 
+**NOTE**: run the update generator if you've already installed ductwork to get updates:
+
+```bash
+bin/rails generate ductwork:update
+```
+
 Run migrations and you're ready to start building pipelines!
 
 ## Configuration

@@ -3,6 +3,7 @@
 FactoryBot.define do
   factory :availability, class: "Ductwork::Availability" do
     started_at { Time.current }
+    pipeline_klass { "MyPipeline" }
     execution
   end
 
