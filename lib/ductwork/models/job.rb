@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Ductwork
-  class Job < Ductwork::Record # rubocop:todo Metrics/ClassLength
+  class Job < Ductwork::Record
     belongs_to :step, class_name: "Ductwork::Step"
     has_many :executions, class_name: "Ductwork::Execution", foreign_key: "job_id", dependent: :destroy
 
@@ -11,58 +11,8 @@ module Ductwork
 
     FAILED_EXECUTION_TIMEOUT = 10.seconds
 
-    def self.claim_latest(klass) # rubocop:todo Metrics
-      process_id = ::Process.pid
-      id = Ductwork::Availability
-           .where("ductwork_availabilities.started_at <= ?", Time.current)
-           .where(completed_at: nil, pipeline_klass: klass)
-           .order(:started_at)
-           .limit(1)
-           .pluck(:id)
-           .first
-
-      if id.present?
-        # TODO: probably makes sense to use SQL here instead of relying
-        # on ActiveRecord to construct the correct `UPDATE` query
-        rows_updated = nil
-        Ductwork::Record.transaction do
-          rows_updated = Ductwork::Availability
-                         .where(id: id, completed_at: nil)
-                         .update_all(completed_at: Time.current, process_id: process_id)
-          Ductwork::Execution
-            .joins(:availability)
-            .where(completed_at: nil)
-            .where(ductwork_availabilities: { id: })
-            .update_all(process_id:)
-        end
-
-        if rows_updated == 1
-          Ductwork.logger.debug(
-            msg: "Job claimed",
-            role: :job_worker,
-            process_id: process_id,
-            availability_id: id
-          )
-          job = Ductwork::Job
-                .joins(executions: :availability)
-                .find_by(ductwork_availabilities: { id:, process_id: })
-
-          Ductwork::Record.transaction do
-            job.step.in_progress!
-            job.step.pipeline.in_progress!
-          end
-
-          job
-        else
-          Ductwork.logger.debug(
-            msg: "Did not claim job, avoided race condition",
-            role: :job_worker,
-            process_id: process_id,
-            availability_id: id
-          )
-          nil
-        end
-      end
+    def self.claim_latest(klass)
+      Ductwork::JobClaim.new(klass).latest
     end
 
     def self.enqueue(step, *args)

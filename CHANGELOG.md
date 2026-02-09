@@ -2,6 +2,7 @@
 
 ## [0.21.0] (Unreleased)
 
+- feat: use row locking job claiming when the database supports it
 - feat: denormalize pipeline klass column on `ductwork_availabilities` - be sure to run `bin/rails g ductwork:update` to get the latest migration
 - fix: use pipeline class name in log message
 
