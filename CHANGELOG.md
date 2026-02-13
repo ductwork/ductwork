@@ -2,6 +2,7 @@
 
 ## [0.21.0] (Unreleased)
 
+- fix: use node's defined klass when looking up max expansion depth
 - feat!: change all tables' primary key type to UUID v7 - BREAKING CHANGE: be sure to run `bin/rails g ductwork:update` to get the database migrations required to migrate existing data
 - chore!: drop support for ruby 3.2 - BREAKING CHANGE: we need UUID v7 from `SecureRandom` to use as primary keys for our tables; it is only available on Ruby 3.3+ (support ends in a ~month so this was going to happen anyway)
 - feat: use row locking job claiming when the database supports it

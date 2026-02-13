@@ -259,7 +259,7 @@ module Ductwork
     end
 
     def expand_to_next_steps(step_id, edge)
-      next_klass = edge[:to].sole
+      next_klass = parsed_definition.dig(:edges, edge[:to].sole, :klass)
       return_value = Ductwork::Job
                      .find_by(step_id:)
                      .return_value
