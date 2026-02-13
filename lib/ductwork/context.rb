@@ -21,6 +21,7 @@ module Ductwork
 
     def set(key, value, overwrite: false)
       attributes = {
+        id: SecureRandom.uuid_v7,
         pipeline_id: pipeline_id,
         key: key,
         serialized_value: Ductwork::Tuple.serialize(value),

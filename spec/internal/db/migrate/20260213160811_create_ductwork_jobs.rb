@@ -1,9 +1,15 @@
 # frozen_string_literal: true
 
-class CreateDuctworkJobs < ActiveRecord::Migration[8.1]
+class CreateDuctworkJobs < Ductwork::Migration
   def change
-    create_table :ductwork_jobs do |table|
-      table.belongs_to :step, index: false, null: false, foreign_key: { to_table: :ductwork_steps }
+    create_ductwork_table :ductwork_jobs do |table|
+      belongs_to(
+        table,
+        :step,
+        index: false,
+        null: false,
+        foreign_key: { to_table: :ductwork_steps }
+      )
       table.string :klass, null: false
       table.timestamp :started_at, null: false
       table.timestamp :completed_at

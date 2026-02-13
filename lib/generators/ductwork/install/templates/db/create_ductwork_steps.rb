@@ -1,9 +1,15 @@
 # frozen_string_literal: true
 
-class CreateDuctworkSteps < ActiveRecord::Migration[<%= Rails::VERSION::MAJOR %>.<%= Rails::VERSION::MINOR %>]
+class CreateDuctworkSteps < Ductwork::Migration
   def change
-    create_table :ductwork_steps do |table|
-      table.belongs_to :pipeline, index: true, null: false, foreign_key: { to_table: :ductwork_pipelines }
+    create_ductwork_table :ductwork_steps do |table|
+      belongs_to(
+        table,
+        :pipeline,
+        index: true,
+        null: false,
+        foreign_key: { to_table: :ductwork_pipelines }
+      )
       table.string :node, null: false
       table.string :klass, null: false
       table.string :to_transition, null: false

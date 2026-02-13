@@ -1,9 +1,15 @@
 # frozen_string_literal: true
 
-class CreateDuctworkAvailabilities < ActiveRecord::Migration[8.1]
+class CreateDuctworkAvailabilities < Ductwork::Migration
   def change
-    create_table :ductwork_availabilities do |table|
-      table.belongs_to :execution, index: false, null: false, foreign_key: { to_table: :ductwork_executions }
+    create_ductwork_table :ductwork_availabilities do |table|
+      belongs_to(
+        table,
+        :execution,
+        index: false,
+        null: false,
+        foreign_key: { to_table: :ductwork_executions }
+      )
       table.timestamp :started_at, null: false
       table.timestamp :completed_at
       table.integer :process_id

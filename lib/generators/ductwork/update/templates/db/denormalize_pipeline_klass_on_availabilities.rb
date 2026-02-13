@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-class DenormalizePipelineKlassOnAvailabilities < ActiveRecord::Migration[<%= Rails::VERSION::MAJOR %>.<%= Rails::VERSION::MINOR %>]
+class DenormalizePipelineKlassOnAvailabilities < Ductwork::Migration
   def change
     add_column :ductwork_availabilities, :pipeline_klass, :string
 

@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-class CreateDuctworkProcesses < ActiveRecord::Migration[8.1]
+class CreateDuctworkProcesses < Ductwork::Migration
   def change
-    create_table :ductwork_processes do |table|
+    create_ductwork_table :ductwork_processes do |table|
       table.integer :pid, null: false
       table.string :machine_identifier, null: false
       table.timestamp :last_heartbeat_at, null: false
