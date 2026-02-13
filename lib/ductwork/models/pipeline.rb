@@ -270,12 +270,78 @@ module Ductwork
       elsif return_value.none?
         complete!
       else
-        # TODO: Brainstorm on using `insert_all` instead of iterating.
-        # Performance is bad when the return value has a lot of elements
-        # and we create a step and job individually
-        Array(return_value).each do |input_arg|
-          create_step_and_enqueue_job(edge:, input_arg:)
+        bulk_create_steps_and_jobs(edge:, return_value:)
+      end
+    end
+
+    def bulk_create_steps_and_jobs(edge:, return_value:)
+      # NOTE: "chain" is used by ActiveRecord so we have to call
+      # this enum value "default" :sad:
+      to_transition = edge[:type] == "chain" ? "default" : edge[:type]
+      node ||= edge[:to].sole
+      step_klass = parsed_definition.dig(:edges, node, :klass)
+      now = Time.current
+
+      Array(return_value).each_slice(1_000).each do |batch|
+        step_rows = []
+        job_rows = []
+        execution_rows = []
+        availability_rows = []
+
+        batch.each do |value|
+          step_id = SecureRandom.uuid_v7
+          job_id = SecureRandom.uuid_v7
+          execution_id = SecureRandom.uuid_v7
+          availability_id = SecureRandom.uuid_v7
+
+          step_rows << {
+            id: step_id,
+            pipeline_id: id,
+            node: node,
+            klass: step_klass,
+            status: "in_progress",
+            to_transition: to_transition,
+            started_at: now,
+            created_at: now,
+            updated_at: now,
+          }
+          job_rows << {
+            id: job_id,
+            step_id: step_id,
+            input_args: JSON.dump({ args: [value] }),
+            klass: step_klass,
+            started_at: now,
+            created_at: now,
+            updated_at: now,
+          }
+          execution_rows << {
+            id: execution_id,
+            job_id: job_id,
+            retry_count: 0,
+            started_at: now,
+            created_at: now,
+            updated_at: now,
+          }
+          availability_rows << {
+            id: availability_id,
+            execution_id: execution_id,
+            pipeline_klass: klass,
+            started_at: now,
+            created_at: now,
+            updated_at: now,
+          }
         end
+
+        Ductwork::Step.insert_all!(step_rows)
+        Ductwork::Job.insert_all!(job_rows)
+        Ductwork::Execution.insert_all!(execution_rows)
+        Ductwork::Availability.insert_all!(availability_rows)
+
+        Ductwork.logger.info(
+          msg: "Job batch enqueued",
+          count: batch.count,
+          job_klass: step_klass
+        )
       end
     end
 

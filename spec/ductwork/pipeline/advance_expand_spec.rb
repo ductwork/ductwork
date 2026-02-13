@@ -51,13 +51,12 @@ RSpec.describe Ductwork::Pipeline, "#advance" do
   end
 
   it "passes the output payload as input arguments to the next step" do
-    allow(Ductwork::Job).to receive(:enqueue)
-
     pipeline.advance!
 
-    expect(Ductwork::Job).to have_received(:enqueue).with(anything, "a")
-    expect(Ductwork::Job).to have_received(:enqueue).with(anything, "b")
-    expect(Ductwork::Job).to have_received(:enqueue).with(anything, "c")
+    input_args = Ductwork::Job.last(3).map do |job|
+      JSON.parse(job.input_args).fetch("args")
+    end
+    expect(input_args).to contain_exactly(["a"], ["b"], ["c"])
   end
 
   it "halts the pipeline if next step cardinality is too large" do
