@@ -274,7 +274,7 @@ module Ductwork
       end
     end
 
-    def bulk_create_steps_and_jobs(edge:, return_value:)
+    def bulk_create_steps_and_jobs(edge:, return_value:) # rubocop:todo Metrics
       # NOTE: "chain" is used by ActiveRecord so we have to call
       # this enum value "default" :sad:
       to_transition = edge[:type] == "chain" ? "default" : edge[:type]
@@ -282,13 +282,13 @@ module Ductwork
       step_klass = parsed_definition.dig(:edges, node, :klass)
       now = Time.current
 
-      Array(return_value).each_slice(1_000).each do |batch|
+      Array(return_value).each_slice(1_000).each do |batch| # rubocop:todo Metrics/BlockLength
         step_rows = []
         job_rows = []
         execution_rows = []
         availability_rows = []
 
-        batch.each do |value|
+        batch.each do |value| # rubocop:todo Metrics/BlockLength
           step_id = SecureRandom.uuid_v7
           job_id = SecureRandom.uuid_v7
           execution_id = SecureRandom.uuid_v7
