@@ -6,6 +6,8 @@ source "https://rubygems.org"
 gemspec
 
 gem "appraisal"
+gem "benchmark"
+gem "benchmark-ips"
 gem "combustion"
 gem "debug"
 gem "factory_bot"
