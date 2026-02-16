@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [0.21.0] (Unreleased)
+## [0.21.0]
 
 - feat: enqueue jobs in batches when expanding - this marks a major performance improvement
 - fix: use node's defined klass when looking up max expansion depth
