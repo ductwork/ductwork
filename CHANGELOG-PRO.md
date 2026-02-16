@@ -1,5 +1,9 @@
 # Ductwork Pro Changelog
 
+## [0.5.0]
+
+- feat: enqueue jobs in batches when expanding and support starting delays
+
 ## [0.4.0]
 
 - feat: release pipeline or job claim if not finished by shutdown timeout - this is basically the same as what happens when a step times out except we don't restart the thread because we're shutting down
