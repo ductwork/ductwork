@@ -9,6 +9,12 @@ RSpec.describe Ductwork::DSL::DefinitionBuilder, "#chain" do
     expect(returned_builder).to eq(builder)
   end
 
+  it "accepts an optional `to` keyword argument for better DSL readability" do
+    returned_builder = builder.start(MyFirstStep).chain(to: MySecondStep)
+
+    expect(returned_builder).to eq(builder)
+  end
+
   it "adds a new step to the current branch of the definition" do
     allow(SecureRandom).to receive(:hex).and_return("0", "1")
 

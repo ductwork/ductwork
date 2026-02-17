@@ -103,7 +103,7 @@ class EnrichUserDataPipeline < Ductwork::Pipeline
             .divide(to: [FetchDataFromSourceA,     # Split into parallel branches
                          FetchDataFromSourceB])
             .combine(into: CollateUserData)        # Merge branches back together
-            .chain(UpdateUserData)                 # Sequential processing
+            .chain(to: UpdateUserData)             # Sequential processing
             .collapse(into: ReportSuccess)         # Gather expanded steps
   end
 end

@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.22.0] (Unreleased)
+
+- feat: add optional `to` keyword argument to `chain` transition - this makes the DSL a bit more aligned
+
 ## [0.21.0]
 
 - feat: enqueue jobs in batches when expanding - this marks a major performance improvement

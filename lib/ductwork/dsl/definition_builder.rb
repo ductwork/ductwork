@@ -30,7 +30,8 @@ module Ductwork
         self
       end
 
-      def chain(klass)
+      def chain(klass = nil, to: nil)
+        klass ||= to
         validate_classes!(klass)
         validate_definition_started!(action: "chaining")
         add_edge_to_last_nodes(klass, type: :chain)

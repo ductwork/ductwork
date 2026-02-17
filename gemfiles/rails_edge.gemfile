@@ -3,6 +3,8 @@
 source "https://rubygems.org"
 
 gem "appraisal"
+gem "benchmark"
+gem "benchmark-ips"
 gem "combustion"
 gem "debug"
 gem "factory_bot"
