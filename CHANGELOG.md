@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [0.22.0] (Unreleased)
+## [0.22.0]
 
 - feat: add optional `to` keyword argument to `chain` transition - this makes the DSL a bit more aligned
 
