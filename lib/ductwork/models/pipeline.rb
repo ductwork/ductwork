@@ -19,6 +19,7 @@ module Ductwork
          waiting: "waiting",
          advancing: "advancing",
          halted: "halted",
+         paused: "paused",
          completed: "completed"
 
     def self.inherited(subclass)

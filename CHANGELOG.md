@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.23.0] (Unreleased)
+
+- chore: add `paused` pipeline status to enum
+
 ## [0.22.0]
 
 - feat: add optional `to` keyword argument to `chain` transition - this makes the DSL a bit more aligned
