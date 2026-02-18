@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [0.23.0] (Unreleased)
+## [0.23.0]
 
 - chore: add `paused` pipeline status to enum
 
