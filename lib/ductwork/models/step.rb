@@ -24,7 +24,10 @@ module Ductwork
          divide: "divide",
          combine: "combine",
          expand: "expand",
-         collapse: "collapse"
+         collapse: "collapse",
+         divert: "divert",
+         converge: "converge",
+         damper: "damper"
 
     def self.build_for_execution(pipeline_id, *, **)
       instance = allocate

@@ -97,7 +97,13 @@ module Ductwork
                 )
 
                 # rubocop:todo Metrics/BlockNesting
-                status = pipeline.completed? ? "completed" : "in_progress"
+                status = if pipeline.completed?
+                           "completed"
+                         elsif pipeline.paused?
+                           "paused"
+                         else
+                           "in_progress"
+                         end
                 # rubocop:enable Metrics/BlockNesting
               ensure
                 # release the pipeline and set last advanced at so it doesn't

@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.24.0] (Unreleased)
+
+- feat: add new step transition enum values
+
 ## [0.23.0]
 
 - chore: add `paused` pipeline status to enum
