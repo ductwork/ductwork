@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [0.24.0] (Unreleased)
+## [0.24.0]
 
 - feat: add new step transition enum values
 
