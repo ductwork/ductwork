@@ -136,16 +136,10 @@ module Ductwork
             klass.method_defined?(:execute) &&
             klass.instance_method(:execute).arity.zero?
         end
+        return if valid
 
-        if !valid
-          word = if Array(klasses).length > 1
-                   "Arguments"
-                 else
-                   "Argument"
-                 end
-
-          raise ArgumentError, "#{word} must be a valid step class"
-        end
+        word = Array(klasses).length > 1 ? "Arguments" : "Argument"
+        raise ArgumentError, "#{word} must be a valid step class"
       end
 
       def validate_start_once!
@@ -161,17 +155,23 @@ module Ductwork
       end
 
       def validate_can_combine!
-        if divergences.empty?
+        case divergences
+        in []
           raise CombineError, "Must divide pipeline definition before combining steps"
-        elsif divergences[-1] != :divide
+        in *_, :divide
+          nil
+        else
           raise CombineError, "Ambiguous combine on most recently expanded definition"
         end
       end
 
       def validate_can_collapse!
-        if divergences.empty?
+        case divergences
+        in []
           raise CollapseError, "Must expand pipeline definition before collapsing steps"
-        elsif divergences[-1] != :expand
+        in *_, :expand
+          nil
+        else
           raise CollapseError, "Ambiguous collapse on most recently divided definition"
         end
       end
