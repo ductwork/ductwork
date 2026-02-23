@@ -1,5 +1,13 @@
 # Ductwork Pro Changelog
 
+## [0.6.0]
+
+- feat: introduce `dampen` transition - this is the first iteration of the human-in-the-loop feature
+- fix: bump `ductwork` dependency to v0.25.0
+- fix: bump `ductwork` dependency to v0.24.0
+- fix: bump `ductwork` dependency to v0.23.0 and set pipeline klass when creating availabilities
+- feat: add optional `to` keyword argument to `chain` transition - this makes the DSL a bit more aligned
+
 ## [0.5.0]
 
 - feat: enqueue jobs in batches when expanding and support starting delays
