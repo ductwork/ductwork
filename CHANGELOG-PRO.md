@@ -1,5 +1,9 @@
 # Ductwork Pro Changelog
 
+## [0.7.0]
+
+- feat: allow for passing an argument when resuming a pipeline - this will replace passing the previous step's output payload as the input arguments to the next step
+
 ## [0.6.0]
 
 - feat: introduce `dampen` transition - this is the first iteration of the human-in-the-loop feature
