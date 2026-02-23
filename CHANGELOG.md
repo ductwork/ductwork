@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [0.25.0] (Unreleased)
+## [0.25.0]
 
 - chore: align "dampen" naming and remove "pause" naming
 
