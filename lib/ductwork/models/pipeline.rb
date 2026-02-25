@@ -177,11 +177,13 @@ module Ductwork
     def advance_to_next_steps_by_type(edges, advancing_ids)
       steps.where(id: advancing_ids).update_all(status: :completed, completed_at: Time.current)
 
-      if edges.all? { |_, attrs| attrs[:type] == "combine" }
+      case edges
+      in _ if edges.all? { |_, attrs| attrs[:type] == "combine" }
         conditionally_combine_next_steps(edges, advancing_ids)
       else
         edges.each do |node, attrs|
-          if attrs[:type] == "collapse"
+          case attrs[:type]
+          in "collapse"
             conditionally_collapse_next_steps(node, attrs, advancing_ids)
           else
             advance_non_merging_steps(attrs, advancing_ids)
@@ -196,9 +198,10 @@ module Ductwork
       klass = edge[:klass]
 
       steps.where(id: advancing_ids, klass: klass).find_each do |step|
-        if to_transition.in?(%w[chain divide])
+        case to_transition
+        in "chain" | "divide"
           advance_to_next_steps(step.id, edge)
-        elsif to_transition == "expand"
+        in "expand"
           expand_to_next_steps(step.id, edge)
         else
           Ductwork.logger.error(
