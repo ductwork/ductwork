@@ -43,6 +43,31 @@ module Ductwork
         self
       end
 
+      def divert(to:)
+        to_map = {}
+        next_nodes = []
+        to.each do |key, klass|
+          node = node_name(klass)
+          definition[:edges][node] ||= { klass: klass.name }
+          to_map[key.to_s] = node
+          next_nodes << node
+        end
+
+        definition[:edges][last_node][:to] = to_map
+        definition[:edges][last_node][:type] = :divert
+        definition[:nodes].push(*next_nodes)
+
+        if block_given?
+          sub_branches = next_nodes.map do |last_node|
+            Ductwork::DSL::BranchBuilder.new(last_node:, definition:)
+          end
+
+          yield sub_branches
+        end
+
+        self
+      end
+
       def combine(*branch_builders, into:)
         next_klass_name = node_name(into)
         definition[:edges][last_node][:to] = [next_klass_name]
@@ -51,6 +76,21 @@ module Ductwork
         branch_builders.each do |branch|
           definition[:edges][branch.last_node][:to] = [next_klass_name]
           definition[:edges][branch.last_node][:type] = :combine
+        end
+        definition[:nodes].push(next_klass_name)
+        definition[:edges][next_klass_name] ||= { klass: into.name }
+
+        self
+      end
+
+      def converge(*branch_builders, into:)
+        next_klass_name = node_name(into)
+        definition[:edges][last_node][:to] = [next_klass_name]
+        definition[:edges][last_node][:type] = :converge
+
+        branch_builders.each do |branch|
+          definition[:edges][branch.last_node][:to] = [next_klass_name]
+          definition[:edges][branch.last_node][:type] = :converge
         end
         definition[:nodes].push(next_klass_name)
         definition[:edges][next_klass_name] ||= { klass: into.name }

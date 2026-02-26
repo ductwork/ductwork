@@ -2,10 +2,12 @@
 
 module Ductwork
   module DSL
-    class DefinitionBuilder
+    class DefinitionBuilder # rubocop:todo Metrics/ClassLength
       class StartError < StandardError; end
       class CollapseError < StandardError; end
       class CombineError < StandardError; end
+      class DivertError < StandardError; end
+      class ConvergeError < StandardError; end
 
       def initialize
         @definition = {
@@ -112,6 +114,66 @@ module Ductwork
         self
       end
 
+      def divert(to:) # rubocop:todo Metrics/AbcSize
+        validate_classes!(to.values)
+        validate_definition_started!(action: "diverting chain")
+        validate_fallback_step!(to.keys)
+
+        to_map = {}
+        to_nodes = []
+        to.each do |key, klass|
+          node = node_name(klass)
+          definition[:edges][node] ||= { klass: klass.name }
+          to_map[key.to_s] = node
+          to_nodes << node
+        end
+
+        last_nodes.each do |last_node|
+          definition[:edges][last_node][:to] = to_map
+          definition[:edges][last_node][:type] = :divert
+        end
+
+        @last_nodes = to_nodes
+
+        definition[:nodes].push(*to_nodes)
+        divergences.push(:divert)
+
+        if block_given?
+          branches = last_nodes.map do |last_node|
+            Ductwork::DSL::BranchBuilder
+              .new(last_node:, definition:)
+          end
+
+          yield branches
+        end
+
+        self
+      end
+
+      def converge(into:) # rubocop:todo Metrics/AbcSize
+        validate_classes!(into)
+        validate_definition_started!(action: "converging steps")
+        validate_can_converge!
+
+        divergences.pop
+
+        into_node = node_name(into)
+        definition[:edges][into_node] ||= { klass: into.name }
+        last_nodes = definition[:nodes].reverse.select do |node|
+          definition.dig(:edges, node, :to).blank?
+        end
+        last_nodes.each do |last_node|
+          definition[:edges][last_node][:to] = [into_node]
+          definition[:edges][last_node][:type] = :converge
+        end
+
+        @last_nodes = Array(into_node)
+
+        definition[:nodes].push(into_node)
+
+        self
+      end
+
       def on_halt(klass)
         validate_classes!(klass)
 
@@ -173,6 +235,20 @@ module Ductwork
           raise CollapseError, "Must expand pipeline definition before collapsing steps"
         elsif divergences[-1] != :expand
           raise CollapseError, "Ambiguous collapse on most recently divided definition"
+        end
+      end
+
+      def validate_can_converge!
+        if divergences.empty?
+          raise ConvergeError, "Must divert pipeline definition before converging steps"
+        elsif divergences[-1] != :divert
+          raise ConvergeError, "Ambiguous converge on most recently divided/expanded definition"
+        end
+      end
+
+      def validate_fallback_step!(keys)
+        if keys.exclude?(:otherwise)
+          raise DivertError, "Must specify an `otherwise` branch"
         end
       end
 

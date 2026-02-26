@@ -167,4 +167,37 @@ RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
       { to: ["MyFifthStep.4"], type: :collapse, klass: "MyFourthStep" }
     )
   end
+
+  it "correctly handles diverting an expansion" do
+    allow(SecureRandom).to receive(:hex).and_return(*%w[0 1 2 3])
+
+    definition = Class.new(Ductwork::Pipeline) do
+      define do |pipeline|
+        pipeline
+          .start(MyFirstStep)
+          .expand(to: MySecondStep)
+          .divert(to: { foo: MyThirdStep, otherwise: MyFourthStep })
+      end
+    end.pipeline_definition
+
+    expect(definition[:nodes]).to eq(
+      %w[MyFirstStep.0 MySecondStep.1 MyThirdStep.2 MyFourthStep.3]
+    )
+    expect(definition[:edges]["MyFirstStep.0"]).to eq(
+      { to: ["MySecondStep.1"], type: :expand, klass: "MyFirstStep" }
+    )
+    expect(definition[:edges]["MySecondStep.1"]).to eq(
+      {
+        to: { "foo" => "MyThirdStep.2", "otherwise" => "MyFourthStep.3" },
+        type: :divert,
+        klass: "MySecondStep",
+      }
+    )
+    expect(definition[:edges]["MyThirdStep.2"]).to eq(
+      { klass: "MyThirdStep" }
+    )
+    expect(definition[:edges]["MyFourthStep.3"]).to eq(
+      { klass: "MyFourthStep" }
+    )
+  end
 end

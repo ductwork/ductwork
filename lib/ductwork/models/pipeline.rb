@@ -196,7 +196,7 @@ module Ductwork
       klass = edge[:klass]
 
       steps.where(id: advancing_ids, klass: klass).find_each do |step|
-        if to_transition.in?(%w[chain divide])
+        if to_transition.in?(%w[chain divide divert converge])
           advance_to_next_steps(step.id, edge)
         elsif to_transition == "expand"
           expand_to_next_steps(step.id, edge)
@@ -212,6 +212,25 @@ module Ductwork
     end
 
     def advance_to_next_steps(step_id, edge)
+      if edge[:type] == "divert"
+        advance_to_divert_step(step_id, edge)
+      else
+        advance_to_array_steps(step_id, edge)
+      end
+    end
+
+    def advance_to_divert_step(step_id, edge)
+      input_arg = Ductwork::Job.find_by(step_id:).return_value
+      node = edge[:to][input_arg.to_s] || edge[:to]["otherwise"]
+
+      if node.nil?
+        halt!
+      else
+        create_step_and_enqueue_job(edge:, input_arg:, node:)
+      end
+    end
+
+    def advance_to_array_steps(step_id, edge)
       too_many = edge[:to].tally.any? do |to_klass, count|
         depth = Ductwork
                 .configuration
