@@ -59,6 +59,7 @@ module Ductwork
           raise DefinitionError, "Pipeline must be defined before triggering"
         end
 
+        now = Time.current
         node = pipeline_definition.dig(:nodes, 0)
         klass = pipeline_definition.dig(:edges, node, :klass)
         definition = JSON.dump(pipeline_definition)
@@ -69,16 +70,23 @@ module Ductwork
             status: :in_progress,
             definition: definition,
             definition_sha1: Digest::SHA1.hexdigest(definition),
-            triggered_at: Time.current,
-            started_at: Time.current,
-            last_advanced_at: Time.current
+            triggered_at: now,
+            started_at: now,
+            last_advanced_at: now
           )
-          step = p.steps.create!(
+          branch = p.branches.create!(
+            pipeline_klass: name.to_s,
+            status: :in_progress,
+            started_at: now,
+            last_advanced_at: now
+          )
+          step = branch.steps.create!(
+            pipeline: p,
             node: node,
             klass: klass,
             status: :in_progress,
             to_transition: :start,
-            started_at: Time.current
+            started_at: now
           )
           Ductwork::Job.enqueue(step, *args)
 

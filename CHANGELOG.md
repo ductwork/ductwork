@@ -2,6 +2,7 @@
 
 ## [0.27.0] (Unreleased)
 
+- feat: create initial branch when a pipeline is triggered
 - feat: introduce `Branch` and `BranchJunction` models and tables
 - fix: correctly log transition names via edge
 

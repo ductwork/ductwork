@@ -263,6 +263,19 @@ RSpec.describe Ductwork::Pipeline do
       expect(step.started_at).to be_present
     end
 
+    it "creates the initial branch record" do
+      pipeline = nil
+
+      expect do
+        pipeline = klass.trigger(args)
+      end.to change(Ductwork::Branch, :count).by(1)
+      branch = pipeline.branches.reload.sole
+      expect(branch).to be_in_progress
+      expect(branch.pipeline_klass).to eq("MyPipeline")
+      expect(branch.started_at).to be_present
+      expect(branch.last_advanced_at).to be_present
+    end
+
     it "enqueues a job" do
       expect do
         klass.trigger(args)
