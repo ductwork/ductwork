@@ -343,6 +343,15 @@ RSpec.describe Ductwork::Pipeline do
         .and change(pipeline, :completed_at).to be_within(1.second).of(Time.current)
     end
 
+    it "completes the active branch(es)" do
+      branch = create(:branch, :in_progress, pipeline:)
+
+      expect do
+        pipeline.complete!
+      end.to change { branch.reload.status }.to("completed")
+        .and change(branch, :completed_at).to be_within(1.second).of(Time.current)
+    end
+
     it "logs" do
       allow(Ductwork.logger).to receive(:info).and_call_original
 
@@ -369,6 +378,14 @@ RSpec.describe Ductwork::Pipeline do
       expect do
         pipeline.halt!
       end.to change(pipeline, :halted_at).from(nil).to be_within(1.second).of(Time.current)
+    end
+
+    it "halts the active branch(es)" do
+      branch = create(:branch, :in_progress, pipeline:)
+
+      expect do
+        pipeline.halt!
+      end.to change { branch.reload.status }.to("halted")
     end
 
     it "logs" do

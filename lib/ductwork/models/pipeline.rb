@@ -126,7 +126,12 @@ module Ductwork
     end
 
     def complete!
-      update!(status: :completed, completed_at: Time.current)
+      now = Time.current
+
+      Ductwork::Record.transaction do
+        update!(status: :completed, completed_at: now)
+        branches.in_progress.update_all(status: :completed, completed_at: now)
+      end
 
       Ductwork.logger.info(
         msg: "Pipeline completed",
@@ -136,7 +141,10 @@ module Ductwork
     end
 
     def halt!
-      update!(status: :halted, halted_at: Time.current)
+      Ductwork::Record.transaction do
+        update!(status: :halted, halted_at: Time.current)
+        branches.in_progress.update_all(status: :halted)
+      end
 
       Ductwork.logger.info(
         msg: "Pipeline halted",

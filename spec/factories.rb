@@ -13,6 +13,10 @@ FactoryBot.define do
     started_at { Time.current }
     status { Ductwork::Branch.statuses.keys.sample }
     pipeline
+
+    trait :in_progress do
+      status { "in_progress" }
+    end
   end
 
   factory :execution, class: "Ductwork::Execution" do
