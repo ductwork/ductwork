@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [0.26.1] (Unreleased)
+
+- fix: correctly log transition names via edge
+
 ## [0.26.0]
 
 - feat: add `divert` and complementary `converge` transitions - this is essentially a conditional/case statement transition for pipelines including it's "fan-in" method

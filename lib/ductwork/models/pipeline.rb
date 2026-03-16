@@ -391,7 +391,7 @@ module Ductwork
       Ductwork.logger.info(
         msg: "Pipeline advanced",
         pipeline_id: id,
-        transitions: edges.map { |_, v| v.dig(-1, :type) },
+        transitions: edges.map { |h| h.dig(-1, :type) },
         role: :pipeline_advancer
       )
     end
