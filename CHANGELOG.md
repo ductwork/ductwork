@@ -2,6 +2,7 @@
 
 ## [0.27.0] (Unreleased)
 
+- chore: bump project and CI ruby versions to v4.0.2
 - fix: add missing index when migrating to UUIDs
 - fix: job availability claim and update state in a single transaction
 - feat: complete and halt active branches for pipelines
