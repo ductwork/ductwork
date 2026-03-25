@@ -2,6 +2,7 @@
 
 ## [0.27.0] (Unreleased)
 
+- fix: delete child process records when restarting within supervisor
 - fix: wrap optimistic job claiming in a single transaction
 - chore: bump project and CI ruby versions to v4.0.2
 - fix: add missing index when migrating to UUIDs

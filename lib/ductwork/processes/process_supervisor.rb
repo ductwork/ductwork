@@ -69,6 +69,7 @@ module Ductwork
         workers.each do |worker|
           if process_dead?(worker[:pid])
             old_pid = worker[:pid]
+            delete_process_record!(old_pid)
             new_pid = fork do
               worker[:block].call(worker[:metadata])
             end
@@ -150,6 +151,14 @@ module Ductwork
             .where(pid:, machine_identifier:)
             .where("last_heartbeat_at < ?", 5.minutes.ago)
             .exists?
+        end
+      end
+
+      def delete_process_record!(pid)
+        machine_identifier = Ductwork::MachineIdentifier.fetch
+
+        Ductwork.wrap_with_app_executor do
+          Ductwork::Process.find_by(pid:, machine_identifier:)&.delete
         end
       end
 
