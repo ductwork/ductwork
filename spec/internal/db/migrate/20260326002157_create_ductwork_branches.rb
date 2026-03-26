@@ -22,6 +22,6 @@ class CreateDuctworkBranches < Ductwork::Migration
     add_index :ductwork_branches,
               %w[pipeline_klass claimed_for_advancing_at last_advanced_at],
               name: "index_ductwork_branches_on_claim_latest"
-    add_index :ductwork_branches, %w[branch_id started_at]
+    add_index :ductwork_branches, %w[pipeline_id started_at]
   end
 end
