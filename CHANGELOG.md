@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: DRY up process record adoption and creation
 - fix: create or adopt process records in pipeline advancer and job worker
 - fix: create top-level process record for thread supervisor
 - fix: use safe navigation in rescue when advancing branch

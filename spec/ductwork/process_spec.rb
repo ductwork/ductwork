@@ -38,6 +38,38 @@ RSpec.describe Ductwork::Process do
     end
   end
 
+  describe ".adopt_or_create_current!" do
+    let(:be_almost_now) { be_within(1.second).of(Time.current) }
+
+    it "creates a new process record" do
+      record = nil
+
+      expect do
+        record = described_class.adopt_or_create_current!
+      end.to change(described_class, :count).by(1)
+
+      expect(record.pid).to eq(::Process.pid)
+      expect(record.machine_identifier).to eq(Ductwork::MachineIdentifier.fetch)
+      expect(record.last_heartbeat_at).to be_almost_now
+    end
+
+    it "returns an existing process record" do
+      existing_record = create(:process, :current)
+
+      record = described_class.adopt_or_create_current!
+
+      expect(record).to eq(existing_record)
+    end
+
+    it "updates the last heart timestamp" do
+      existing_record = create(:process, :current)
+
+      expect do
+        described_class.adopt_or_create_current!
+      end.to change { existing_record.reload.last_heartbeat_at }.to(be_almost_now)
+    end
+  end
+
   describe ".current" do
     let(:last_heartbeat_at) { Time.current }
 

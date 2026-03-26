@@ -9,7 +9,7 @@ module Ductwork
         @running_context = Ductwork::RunningContext.new
         @workers = []
 
-        create_or_adopt_process!
+        adopt_or_create_process!
         run_hooks_for(:start)
 
         Signal.trap(:INT) { @running_context.shutdown! }
@@ -133,13 +133,9 @@ module Ductwork
         end
       end
 
-      def create_or_adopt_process!
-        pid = ::Process.pid
-        machine_identifier = Ductwork::MachineIdentifier.fetch
-
+      def adopt_or_create_process!
         Ductwork.wrap_with_app_executor do
-          process = Ductwork::Process.find_or_initialize_by(pid:, machine_identifier:)
-          process.update!(last_heartbeat_at: Time.current)
+          Ductwork::Process.adopt_or_create_current!
         end
       end
 

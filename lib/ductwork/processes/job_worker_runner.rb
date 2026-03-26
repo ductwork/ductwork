@@ -24,7 +24,7 @@ module Ductwork
       end
 
       def run
-        create_process_record!
+        adopt_or_create_process!
         start_job_workers
 
         Ductwork.logger.debug(
@@ -47,13 +47,9 @@ module Ductwork
 
       attr_reader :pipelines, :running_context, :job_workers
 
-      def create_process_record!
+      def adopt_or_create_process!
         Ductwork.wrap_with_app_executor do
-          process = Ductwork::Process.find_or_initialize_by(
-            pid: ::Process.pid,
-            machine_identifier: Ductwork::MachineIdentifier.fetch
-          )
-          process.update!(last_heartbeat_at: Time.current)
+          Ductwork::Process.adopt_or_create_current!
         end
       end
 
