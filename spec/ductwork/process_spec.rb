@@ -93,6 +93,18 @@ RSpec.describe Ductwork::Process do
   end
 
   describe ".reap_all!" do
+    it "releases associated branches" do
+      process = create(:process, last_heartbeat_at: 2.minutes.ago)
+      advancement = create(:advancement, process:)
+      branch = advancement.transition.branch.tap do |b|
+        b.update!(claimed_for_advancing_at: Time.current)
+      end
+
+      expect do
+        described_class.reap_all!(:thread_supervisor)
+      end.to change { branch.reload.claimed_for_advancing_at }.to(nil)
+    end
+
     it "deletes old process records" do
       old_record = create(:process, last_heartbeat_at: 2.minutes.ago)
       _new_record = create(:process)

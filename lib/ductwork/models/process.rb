@@ -5,7 +5,7 @@ module Ductwork
     has_many :advancements,
              class_name: "Ductwork::Advancement",
              foreign_key: "process_id",
-             dependent: :destroy
+             dependent: :nullify
 
     class NotFoundError < StandardError; end
 
@@ -41,7 +41,17 @@ module Ductwork
       )
 
       where("last_heartbeat_at < ?", REAP_THRESHOLD.ago).find_each do |process|
-        process&.delete
+        Ductwork::Record.transaction do
+          locked_process = Ductwork::Process.lock.find_by(id: process.id)
+
+          next if locked_process.blank?
+
+          locked_process.advancements.where(completed_at: nil).find_each do |advancement|
+            advancement.transition.branch.release!
+          end
+          locked_process.destroy
+        end
+
         count += 1
       end
 

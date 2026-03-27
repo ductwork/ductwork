@@ -122,6 +122,10 @@ module Ductwork
       steps.order(started_at: :desc).limit(1).first
     end
 
+    def release!
+      update!(claimed_for_advancing_at: nil, status: :in_progress)
+    end
+
     private
 
     def find_active_or_create_transition
@@ -135,13 +139,19 @@ module Ductwork
 
       Ductwork::Record.transaction do
         if transition.present?
+          attrs = {
+            completed_at: Time.current,
+            error_klass: "Ductwork::ProcessCrash",
+            error_message: "Advancement was abandoned from a process crash",
+          }
+
           transition
             .advancements
             .where(completed_at: nil)
             .order(started_at: :desc)
             .limit(1)
             .first
-            &.update!(completed_at: Time.current)
+            &.update!(**attrs)
         else
           transition = transitions.create!(
             in_step: latest_step,

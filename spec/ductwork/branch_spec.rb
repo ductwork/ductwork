@@ -224,6 +224,7 @@ RSpec.describe Ductwork::Branch do
       let(:advancement) { create(:advancement, transition:) }
 
       before do
+        advancement
         branch.pipeline.tap do |p|
           p.in_progress!
           p.update!(definition:)
@@ -247,11 +248,14 @@ RSpec.describe Ductwork::Branch do
         end.to change { transition.reload.completed_at }.to(be_almost_now)
       end
 
-      it "fails any hanging advancement record and creates a new one" do
+      it "fails any abandoned advancement record and creates a new one" do
         expect do
           branch.advance!
         end.to change(Ductwork::Advancement, :count).by(1)
-          .and change { advancement.reload.completed_at }.to(be_almost_now)
+
+        expect(advancement.reload.completed_at).to be_almost_now
+        expect(advancement.error_klass).to eq("Ductwork::ProcessCrash")
+        expect(advancement.error_message).to eq("Advancement was abandoned from a process crash")
       end
     end
 
@@ -342,6 +346,17 @@ RSpec.describe Ductwork::Branch do
 
     it "returns the latest step" do
       expect(branch.latest_step).to eq(latest_step)
+    end
+  end
+
+  describe "#release!" do
+    subject(:branch) { create(:branch, :advancing, claimed_for_advancing_at: Time.current) }
+
+    it "nullifies the claim timestamp and sets status" do
+      expect do
+        branch.release!
+      end.to change { branch.reload.status }.to("in_progress")
+        .and change(branch, :claimed_for_advancing_at).to(nil)
     end
   end
 end

@@ -7,7 +7,7 @@ class CreateDuctworkAdvancements < Ductwork::Migration
         table,
         :process,
         index: true,
-        null: false,
+        null: true,
         foreign_key: { to_table: :ductwork_processes }
       )
       belongs_to(
