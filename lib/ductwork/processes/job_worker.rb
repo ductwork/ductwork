@@ -45,7 +45,7 @@ module Ductwork
 
       attr_reader :id, :running_context
 
-      def work_loop
+      def work_loop # rubocop:todo Metrics/AbcSize,Metrics/MethodLength
         run_hooks_for(:start)
 
         Ductwork.logger.debug(
@@ -55,29 +55,50 @@ module Ductwork
         )
 
         while running_context.running?
-          Ductwork.logger.debug(
-            msg: "Attempting to claim job",
-            role: :job_worker,
-            pipeline: pipeline
-          )
-
-          @job = Ductwork.wrap_with_app_executor do
-            Job.claim_latest(pipeline)
-          end
-
-          if job.present?
-            Ductwork.wrap_with_app_executor do
-              job.execute(pipeline)
-            end
-
-            @job = nil
-          else
+          begin
             Ductwork.logger.debug(
-              msg: "No job to claim, looping",
+              msg: "Attempting to claim job",
               role: :job_worker,
               pipeline: pipeline
             )
-            sleep(polling_timeout)
+
+            @job = Ductwork.wrap_with_app_executor do
+              Job.claim_latest(pipeline)
+            end
+
+            if job.present?
+              Ductwork.wrap_with_app_executor do
+                job.execute(pipeline)
+              end
+
+              @job = nil
+            else
+              Ductwork.logger.debug(
+                msg: "No job to claim, looping",
+                role: :job_worker,
+                pipeline: pipeline
+              )
+              sleep(polling_timeout)
+            end
+          rescue StandardError => e
+            if job.present?
+              execution = job.executions.order(:created_at).last
+              Ductwork.wrap_with_app_executor do
+                job.execution_crashed!(execution)
+              end
+            end
+
+            Ductwork.logger.error(
+              msg: "Unexpected error in work loop",
+              error_klass: e.class.name,
+              error_message: e.message,
+              job_id: job&.id,
+              job_klass: job&.klass,
+              role: :job_worker,
+              pipeline: pipeline
+            )
+
+            @job = nil
           end
 
           @last_heartbeat_at = Time.current

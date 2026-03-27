@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: rescue all job worker errors as to not let thread die
 - fix: reap process (and claims) on process restart or immediate shutdown
 - chore: bump ruby versions in CI
 - chore: bump rails versions in appraisals file

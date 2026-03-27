@@ -68,6 +68,11 @@ FactoryBot.define do
     end
   end
 
+  factory :run, class: "Ductwork::Run" do
+    started_at { Time.current }
+    execution
+  end
+
   factory :step, class: "Ductwork::Step" do
     node { "MyFirstStep.0" }
     klass { "MyFirstStep" }

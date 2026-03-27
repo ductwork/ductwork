@@ -80,6 +80,25 @@ module Ductwork
       end
     end
 
+    def execution_crashed!(execution)
+      pipeline = step.pipeline
+
+      Ductwork::Record.transaction do
+        execution.update!(completed_at: Time.current)
+        execution.run&.update!(completed_at: Time.current)
+        execution.create_result!(result_type: "process_crashed")
+
+        new_execution = executions.create!(
+          retry_count: execution.retry_count,
+          started_at: FAILED_EXECUTION_TIMEOUT.from_now
+        )
+        new_execution.create_availability!(
+          started_at: FAILED_EXECUTION_TIMEOUT.from_now,
+          pipeline_klass: pipeline.klass
+        )
+      end
+    end
+
     private
 
     def execution_succeeded!(execution, run, output_payload)

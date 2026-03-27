@@ -276,6 +276,43 @@ RSpec.describe Ductwork::Job do
     end
   end
 
+  describe "#execution_crashed!" do
+    subject(:job) { create(:job) }
+
+    let(:execution) { create(:execution, job:) }
+    let(:be_almost_now) { be_within(1.second).of(Time.current) }
+
+    it "completes the execution" do
+      expect do
+        job.execution_crashed!(execution)
+      end.to change { execution.reload.completed_at }.to(be_almost_now)
+    end
+
+    it "completes the run if it exists" do
+      run = create(:run, execution:)
+
+      expect do
+        job.execution_crashed!(execution)
+      end.to change { run.reload.completed_at }.to(be_almost_now)
+    end
+
+    it "creates a 'process crashed' result record" do
+      expect do
+        job.execution_crashed!(execution)
+      end.to change(Ductwork::Result, :count).by(1)
+      expect(execution.result.result_type).to eq("process_crashed")
+    end
+
+    it "creates new execution and availability records" do
+      execution
+
+      expect do
+        job.execution_crashed!(execution)
+      end.to change(Ductwork::Execution, :count).by(1)
+        .and change(Ductwork::Availability, :count).by(1)
+    end
+  end
+
   describe "#return_value" do
     subject(:job) { described_class.new(output_payload:) }
 

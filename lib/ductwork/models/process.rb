@@ -65,7 +65,7 @@ module Ductwork
       end
     end
 
-    def reap!(role) # rubocop:todo Metrics/AbcSize
+    def reap!(role)
       Ductwork.logger.debug(
         msg: "Reaping orphaned process record #{id}",
         id: id,
@@ -78,24 +78,9 @@ module Ductwork
         advancements.where(completed_at: nil).find_each do |advancement|
           advancement.transition.branch.release!
         end
-        orphaned = availabilities.joins(:execution).merge(Ductwork::Execution.where(completed_at: nil))
-        orphaned.find_each do |availability|
-          execution = availability.execution
-          job = execution.job
-          pipeline = job.step.pipeline
-
-          execution.update!(completed_at: Time.current)
-          execution.run&.update!(completed_at: Time.current)
-          execution.create_result!(result_type: "process_crashed")
-
-          new_execution = job.executions.create!(
-            retry_count: execution.retry_count,
-            started_at: Ductwork::Job::FAILED_EXECUTION_TIMEOUT.from_now
-          )
-          new_execution.create_availability!(
-            started_at: Ductwork::Job::FAILED_EXECUTION_TIMEOUT.from_now,
-            pipeline_klass: pipeline.klass
-          )
+        incomplete_executions = Ductwork::Execution.where(completed_at: nil)
+        availabilities.joins(:execution).merge(incomplete_executions).find_each do |availability|
+          availability.execution.job.execution_crashed!(availability.execution)
         end
         destroy
       end
