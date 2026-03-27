@@ -79,28 +79,11 @@ RSpec.describe Ductwork::Process do
         last_heartbeat_at:
       )
 
-      current_process = described_class.current
-
-      expect(current_process).to eq(process)
+      expect(described_class.current).to eq(process)
     end
 
-    it "raises if no record exists" do
-      expect do
-        described_class.current
-      end.to raise_error(described_class::NotFoundError, "Process #{pid} not found")
-    end
-  end
-
-  describe ".destroy_current!" do
-    it "destroys the process record" do
-      process = create(:process, :current)
-
-      expect do
-        described_class.destroy_current!
-      end.to change(described_class, :count).by(-1)
-      expect do
-        process.reload
-      end.to raise_error(ActiveRecord::RecordNotFound)
+    it "returns nil if no record exists" do
+      expect(described_class.current).to be_nil
     end
   end
 
@@ -157,7 +140,7 @@ RSpec.describe Ductwork::Process do
         role: :process_supervisor
       )
       expect(Ductwork.logger).to have_received(:debug).with(
-        msg: "Reaped 1 process records",
+        msg: "Reaped 1 orphaned process records",
         count: 1,
         role: :process_supervisor
       )
@@ -197,10 +180,68 @@ RSpec.describe Ductwork::Process do
       expect(process.reload.last_heartbeat_at).to be_within(1.second).of(Time.current)
     end
 
-    it "raises if the record does not exist" do
+    it "logs if the record does not exist" do
+      allow(Ductwork.logger).to receive(:error).and_call_original
+
+      described_class.report_heartbeat!
+
+      expect(Ductwork.logger).to have_received(:error).with(
+        msg: "Process record missing, cannot report heartbeat",
+        pid: ::Process.pid
+      )
+    end
+  end
+
+  describe "#reap!" do
+    subject(:process) { create(:process, :current) }
+
+    it "releases associated incomplete branch advancements" do
+      advancement = create(:advancement, process:)
+      branch = advancement.transition.branch.tap do |b|
+        b.update!(claimed_for_advancing_at: Time.current)
+      end
+
       expect do
-        described_class.report_heartbeat!
-      end.to raise_error(described_class::NotFoundError, "Process #{pid} not found")
+        process.reap!(:process_supervisor)
+      end.to change { branch.reload.claimed_for_advancing_at }.to(nil)
+    end
+
+    it "re-enqueues claimed jobs with incomplete executions" do
+      availability = create(:availability, process: process, completed_at: Time.current)
+      execution = availability.execution
+
+      process.reap!(:thread_supervisor)
+
+      expect(execution.reload.completed_at).to be_present
+      expect(execution.result.result_type).to eq("process_crashed")
+
+      new_execution = execution.job.executions.where.not(id: execution.id).sole
+      expect(new_execution.retry_count).to eq(execution.retry_count)
+      expect(new_execution.availability).to be_present
+      expect(new_execution.availability.completed_at).to be_nil
+    end
+
+    it "destroys itself" do
+      expect do
+        process.reap!(:thread_supervisor)
+      end.to change(process, :persisted?).from(true).to(false)
+    end
+
+    it "logs" do
+      allow(Ductwork.logger).to receive(:debug).and_call_original
+
+      process.reap!(:process_supervisor)
+
+      expect(Ductwork.logger).to have_received(:debug).with(
+        msg: "Reaping orphaned process record #{process.id}",
+        id: process.id,
+        role: :process_supervisor
+      )
+      expect(Ductwork.logger).to have_received(:debug).with(
+        msg: "Reaped orphaned process record #{process.id}",
+        id: process.id,
+        role: :process_supervisor
+      )
     end
   end
 end

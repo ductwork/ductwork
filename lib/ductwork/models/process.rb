@@ -11,8 +11,6 @@ module Ductwork
              foreign_key: "process_id",
              dependent: :nullify
 
-    class NotFoundError < StandardError; end
-
     REAP_THRESHOLD = 1.minute.freeze
 
     validates :pid, uniqueness: { scope: :machine_identifier }
@@ -31,19 +29,10 @@ module Ductwork
       pid = ::Process.pid
       machine_identifier = Ductwork::MachineIdentifier.fetch
 
-      find_by!(pid:, machine_identifier:)
-    rescue ActiveRecord::RecordNotFound
-      raise NotFoundError, "Process #{pid} not found"
+      find_by(pid:, machine_identifier:)
     end
 
-    def self.destroy_current!
-      pid = ::Process.pid
-      machine_identifier = Ductwork::MachineIdentifier.fetch
-
-      find_by(pid:, machine_identifier:)&.destroy
-    end
-
-    def self.reap_all!(role) # rubocop:todo Metrics/AbcSize
+    def self.reap_all!(role)
       count = 0
 
       Ductwork.logger.debug(
@@ -51,52 +40,76 @@ module Ductwork
         role: role
       )
 
-      where("last_heartbeat_at < ?", REAP_THRESHOLD.ago).find_each do |process| # rubocop:todo Metrics/BlockLength
-        Ductwork::Record.transaction do
-          locked_process = Ductwork::Process.lock.find_by(id: process.id)
-
-          next if locked_process.blank?
-
-          locked_process.advancements.where(completed_at: nil).find_each do |advancement|
-            advancement.transition.branch.release!
-          end
-          availabilities = locked_process.availabilities
-                                         .joins(:execution)
-                                         .merge(Ductwork::Execution.where(completed_at: nil))
-
-          availabilities.find_each do |availability|
-            execution = availability.execution
-            job = execution.job
-            pipeline = job.step.pipeline
-
-            execution.update!(completed_at: Time.current)
-            execution.run&.update!(completed_at: Time.current)
-            execution.create_result!(result_type: "process_crashed")
-
-            new_execution = job.executions.create!(
-              retry_count: execution.retry_count,
-              started_at: Ductwork::Job::FAILED_EXECUTION_TIMEOUT.from_now
-            )
-            new_execution.create_availability!(
-              started_at: Ductwork::Job::FAILED_EXECUTION_TIMEOUT.from_now,
-              pipeline_klass: pipeline.klass
-            )
-          end
-          locked_process.destroy
-        end
-
+      where("last_heartbeat_at < ?", REAP_THRESHOLD.ago).find_each do |process|
+        process.reap!(role)
         count += 1
       end
 
       Ductwork.logger.debug(
-        msg: "Reaped #{count} process records",
+        msg: "Reaped #{count} orphaned process records",
         count: count,
         role: role
       )
     end
 
     def self.report_heartbeat!
-      current.update!(last_heartbeat_at: Time.current)
+      current.tap do |process|
+        if process.present?
+          process.update!(last_heartbeat_at: Time.current)
+        else
+          Ductwork.logger.error(
+            msg: "Process record missing, cannot report heartbeat",
+            pid: ::Process.pid
+          )
+        end
+      end
+    end
+
+    def reap!(role) # rubocop:todo Metrics/AbcSize
+      Ductwork.logger.debug(
+        msg: "Reaping orphaned process record #{id}",
+        id: id,
+        role: role
+      )
+
+      Ductwork::Record.transaction do
+        lock!
+
+        advancements.where(completed_at: nil).find_each do |advancement|
+          advancement.transition.branch.release!
+        end
+        orphaned = availabilities.joins(:execution).merge(Ductwork::Execution.where(completed_at: nil))
+        orphaned.find_each do |availability|
+          execution = availability.execution
+          job = execution.job
+          pipeline = job.step.pipeline
+
+          execution.update!(completed_at: Time.current)
+          execution.run&.update!(completed_at: Time.current)
+          execution.create_result!(result_type: "process_crashed")
+
+          new_execution = job.executions.create!(
+            retry_count: execution.retry_count,
+            started_at: Ductwork::Job::FAILED_EXECUTION_TIMEOUT.from_now
+          )
+          new_execution.create_availability!(
+            started_at: Ductwork::Job::FAILED_EXECUTION_TIMEOUT.from_now,
+            pipeline_klass: pipeline.klass
+          )
+        end
+        destroy
+      end
+      Ductwork.logger.debug(
+        msg: "Reaped orphaned process record #{id}",
+        id: id,
+        role: role
+      )
+    rescue ActiveRecord::RecordNotFound
+      Ductwork.logger.debug(
+        msg: "Process already reaped by another parent",
+        id: id,
+        role: role
+      )
     end
   end
 end

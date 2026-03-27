@@ -2,7 +2,7 @@
 
 module Ductwork
   module Processes
-    class ProcessSupervisor
+    class ProcessSupervisor # rubocop:todo Metrics/ClassLength
       attr_reader :workers
 
       def initialize
@@ -70,7 +70,7 @@ module Ductwork
         workers.each do |worker|
           if process_dead?(worker[:pid])
             old_pid = worker[:pid]
-            destroy_process_record!(old_pid)
+            reap_process_record!(old_pid)
             new_pid = fork do
               worker[:block].call(worker[:metadata])
             end
@@ -129,16 +129,17 @@ module Ductwork
 
       def terminate_immediately
         workers.each_with_index do |worker, index|
-          Ductwork.logger.debug(
+          Ductwork.logger.warn(
             msg: "Sending KILL signal to process (#{worker[:pid]})",
             role: :process_supervisor,
             pid: worker[:pid],
             signal: :KILL
           )
           ::Process.kill(:KILL, worker[:pid])
+          reap_process_record!(worker[:pid])
           ::Process.wait(worker[:pid])
           workers[index] = nil
-          Ductwork.logger.debug(
+          Ductwork.logger.warn(
             msg: "Child process (#{worker[:pid]}) killed after timeout",
             role: :process_supervisor,
             pid: worker[:pid]
@@ -161,11 +162,13 @@ module Ductwork
         end
       end
 
-      def destroy_process_record!(pid)
+      def reap_process_record!(pid)
         machine_identifier = Ductwork::MachineIdentifier.fetch
 
         Ductwork.wrap_with_app_executor do
-          Ductwork::Process.find_by(pid:, machine_identifier:)&.destroy
+          Ductwork::Process
+            .find_by(pid:, machine_identifier:)
+            &.reap!(:process_supervisor)
         end
       end
 

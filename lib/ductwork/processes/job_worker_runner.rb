@@ -112,7 +112,7 @@ module Ductwork
         job_workers.each(&:stop)
         await_threads_graceful_shutdown
         kill_remaining_job_workers
-        destroy_process_record!
+        reap_process_record!
       end
 
       def await_threads_graceful_shutdown
@@ -148,9 +148,9 @@ module Ductwork
         end
       end
 
-      def destroy_process_record!
+      def reap_process_record!
         Ductwork.wrap_with_app_executor do
-          Ductwork::Process.destroy_current!
+          Ductwork::Process.current.reap!(:job_worker_runner)
         end
       end
     end
