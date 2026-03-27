@@ -46,6 +46,11 @@ module Ductwork
         migration_template "db/create_ductwork_advancements.rb",
                            "db/migrate/create_ductwork_advancements.rb"
       end
+
+      if Ductwork::Execution.column_names.include?("process_id")
+        migration_template "db/update_process_associations.rb",
+                           "db/migrate/update_process_associations.rb"
+      end
     end
   end
 end

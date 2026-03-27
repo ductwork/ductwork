@@ -6,6 +6,10 @@ module Ductwork
              class_name: "Ductwork::Advancement",
              foreign_key: "process_id",
              dependent: :nullify
+    has_many :availabilities,
+             class_name: "Ductwork::Availability",
+             foreign_key: "process_id",
+             dependent: :nullify
 
     class NotFoundError < StandardError; end
 

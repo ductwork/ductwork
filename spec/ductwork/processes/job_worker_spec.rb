@@ -9,6 +9,10 @@ RSpec.describe Ductwork::Processes::JobWorker do
   end
 
   describe "#start" do
+    before do
+      create(:process, :current)
+    end
+
     it "creates a thread" do
       job_worker = described_class.new(pipeline, id)
 
@@ -30,6 +34,7 @@ RSpec.describe Ductwork::Processes::JobWorker do
       job_worker.start
       sleep(1)
 
+      expect(job_worker.thread).to be_alive
       expect(job_worker.last_heartbeat_at).to be_now
 
       shutdown(job_worker)

@@ -38,9 +38,21 @@ RSpec.describe Ductwork::Job do
     let(:availability) { create(:availability) }
     let(:execution) { availability.execution }
     let(:klass) { execution.job.step.pipeline.klass }
+    let(:process) { create(:process, :current) }
 
     before do
+      process
       availability.update!(pipeline_klass: klass)
+    end
+
+    it "calls the job claim class" do
+      claim = instance_double(Ductwork::JobClaim, latest: nil)
+      allow(Ductwork::JobClaim).to receive(:new).and_return(claim)
+
+      described_class.claim_latest(klass)
+
+      expect(Ductwork::JobClaim).to have_received(:new).with(klass)
+      expect(claim).to have_received(:latest)
     end
 
     it "updates the the availability record" do
@@ -49,13 +61,7 @@ RSpec.describe Ductwork::Job do
       expect do
         described_class.claim_latest(klass)
       end.to change { availability.reload.completed_at }.from(nil).to(be_almost_now)
-        .and change(availability, :process_id).from(nil).to(::Process.pid)
-    end
-
-    it "updates the execution record" do
-      expect do
-        described_class.claim_latest(klass)
-      end.to change { execution.reload.process_id }.from(nil).to(::Process.pid)
+        .and change(availability, :process_id).from(nil).to(process.id)
     end
 
     it "only claims jobs for the specified pipeline klass" do

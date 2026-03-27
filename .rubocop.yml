@@ -29,6 +29,8 @@ Lint/MissingSuper:
 
 Metrics/AbcSize:
   Max: 30
+  Exclude:
+    - lib/generators/ductwork/update/update_generator.rb
 
 Metrics/BlockLength:
   Exclude:
@@ -44,6 +46,10 @@ Metrics/CyclomaticComplexity:
 
 Metrics/MethodLength:
   Max: 40
+
+Metrics/PerceivedComplexity:
+  Exclude:
+    - lib/generators/ductwork/update/update_generator.rb
 
 Naming/BlockForwarding:
   EnforcedStyle: explicit

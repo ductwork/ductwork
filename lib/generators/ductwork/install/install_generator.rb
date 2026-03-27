@@ -25,6 +25,8 @@ module Ductwork
                          "db/migrate/create_ductwork_steps.rb"
       migration_template "db/create_ductwork_jobs.rb",
                          "db/migrate/create_ductwork_jobs.rb"
+      migration_template "db/create_ductwork_processes.rb",
+                         "db/migrate/create_ductwork_processes.rb"
       migration_template "db/create_ductwork_executions.rb",
                          "db/migrate/create_ductwork_executions.rb"
       migration_template "db/create_ductwork_availabilities.rb",
@@ -33,8 +35,6 @@ module Ductwork
                          "db/migrate/create_ductwork_runs.rb"
       migration_template "db/create_ductwork_results.rb",
                          "db/migrate/create_ductwork_results.rb"
-      migration_template "db/create_ductwork_processes.rb",
-                         "db/migrate/create_ductwork_processes.rb"
       migration_template "db/create_ductwork_transitions.rb",
                          "db/migrate/create_ductwork_transitions.rb"
       migration_template "db/create_ductwork_advancements.rb",

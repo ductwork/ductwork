@@ -6,7 +6,7 @@ module Ductwork
       @availability = nil
       @job = nil
       @klass = klass
-      @process_id = ::Process.pid
+      @process_id = Ductwork::Process.current.id
     end
 
     def latest
@@ -49,14 +49,15 @@ module Ductwork
 
       return unless availability
 
-      availability.update_columns(completed_at: Time.current, process_id: process_id)
+      availability.update_columns(
+        completed_at: Time.current,
+        process_id: process_id
+      )
     end
 
     def update_state
-      execution = availability.execution
-      @job = execution.job
+      @job = availability.execution.job
 
-      execution.update!(process_id:)
       job.step.in_progress!
       job.step.pipeline.in_progress!
     end

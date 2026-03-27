@@ -10,9 +10,15 @@ class CreateDuctworkAvailabilities < Ductwork::Migration
         null: false,
         foreign_key: { to_table: :ductwork_executions }
       )
+      belongs_to(
+        table,
+        :process,
+        index: true,
+        null: true,
+        foreign_key: { to_table: :ductwork_processes }
+      )
       table.timestamp :started_at, null: false
       table.timestamp :completed_at
-      table.integer :process_id
       table.string :pipeline_klass, null: false
       table.timestamps null: false
     end

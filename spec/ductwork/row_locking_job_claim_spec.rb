@@ -5,6 +5,11 @@ RSpec.describe Ductwork::RowLockingJobClaim do
     subject(:claim) { described_class.new(klass) }
 
     let(:be_almost_now) { be_within(1.second).of(Time.current) }
+    let(:process) { create(:process, :current) }
+
+    before do
+      process
+    end
 
     context "when there is a job to claim" do
       let(:availability) { create(:availability) }
@@ -29,12 +34,6 @@ RSpec.describe Ductwork::RowLockingJobClaim do
         expect do
           claim.latest
         end.to change { availability.reload.completed_at }.from(nil).to(be_almost_now)
-      end
-
-      it "sets the process id on the execution" do
-        expect do
-          claim.latest
-        end.to change { execution.reload.process_id }.from(nil).to(Process.pid)
       end
 
       it "marks the step and pipeline as in-progress" do
@@ -62,7 +61,7 @@ RSpec.describe Ductwork::RowLockingJobClaim do
         expect(Ductwork.logger).to have_received(:debug).with(
           msg: "No available job to claim",
           role: :job_worker,
-          process_id: Process.pid,
+          process_id: process.id,
           pipeline: klass
         )
       end

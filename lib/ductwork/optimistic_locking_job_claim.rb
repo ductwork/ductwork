@@ -6,7 +6,7 @@ module Ductwork
       @id = nil
       @job = nil
       @klass = klass
-      @process_id = ::Process.pid
+      @process_id = Ductwork::Process.current.id
     end
 
     def latest
@@ -75,12 +75,6 @@ module Ductwork
     end
 
     def update_state
-      Ductwork::Execution
-        .joins(:availability)
-        .where(completed_at: nil)
-        .where(ductwork_availabilities: { id: })
-        .sole
-        .update!(process_id:)
       job.step.in_progress!
       job.step.pipeline.in_progress!
     end
