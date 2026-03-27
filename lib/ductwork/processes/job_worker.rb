@@ -82,8 +82,8 @@ module Ductwork
             end
           rescue StandardError => e
             if job.present?
-              execution = job.executions.order(:created_at).last
               Ductwork.wrap_with_app_executor do
+                execution = job.executions.order(:created_at).last
                 job.execution_crashed!(execution)
               end
             end
