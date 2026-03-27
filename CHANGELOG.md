@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: bump ruby versions in CI
 - chore: bump rails versions in appraisals file
 - chore: DRY up process record destruction
 - fix: release job availabilities during process reaping
