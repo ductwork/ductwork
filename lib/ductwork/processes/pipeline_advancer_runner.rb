@@ -152,7 +152,7 @@ module Ductwork
 
       def reap_process_record!
         Ductwork.wrap_with_app_executor do
-          Ductwork::Process.current.reap!(:pipeline_advancer_runner)
+          Ductwork::Process.current&.reap!(:pipeline_advancer_runner)
         end
       end
     end
