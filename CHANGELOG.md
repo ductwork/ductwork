@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: guard against PID reuse with guard statement
 - fix: use safe navigation operator on process records
 - fix: rescue all job worker errors as to not let thread die
 - fix: reap process (and claims) on process restart or immediate shutdown
