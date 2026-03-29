@@ -4,7 +4,6 @@ RSpec.describe Ductwork::OptimisticLockingJobClaim do
   describe "#latest" do
     subject(:claim) { described_class.new(klass) }
 
-    let(:be_almost_now) { be_within(1.second).of(Time.current) }
     let(:process) { create(:process, :current) }
 
     before do

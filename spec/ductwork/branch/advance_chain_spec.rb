@@ -61,7 +61,6 @@ RSpec.describe Ductwork::Branch, "#advance!" do
   it "completes the transition and advancement records" do
     branch.advance!(transition, advancement)
 
-    be_almost_now = be_within(1.second).of(Time.current)
     expect(transition.completed_at).to be_almost_now
     expect(advancement.completed_at).to be_almost_now
   end

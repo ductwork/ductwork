@@ -128,7 +128,6 @@ RSpec.describe Ductwork::Branch do
     subject(:branch) { create(:branch) }
 
     let(:step) { create(:step, :advancing, branch:) }
-    let(:be_almost_now) { be_within(1.second).of(Time.current) }
 
     before do
       step

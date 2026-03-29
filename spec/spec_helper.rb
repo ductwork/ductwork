@@ -30,6 +30,7 @@ RSpec.configure do |config|
   config.disable_monkey_patching!
   config.order = :random
   Kernel.srand(config.seed)
+  config.include Helpers
 
   config.expect_with :rspec do |c|
     c.syntax = :expect

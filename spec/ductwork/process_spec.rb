@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 RSpec.describe Ductwork::Process do
-  let(:be_almost_now) { be_within(1.second).of(Time.current) }
   let(:pid) { ::Process.pid }
   let(:machine_identifier) do
     File.read("/etc/machine-id").strip

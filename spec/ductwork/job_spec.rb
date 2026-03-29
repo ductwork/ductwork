@@ -56,8 +56,6 @@ RSpec.describe Ductwork::Job do
     end
 
     it "updates the the availability record" do
-      be_almost_now = be_within(1.second).of(Time.current)
-
       expect do
         described_class.claim_latest(klass)
       end.to change { availability.reload.completed_at }.from(nil).to(be_almost_now)
@@ -178,8 +176,6 @@ RSpec.describe Ductwork::Job do
     end
 
     it "updates the timestamp on the execution" do
-      be_almost_now = be_within(1.second).of(Time.current)
-
       expect do
         job.execute(pipeline)
       end.to change { execution.reload.completed_at }.from(nil).to(be_almost_now)
@@ -280,7 +276,6 @@ RSpec.describe Ductwork::Job do
     subject(:job) { create(:job) }
 
     let(:execution) { create(:execution, job:) }
-    let(:be_almost_now) { be_within(1.second).of(Time.current) }
 
     it "completes the execution" do
       expect do
