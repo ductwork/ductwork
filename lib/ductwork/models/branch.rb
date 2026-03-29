@@ -123,7 +123,11 @@ module Ductwork
     end
 
     def release!
-      update!(claimed_for_advancing_at: nil, status: :in_progress)
+      update!(
+        claimed_for_advancing_at: nil,
+        status: :in_progress,
+        last_advanced_at: Time.current
+      )
     end
 
     private

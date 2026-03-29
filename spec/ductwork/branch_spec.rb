@@ -337,13 +337,20 @@ RSpec.describe Ductwork::Branch do
   end
 
   describe "#release!" do
-    subject(:branch) { create(:branch, :advancing, claimed_for_advancing_at: Time.current) }
+    subject(:branch) do
+      create(
+        :branch,
+        :advancing,
+        claimed_for_advancing_at: Time.current
+      )
+    end
 
-    it "nullifies the claim timestamp and sets status" do
+    it "nullifies the claim timestamp and sets status and last advanced at" do
       expect do
         branch.release!
       end.to change { branch.reload.status }.to("in_progress")
         .and change(branch, :claimed_for_advancing_at).to(nil)
+        .and change(branch, :last_advanced_at).to be_almost_now
     end
   end
 end
