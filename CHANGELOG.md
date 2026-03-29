@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: derive process dead threshold from process reap threshold
 - fix: move transition and advancement creation into claim transaction
 - fix: guard against PID reuse with guard statement
 - fix: use safe navigation operator on process records

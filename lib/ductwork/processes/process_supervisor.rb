@@ -153,11 +153,12 @@ module Ductwork
 
       def process_dead?(pid)
         machine_identifier = Ductwork::MachineIdentifier.fetch
+        threshold = Ductwork::Process::REAP_THRESHOLD - 10.seconds
 
         Ductwork.wrap_with_app_executor do
           Ductwork::Process
             .where(pid:, machine_identifier:)
-            .where("last_heartbeat_at < ?", 50.seconds.ago)
+            .where("last_heartbeat_at < ?", threshold.ago)
             .exists?
         end
       end
