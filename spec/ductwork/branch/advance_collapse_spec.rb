@@ -26,12 +26,16 @@ RSpec.describe Ductwork::Branch, "#advance" do
       pipeline: pipeline
     )
   end
+  let(:transition) { create(:transition, branch:) }
+  let(:advancement) { create(:advancement, transition:) }
   let(:output_payload) { { payload: }.to_json }
   let(:payload) { 1 }
   let(:other_branches) { create_list(:branch, 2, :completed, pipeline:) }
   let(:parent_branch) { create(:branch, :completed, pipeline:) }
 
   before do
+    transition
+    advancement
     create(:process, :current)
     other_step1 = create(
       :step,
@@ -61,7 +65,7 @@ RSpec.describe Ductwork::Branch, "#advance" do
 
   it "creates a new step and enqueues a job" do
     expect do
-      branch.advance!
+      branch.advance!(transition, advancement)
     end.to change(Ductwork::Step, :count).by(1)
       .and change(Ductwork::Job, :count).by(1)
 
@@ -75,21 +79,21 @@ RSpec.describe Ductwork::Branch, "#advance" do
   it "passes the output payload as input arguments to the next step" do
     allow(Ductwork::Job).to receive(:enqueue)
 
-    branch.advance!
+    branch.advance!(transition, advancement)
 
     expect(Ductwork::Job).to have_received(:enqueue).with(anything, [1, 1, 1])
   end
 
   it "completes the current branch" do
     expect do
-      branch.advance!
+      branch.advance!(transition, advancement)
     end.to change(branch, :status).from("in_progress").to("completed")
       .and change(branch, :completed_at).to(be_within(1.second).of(Time.current))
   end
 
   it "creates a new child branch" do
     expect do
-      branch.advance!
+      branch.advance!(transition, advancement)
     end.to change(described_class, :count).by(1)
       .and change(Ductwork::BranchLink, :count).by(3)
 
@@ -98,12 +102,9 @@ RSpec.describe Ductwork::Branch, "#advance" do
   end
 
   it "completes the transition and advancement records" do
-    branch.advance!
+    branch.advance!(transition, advancement)
 
     be_almost_now = be_within(1.second).of(Time.current)
-    transition = branch.transitions.sole
-    advancement = transition.advancements.sole
-
     expect(transition.completed_at).to be_almost_now
     expect(advancement.completed_at).to be_almost_now
   end
@@ -127,7 +128,7 @@ RSpec.describe Ductwork::Branch, "#advance" do
 
     it "does not advance" do
       expect do
-        branch.advance!
+        branch.advance!(transition, advancement)
       end.to not_change(Ductwork::Step, :count)
         .and change(branch, :status).from("in_progress").to("completed")
         .and change(branch, :completed_at).to(be_within(1.second).of(Time.current))

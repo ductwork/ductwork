@@ -157,7 +157,7 @@ module Ductwork
         Ductwork.wrap_with_app_executor do
           Ductwork::Process
             .where(pid:, machine_identifier:)
-            .where("last_heartbeat_at < ?", 5.minutes.ago)
+            .where("last_heartbeat_at < ?", 50.seconds.ago)
             .exists?
         end
       end

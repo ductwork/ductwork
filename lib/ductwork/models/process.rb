@@ -86,6 +86,7 @@ module Ductwork
         end
         destroy
       end
+
       Ductwork.logger.debug(
         msg: "Reaped orphaned process record #{id}",
         id: id,

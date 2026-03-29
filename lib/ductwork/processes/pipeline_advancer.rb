@@ -55,8 +55,8 @@ module Ductwork
         )
 
         while running_context.running?
-          Branch.with_latest_claimed(klass) do |branch|
-            branch.advance!
+          Branch.with_latest_claimed(klass) do |branch, transition, advancement|
+            branch.advance!(transition, advancement)
           end
 
           @last_heartbeat_at = Time.current

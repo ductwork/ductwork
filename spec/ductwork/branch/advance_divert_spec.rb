@@ -31,17 +31,21 @@ RSpec.describe Ductwork::Branch, "#advance!" do
       pipeline: pipeline
     )
   end
+  let(:transition) { create(:transition, branch:) }
+  let(:advancement) { create(:advancement, transition:) }
   let(:output_payload) { { payload: }.to_json }
   let(:payload) { "bar" }
 
   before do
+    transition
+    advancement
     create(:process, :current)
     create(:job, output_payload:, step:)
   end
 
   it "routes to the correct next step when return value matches" do
     expect do
-      branch.advance!
+      branch.advance!(transition, advancement)
     end.to change(Ductwork::Step, :count).by(1)
       .and change(Ductwork::Job, :count).by(1)
 
@@ -56,13 +60,13 @@ RSpec.describe Ductwork::Branch, "#advance!" do
   it "passes the output payload as input arguments to the next steps" do
     allow(Ductwork::Job).to receive(:enqueue)
 
-    branch.advance!
+    branch.advance!(transition, advancement)
 
     expect(Ductwork::Job).to have_received(:enqueue).with(anything, payload)
   end
 
   it "completes the transition and advancement records" do
-    branch.advance!
+    branch.advance!(transition, advancement)
 
     be_almost_now = be_within(1.second).of(Time.current)
     transition = branch.transitions.sole
@@ -90,7 +94,7 @@ RSpec.describe Ductwork::Branch, "#advance!" do
 
     it "halts the branch and pipeline" do
       expect do
-        branch.advance!
+        branch.advance!(transition, advancement)
       end.not_to change(Ductwork::Step, :count)
 
       expect(branch.reload).to be_halted

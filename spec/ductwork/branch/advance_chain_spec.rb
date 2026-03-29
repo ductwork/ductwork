@@ -25,17 +25,21 @@ RSpec.describe Ductwork::Branch, "#advance!" do
       pipeline: pipeline
     )
   end
+  let(:transition) { create(:transition, branch:) }
+  let(:advancement) { create(:advancement, transition:) }
   let(:output_payload) { { payload: }.to_json }
   let(:payload) { %w[a b c] }
 
   before do
+    transition
+    advancement
     create(:process, :current)
     create(:job, output_payload:, step:)
   end
 
   it "creates a new step and enqueues a job" do
     expect do
-      branch.advance!
+      branch.advance!(transition, advancement)
     end.to change(Ductwork::Step, :count).by(1)
       .and change(Ductwork::Job, :count).by(1)
 
@@ -49,18 +53,15 @@ RSpec.describe Ductwork::Branch, "#advance!" do
   it "passes the output payload as input arguments to the next step" do
     allow(Ductwork::Job).to receive(:enqueue)
 
-    branch.advance!
+    branch.advance!(transition, advancement)
 
     expect(Ductwork::Job).to have_received(:enqueue).with(anything, payload)
   end
 
   it "completes the transition and advancement records" do
-    branch.advance!
+    branch.advance!(transition, advancement)
 
     be_almost_now = be_within(1.second).of(Time.current)
-    transition = branch.transitions.sole
-    advancement = transition.advancements.sole
-
     expect(transition.completed_at).to be_almost_now
     expect(advancement.completed_at).to be_almost_now
   end

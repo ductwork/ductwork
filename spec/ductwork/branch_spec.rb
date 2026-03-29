@@ -67,7 +67,12 @@ RSpec.describe Ductwork::Branch do
 
   describe ".with_latest_claimed" do
     let(:pipeline_klass) { "MyPipeline" }
-    let(:claim) { instance_double(Ductwork::BranchClaim, latest: branch) }
+    let(:claim) do
+      instance_double(
+        Ductwork::BranchClaim,
+        latest: [branch, transition, advancement]
+      )
+    end
     let(:branch) do
       create(
         :branch,
@@ -76,6 +81,8 @@ RSpec.describe Ductwork::Branch do
         last_advanced_at: 5.minutes.ago
       )
     end
+    let(:transition) { create(:transition, branch:) }
+    let(:advancement) { create(:advancement, transition:) }
 
     before do
       allow(Ductwork::BranchClaim).to receive(:new).and_return(claim)
@@ -91,7 +98,7 @@ RSpec.describe Ductwork::Branch do
     it "yields the claimed branch" do
       expect do |block|
         described_class.with_latest_claimed(pipeline_klass, &block)
-      end.to yield_with_args(branch)
+      end.to yield_with_args(branch, transition, advancement)
     end
 
     it "does not yield if there is no branch to claim" do
@@ -126,21 +133,9 @@ RSpec.describe Ductwork::Branch do
       create(:process, :current)
     end
 
-    it "creates an advancement record" do
-      expect do
-        branch.advance!
-      end.to change(Ductwork::Advancement, :count).by(1)
-    end
-
-    it "creates a transition record" do
-      expect do
-        branch.advance!
-      end.to change(Ductwork::Transition, :count).by(1)
-    end
-
     it "completes the step" do
       expect do
-        branch.advance!
+        branch.advance!(spy, spy)
       end.to change { step.reload.status }.from("advancing").to("completed")
         .and change(step, :completed_at).from(nil).to(be_almost_now)
     end
@@ -164,13 +159,13 @@ RSpec.describe Ductwork::Branch do
 
       it "completes the branch" do
         expect do
-          branch.advance!
+          branch.advance!(spy, spy)
         end.to change { branch.reload.completed_at }.to(be_almost_now)
       end
 
       it "completes the pipeline" do
         expect do
-          branch.advance!
+          branch.advance!(spy, spy)
         end.to change { pipeline.reload.status }.to("completed")
           .and change(pipeline, :completed_at).to(be_almost_now)
       end
@@ -199,7 +194,7 @@ RSpec.describe Ductwork::Branch do
 
       it "does not complete the pipeline" do
         expect do
-          branch.advance!
+          branch.advance!(spy, spy)
         end.not_to change(pipeline, :status)
       end
     end
@@ -224,7 +219,6 @@ RSpec.describe Ductwork::Branch do
       let(:advancement) { create(:advancement, transition:) }
 
       before do
-        advancement
         branch.pipeline.tap do |p|
           p.in_progress!
           p.update!(definition:)
@@ -244,18 +238,8 @@ RSpec.describe Ductwork::Branch do
 
       it "attempts to advance again and completes the transition" do
         expect do
-          branch.advance!
+          branch.advance!(transition, advancement)
         end.to change { transition.reload.completed_at }.to(be_almost_now)
-      end
-
-      it "fails any abandoned advancement record and creates a new one" do
-        expect do
-          branch.advance!
-        end.to change(Ductwork::Advancement, :count).by(1)
-
-        expect(advancement.reload.completed_at).to be_almost_now
-        expect(advancement.error_klass).to eq("Ductwork::ProcessCrash")
-        expect(advancement.error_message).to eq("Advancement was abandoned from a process crash")
       end
     end
 
@@ -268,6 +252,8 @@ RSpec.describe Ductwork::Branch do
           },
         }.to_json
       end
+      let(:transition) { create(:transition, branch:) }
+      let(:advancement) { create(:advancement, transition:) }
 
       before do
         branch.pipeline.tap do |p|
@@ -277,7 +263,7 @@ RSpec.describe Ductwork::Branch do
       end
 
       it "completes and sets error metadata on the advancement record" do
-        branch.advance!
+        branch.advance!(transition, advancement)
 
         advancement = branch.transitions.sole.advancements.sole
         expect(advancement.completed_at).to be_almost_now

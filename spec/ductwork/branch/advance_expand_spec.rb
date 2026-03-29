@@ -25,17 +25,21 @@ RSpec.describe Ductwork::Branch, "#advance!" do
       pipeline: pipeline
     )
   end
+  let(:transition) { create(:transition, branch:) }
+  let(:advancement) { create(:advancement, transition:) }
   let(:output_payload) { { payload: }.to_json }
   let(:payload) { %w[a b c] }
 
   before do
+    transition
+    advancement
     create(:process, :current)
     create(:job, output_payload:, step:)
   end
 
   it "creates new steps and enqueues jobs" do
     expect do
-      branch.advance!
+      branch.advance!(transition, advancement)
     end.to change(Ductwork::Step, :count).by(3)
       .and change(Ductwork::Job, :count).by(3)
 
@@ -55,7 +59,7 @@ RSpec.describe Ductwork::Branch, "#advance!" do
   end
 
   it "passes the output payload as input arguments to the next steps" do
-    branch.advance!
+    branch.advance!(transition, advancement)
 
     input_args = Ductwork::Job.last(3).map do |job|
       JSON.parse(job.input_args).fetch("args")
@@ -65,14 +69,14 @@ RSpec.describe Ductwork::Branch, "#advance!" do
 
   it "completes the current branch" do
     expect do
-      branch.advance!
+      branch.advance!(transition, advancement)
     end.to change(branch, :status).from("in_progress").to("completed")
       .and change(branch, :completed_at).to(be_within(1.second).of(Time.current))
   end
 
   it "creates new child branches" do
     expect do
-      branch.advance!
+      branch.advance!(transition, advancement)
     end.to change(described_class, :count).by(3)
       .and change(Ductwork::BranchLink, :count).by(3)
 
@@ -83,7 +87,7 @@ RSpec.describe Ductwork::Branch, "#advance!" do
   end
 
   it "completes the transition and advancement records" do
-    branch.advance!
+    branch.advance!(transition, advancement)
 
     be_almost_now = be_within(1.second).of(Time.current)
     transition = branch.transitions.sole
@@ -98,7 +102,7 @@ RSpec.describe Ductwork::Branch, "#advance!" do
 
     it "completes the branch and pipeline" do
       expect do
-        branch.advance!
+        branch.advance!(transition, advancement)
       end.to change(branch, :status).from("in_progress").to("completed")
         .and change(pipeline, :status).from("in_progress").to("completed")
         .and change(pipeline, :completed_at).to(be_within(1.second).of(Time.current))
@@ -130,7 +134,7 @@ RSpec.describe Ductwork::Branch, "#advance!" do
 
     it "halts the pipeline" do
       expect do
-        branch.advance!
+        branch.advance!(transition, advancement)
       end.not_to change(Ductwork::Step, :count)
       expect(pipeline.reload).to be_halted
     end
@@ -139,7 +143,7 @@ RSpec.describe Ductwork::Branch, "#advance!" do
       create(:branch, :in_progress, pipeline:)
 
       expect do
-        branch.advance!
+        branch.advance!(transition, advancement)
       end.not_to change(Ductwork::Step, :count)
       expect(pipeline.branches).to all(be_halted)
     end

@@ -39,11 +39,11 @@ module Ductwork
     class TransitionError < StandardError; end
 
     def self.with_latest_claimed(pipeline_klass)
-      branch = Ductwork::BranchClaim.new(pipeline_klass).latest
+      branch, transition, advancement = Ductwork::BranchClaim.new(pipeline_klass).latest
       succeeded = false
 
       if branch.present?
-        yield branch
+        yield branch, transition, advancement
 
         succeeded = true
       end
@@ -65,9 +65,8 @@ module Ductwork
       end
     end
 
-    def advance! # rubocop:todo Metrics
+    def advance!(transition, advancement) # rubocop:todo Metrics
       edge = pipeline.parsed_definition.dig(:edges, latest_step.node)
-      transition, advancement = find_active_or_create_transition
 
       if edge.nil? || edge[:to].blank?
         complete_branch_and_pipeline(transition, advancement)
@@ -127,46 +126,6 @@ module Ductwork
     end
 
     private
-
-    def find_active_or_create_transition
-      now = Time.current
-      transition = transitions
-                   .where(completed_at: nil)
-                   .order(started_at: :desc)
-                   .limit(1)
-                   .first
-      advancement = nil
-
-      Ductwork::Record.transaction do
-        if transition.present?
-          attrs = {
-            completed_at: Time.current,
-            error_klass: "Ductwork::ProcessCrash",
-            error_message: "Advancement was abandoned from a process crash",
-          }
-
-          transition
-            .advancements
-            .where(completed_at: nil)
-            .order(started_at: :desc)
-            .limit(1)
-            .first
-            &.update!(**attrs)
-        else
-          transition = transitions.create!(
-            in_step: latest_step,
-            started_at: now
-          )
-        end
-
-        advancement = transition.advancements.create!(
-          process: Ductwork::Process.current,
-          started_at: now
-        )
-      end
-
-      [transition, advancement]
-    end
 
     def complete_branch_and_pipeline(transition, advancement)
       Ductwork::Record.transaction do

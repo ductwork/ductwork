@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: move transition and advancement creation into claim transaction
 - fix: guard against PID reuse with guard statement
 - fix: use safe navigation operator on process records
 - fix: rescue all job worker errors as to not let thread die
