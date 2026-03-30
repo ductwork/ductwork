@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: log when pipeline advancement errors
 - fix: move branch release into main advance transaction
 - fix: set `last_advanced_at` timestamp when releasing branch
 - chore: derive process dead threshold from process reap threshold

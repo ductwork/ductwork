@@ -79,6 +79,13 @@ module Ductwork
               "Invalid transition type `#{edge[:type]}`"
       end
     rescue StandardError => e
+      Ductwork.logger.error(
+        msg: "Branch advancement errored",
+        branch_id: id,
+        error_klass: e.class.to_s,
+        error_message: e.message
+      )
+
       advancement&.update!(
         completed_at: Time.current,
         error_klass: e.class.to_s,

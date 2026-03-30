@@ -272,6 +272,19 @@ RSpec.describe Ductwork::Branch do
         expect(advancement.error_message).to eq("Invalid transition type `bogus`")
         expect(advancement.error_backtrace).to be_present
       end
+
+      it "logs" do
+        allow(Ductwork.logger).to receive(:error)
+
+        branch.advance!(transition, advancement)
+
+        expect(Ductwork.logger).to have_received(:error).with(
+          msg: "Branch advancement errored",
+          branch_id: branch.id,
+          error_klass: "Ductwork::Branch::TransitionError",
+          error_message: "Invalid transition type `bogus`"
+        )
+      end
     end
   end
 
