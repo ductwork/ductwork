@@ -31,8 +31,8 @@ module Ductwork
                          "db/migrate/create_ductwork_executions.rb"
       migration_template "db/create_ductwork_availabilities.rb",
                          "db/migrate/create_ductwork_availabilities.rb"
-      migration_template "db/create_ductwork_runs.rb",
-                         "db/migrate/create_ductwork_runs.rb"
+      migration_template "db/create_ductwork_attempts.rb",
+                         "db/migrate/create_ductwork_attempts.rb"
       migration_template "db/create_ductwork_results.rb",
                          "db/migrate/create_ductwork_results.rb"
       migration_template "db/create_ductwork_transitions.rb",

@@ -7,6 +7,11 @@ FactoryBot.define do
     transition
   end
 
+  factory :attempt, class: "Ductwork::Attempt" do
+    started_at { Time.current }
+    execution
+  end
+
   factory :availability, class: "Ductwork::Availability" do
     started_at { Time.current }
     pipeline_klass { "MyPipeline" }
@@ -66,11 +71,6 @@ FactoryBot.define do
         Socket.gethostname
       end
     end
-  end
-
-  factory :run, class: "Ductwork::Run" do
-    started_at { Time.current }
-    execution
   end
 
   factory :step, class: "Ductwork::Step" do

@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: rename `ductwork_runs` to `ductwork_attempts`
 - chore: log when pipeline advancement errors
 - fix: move branch release into main advance transaction
 - fix: set `last_advanced_at` timestamp when releasing branch

@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-class CreateDuctworkRuns < Ductwork::Migration
+class CreateDuctworkAttempts < Ductwork::Migration
   def change
-    create_ductwork_table :ductwork_runs do |table|
+    create_ductwork_table :ductwork_attempts do |table|
       belongs_to(
         table,
         :execution,
@@ -15,6 +15,6 @@ class CreateDuctworkRuns < Ductwork::Migration
       table.timestamps null: false
     end
 
-    add_index :ductwork_runs, :execution_id, unique: true
+    add_index :ductwork_attempts, :execution_id, unique: true
   end
 end

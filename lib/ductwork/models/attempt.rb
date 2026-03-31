@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Ductwork
-  class Run < Ductwork::Record
+  class Attempt < Ductwork::Record
     belongs_to :execution, class_name: "Ductwork::Execution"
 
     validates :started_at, presence: true

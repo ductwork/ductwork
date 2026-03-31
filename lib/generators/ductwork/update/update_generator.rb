@@ -51,6 +51,11 @@ module Ductwork
         migration_template "db/update_process_associations.rb",
                            "db/migrate/update_process_associations.rb"
       end
+
+      if Ductwork::Record.connection.table_exists?(:ductwork_runs)
+        migration_template "db/rename_runs_to_attempts.rb",
+                           "db/migrate/rename_runs_to_attempts.rb"
+      end
     end
   end
 end

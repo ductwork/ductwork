@@ -50,17 +50,17 @@ module Ductwork
       )
       args = JSON.parse(input_args)["args"]
       instance = Object.const_get(klass).build_for_execution(step.pipeline_id, *args)
-      run = execution.create_run!(
+      attempt = execution.create_attempt!(
         started_at: Time.current
       )
       result = nil
 
       begin
         output_payload = instance.execute
-        execution_succeeded!(execution, run, output_payload)
+        execution_succeeded!(execution, attempt, output_payload)
         result = "success"
       rescue StandardError => e
-        execution_failed!(execution, run, e)
+        execution_failed!(execution, attempt, e)
         result = "failure"
       ensure
         Ductwork.logger.info(
@@ -85,7 +85,7 @@ module Ductwork
 
       Ductwork::Record.transaction do
         execution.update!(completed_at: Time.current)
-        execution.run&.update!(completed_at: Time.current)
+        execution.attempt&.update!(completed_at: Time.current)
         execution.create_result!(result_type: "process_crashed")
 
         new_execution = executions.create!(
@@ -101,19 +101,19 @@ module Ductwork
 
     private
 
-    def execution_succeeded!(execution, run, output_payload)
+    def execution_succeeded!(execution, attempt, output_payload)
       payload = JSON.dump({ payload: output_payload })
 
       Ductwork::Record.transaction do
         update!(output_payload: payload, completed_at: Time.current)
         execution.update!(completed_at: Time.current)
-        run.update!(completed_at: Time.current)
+        attempt.update!(completed_at: Time.current)
         execution.create_result!(result_type: "success")
         step.update!(status: :advancing)
       end
     end
 
-    def execution_failed!(execution, run, error) # rubocop:todo Metrics
+    def execution_failed!(execution, attempt, error) # rubocop:todo Metrics
       halted = false
       pipeline = step.pipeline
       max_retry = Ductwork
@@ -122,7 +122,7 @@ module Ductwork
 
       Ductwork::Record.transaction do
         execution.update!(completed_at: Time.current)
-        run.update!(completed_at: Time.current)
+        attempt.update!(completed_at: Time.current)
         execution.create_result!(
           result_type: "failure",
           error_klass: error.class.to_s,

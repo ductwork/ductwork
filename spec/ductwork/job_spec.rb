@@ -163,16 +163,16 @@ RSpec.describe Ductwork::Job do
       expect do
         job.execute(pipeline)
       end.to change(job, :output_payload).from(nil).to(payload)
-        .and change(job, :completed_at).from(nil).to(be_within(1.second).of(Time.current))
+        .and change(job, :completed_at).from(nil).to(be_almost_now)
     end
 
-    it "creates a run record" do
+    it "creates an attempt record" do
       expect do
         job.execute(pipeline)
-      end.to change(Ductwork::Run, :count).by(1)
-      run = Ductwork::Run.sole
-      expect(run.started_at).to be_within(1.second).of(Time.current)
-      expect(run.completed_at).to be_within(1.second).of(Time.current)
+      end.to change(Ductwork::Attempt, :count).by(1)
+      attempt = Ductwork::Attempt.sole
+      expect(attempt.started_at).to be_almost_now
+      expect(attempt.completed_at).to be_almost_now
     end
 
     it "updates the timestamp on the execution" do
@@ -283,12 +283,12 @@ RSpec.describe Ductwork::Job do
       end.to change { execution.reload.completed_at }.to(be_almost_now)
     end
 
-    it "completes the run if it exists" do
-      run = create(:run, execution:)
+    it "completes the attempt if it exists" do
+      attempt = create(:attempt, execution:)
 
       expect do
         job.execution_crashed!(execution)
-      end.to change { run.reload.completed_at }.to(be_almost_now)
+      end.to change { attempt.reload.completed_at }.to(be_almost_now)
     end
 
     it "creates a 'process crashed' result record" do
