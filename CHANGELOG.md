@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: protect against null error backtraces for job results
 - fix: update dashboard pages to handle `ductwork_runs`
 - fix: create `ductwork_runs` records opaquely in rspec test helpers
 - feat: associate `branches`, `steps`, and `tuples` to `runs` instead of `pipelines`

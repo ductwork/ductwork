@@ -85,7 +85,7 @@
                     <%= result.error_message %>
                   </h5>
                   <code>
-                    <%= result.error_backtrace.split("\n").each do |line| %>
+                    <%= (result.error_backtrace&.split("\n") || []).each do |line| %>
                       <div><%= line %></div>
                     <% end %>
                   </code>
