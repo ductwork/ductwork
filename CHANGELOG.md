@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: add `source_step_id` column on `ductwork_steps`
 - fix: protect against null error backtraces for job results
 - fix: update dashboard pages to handle `ductwork_runs`
 - fix: create `ductwork_runs` records opaquely in rspec test helpers
