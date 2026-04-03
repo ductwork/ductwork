@@ -1,11 +1,9 @@
 # frozen_string_literal: true
 
 RSpec.describe Ductwork::Branch, "#advance!" do
-  subject(:branch) { create(:branch, :in_progress, pipeline:) }
+  subject(:branch) { create(:branch, :in_progress, run:) }
 
-  let(:pipeline) do
-    create(:pipeline, status: :in_progress, definition: definition)
-  end
+  let(:run) { create(:run, status: :in_progress, definition: definition) }
   let(:definition) do
     {
       nodes: %w[MyStepA.0 MyStepB.1],
@@ -22,10 +20,10 @@ RSpec.describe Ductwork::Branch, "#advance!" do
       node: "MyStepA.0",
       klass: "MyStepA",
       branch: branch,
-      pipeline: pipeline
+      run: run
     )
   end
-  let(:transition) { create(:transition, branch:) }
+  let(:transition) { create(:transition, branch: branch, in_step: step, out_step: nil) }
   let(:advancement) { create(:advancement, transition:) }
   let(:output_payload) { { payload: }.to_json }
   let(:payload) { %w[a b c] }
@@ -96,12 +94,12 @@ RSpec.describe Ductwork::Branch, "#advance!" do
   context "when the return value is empty" do
     let(:payload) { [] }
 
-    it "completes the branch and pipeline" do
+    it "completes the branch, run, and pipeline" do
       expect do
         branch.advance!(transition, advancement)
       end.to change(branch, :status).from("in_progress").to("completed")
-        .and change(pipeline, :status).from("in_progress").to("completed")
-        .and change(pipeline, :completed_at).to(be_within(1.second).of(Time.current))
+        .and change { run.reload.status }.from("in_progress").to("completed")
+        .and change(run, :completed_at).from(nil).to(be_almost_now)
     end
   end
 
@@ -124,24 +122,25 @@ RSpec.describe Ductwork::Branch, "#advance!" do
         status: :advancing,
         node: "MyStepA.0",
         klass: "MyStepA",
-        pipeline: pipeline
+        run: run
       )
     end
 
-    it "halts the pipeline" do
+    it "halts the run and pipeline" do
       expect do
         branch.advance!(transition, advancement)
       end.not_to change(Ductwork::Step, :count)
-      expect(pipeline.reload).to be_halted
+      expect(run.reload).to be_halted
+      expect(run.pipeline).to be_halted
     end
 
     it "halts all other branches" do
-      create(:branch, :in_progress, pipeline:)
+      create(:branch, :in_progress, run:)
 
       expect do
         branch.advance!(transition, advancement)
       end.not_to change(Ductwork::Step, :count)
-      expect(pipeline.branches).to all(be_halted)
+      expect(run.branches).to all(be_halted)
     end
   end
 end

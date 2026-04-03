@@ -4,8 +4,8 @@ module Ductwork
   class Context
     class OverwriteError < StandardError; end
 
-    def initialize(pipeline_id)
-      @pipeline_id = pipeline_id
+    def initialize(run_id)
+      @run_id = run_id
     end
 
     def get(key)
@@ -14,7 +14,7 @@ module Ductwork
       Ductwork.wrap_with_app_executor do
         Ductwork::Tuple
           .select(:serialized_value)
-          .find_by(pipeline_id:, key:)
+          .find_by(run_id:, key:)
           &.value
       end
     end
@@ -22,13 +22,13 @@ module Ductwork
     def set(key, value, overwrite: false)
       attributes = {
         id: SecureRandom.uuid_v7,
-        pipeline_id: pipeline_id,
+        run_id: run_id,
         key: key,
         serialized_value: Ductwork::Tuple.serialize(value),
         first_set_at: Time.current,
         last_set_at: Time.current,
       }
-      unique_by = %i[pipeline_id key]
+      unique_by = %i[run_id key]
 
       if overwrite
         Ductwork.wrap_with_app_executor do
@@ -49,6 +49,6 @@ module Ductwork
 
     private
 
-    attr_reader :pipeline_id
+    attr_reader :run_id
   end
 end

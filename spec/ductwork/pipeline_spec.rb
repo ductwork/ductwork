@@ -3,121 +3,24 @@
 RSpec.describe Ductwork::Pipeline do
   describe "validations" do
     let(:klass) { "MyPipeline" }
-    let(:triggered_at) { Time.current }
-    let(:started_at) { 10.minutes.from_now }
-    let(:last_advanced_at) { Time.current }
     let(:status) { "in_progress" }
-    let(:definition) { JSON.dump({}) }
-    let(:definition_sha1) { Digest::SHA1.hexdigest(definition) }
 
     it "is invalid if the `klass` is not present" do
-      pipeline = described_class.new(
-        triggered_at:,
-        started_at:,
-        last_advanced_at:,
-        status:,
-        definition:,
-        definition_sha1:
-      )
+      pipeline = described_class.new(status:)
 
       expect(pipeline).not_to be_valid
       expect(pipeline.errors.full_messages).to eq(["Klass can't be blank"])
     end
 
-    it "is invalid if `triggered_at` is not present" do
-      pipeline = described_class.new(
-        klass:,
-        started_at:,
-        last_advanced_at:,
-        status:,
-        definition:,
-        definition_sha1:
-      )
-
-      expect(pipeline).not_to be_valid
-      expect(pipeline.errors.full_messages).to eq(["Triggered at can't be blank"])
-    end
-
-    it "is invalid if `started_at` is not present" do
-      pipeline = described_class.new(
-        klass:,
-        triggered_at:,
-        last_advanced_at:,
-        status:,
-        definition:,
-        definition_sha1:
-      )
-
-      expect(pipeline).not_to be_valid
-      expect(pipeline.errors.full_messages).to eq(["Started at can't be blank"])
-    end
-
-    it "is invalid if `last_advanced_at` is not present" do
-      pipeline = described_class.new(
-        klass:,
-        triggered_at:,
-        started_at:,
-        status:,
-        definition:,
-        definition_sha1:
-      )
-
-      expect(pipeline).not_to be_valid
-      expect(pipeline.errors.full_messages).to eq(["Last advanced at can't be blank"])
-    end
-
     it "is invalid if `status` is not present" do
-      pipeline = described_class.new(
-        klass:,
-        triggered_at:,
-        started_at:,
-        last_advanced_at:,
-        definition:,
-        definition_sha1:
-      )
+      pipeline = described_class.new(klass:)
 
       expect(pipeline).not_to be_valid
       expect(pipeline.errors.full_messages).to eq(["Status can't be blank"])
     end
 
-    it "is invalid if `definition` is not present" do
-      pipeline = described_class.new(
-        klass:,
-        triggered_at:,
-        started_at:,
-        last_advanced_at:,
-        status:,
-        definition_sha1:
-      )
-
-      expect(pipeline).not_to be_valid
-      expect(pipeline.errors.full_messages).to eq(["Definition can't be blank"])
-    end
-
-    it "is invalid if `definition_sha1` is not present" do
-      pipeline = described_class.new(
-        klass:,
-        triggered_at:,
-        started_at:,
-        last_advanced_at:,
-        status:,
-        definition:
-      )
-
-      expect(pipeline).not_to be_valid
-      expect(pipeline.errors.full_messages).to eq(["Definition sha1 can't be blank"])
-    end
-
     it "is valid otherwise" do
-      pipeline = described_class.new(
-        klass:,
-        triggered_at:,
-        started_at:,
-        last_advanced_at:,
-        status:,
-        definition:,
-        definition_sha1:
-      )
+      pipeline = described_class.new(klass:, status:)
 
       expect(pipeline).to be_valid
     end
@@ -141,15 +44,7 @@ RSpec.describe Ductwork::Pipeline do
     end
 
     it "only returns records with the given pipeline name" do
-      record = klass.create!(
-        klass: "MyPipeline",
-        status: :in_progress,
-        definition: "{}",
-        definition_sha1: Digest::SHA1.hexdigest("{}"),
-        triggered_at: Time.current,
-        started_at: Time.current,
-        last_advanced_at: Time.current
-      )
+      record = klass.create!(klass: "MyPipeline", status: :in_progress)
 
       expect(klass.all.count).to eq(1)
       expect(klass.all.first).to eq(record)
@@ -244,9 +139,22 @@ RSpec.describe Ductwork::Pipeline do
       end.to change(described_class, :count).by(1)
       expect(pipeline.klass).to eq("MyPipeline")
       expect(pipeline).to be_in_progress
-      expect(pipeline.definition).to be_present
-      expect(pipeline.triggered_at).to be_present
-      expect(pipeline.completed_at).to be_nil
+    end
+
+    it "creates the initial run record" do
+      pipeline = nil
+
+      expect do
+        pipeline = klass.trigger(args)
+      end.to change(Ductwork::Run, :count).by(1)
+
+      run = pipeline.runs.sole
+      expect(run).to be_in_progress
+      expect(run.pipeline_klass).to eq("MyPipeline")
+      expect(run.definition).to be_present
+      expect(run.definition_sha1).to be_present
+      expect(run.triggered_at).to be_almost_now
+      expect(run.completed_at).to be_nil
     end
 
     it "creates the initial step record" do
@@ -256,7 +164,8 @@ RSpec.describe Ductwork::Pipeline do
       expect do
         pipeline = klass.trigger(args)
       end.to change(Ductwork::Step, :count).by(1)
-      step = pipeline.steps.reload.first
+
+      step = pipeline.runs.sole.steps.first
       expect(step).to be_start
       expect(step.node).to eq("MyFirstStep.a1b2c3d4")
       expect(step.klass).to eq("MyFirstStep")
@@ -269,7 +178,8 @@ RSpec.describe Ductwork::Pipeline do
       expect do
         pipeline = klass.trigger(args)
       end.to change(Ductwork::Branch, :count).by(1)
-      branch = pipeline.branches.reload.sole
+
+      branch = pipeline.runs.sole.branches.sole
       expect(branch).to be_in_progress
       expect(branch.pipeline_klass).to eq("MyPipeline")
       expect(branch.started_at).to be_present
@@ -324,23 +234,36 @@ RSpec.describe Ductwork::Pipeline do
     end
   end
 
-  describe "#parsed_definition" do
-    it "returns a JSON parsed indifferent hash" do
-      pipeline = described_class.new(definition: JSON.dump({ foo: "bar" }))
+  describe "#current_run" do
+    let(:pipeline) { create(:pipeline, status: "in_progress") }
 
-      expect(pipeline.parsed_definition[:foo]).to eq("bar")
-      expect(pipeline.parsed_definition["foo"]).to eq("bar")
+    it "returns the single in-progress run record" do
+      run = create(:run, status: "in_progress", pipeline: pipeline)
+      create(:run, status: "completed", pipeline: pipeline)
+
+      expect(pipeline.current_run).to eq(run)
     end
   end
 
   describe "#complete!" do
     let(:pipeline) { create(:pipeline, status: "in_progress") }
+    let(:run) { create(:run, status: "in_progress", pipeline: pipeline) }
 
-    it "sets the status and completed at timestamp" do
+    before do
+      run
+    end
+
+    it "sets the status of the pipeline" do
       expect do
         pipeline.complete!
       end.to change(pipeline, :status).to("completed")
-        .and change(pipeline, :completed_at).to be_within(1.second).of(Time.current)
+    end
+
+    it "sets the status and completed at timestamp on the run" do
+      expect do
+        pipeline.complete!
+      end.to change { run.reload.status }.to("completed")
+        .and change(run, :completed_at).to(be_almost_now)
     end
 
     it "logs" do
@@ -358,6 +281,11 @@ RSpec.describe Ductwork::Pipeline do
 
   describe "#halt!" do
     let(:pipeline) { create(:pipeline, status: "in_progress") }
+    let(:run) { create(:run, status: "in_progress", pipeline: pipeline) }
+
+    before do
+      run
+    end
 
     it "sets the status" do
       expect do
@@ -365,10 +293,10 @@ RSpec.describe Ductwork::Pipeline do
       end.to change(pipeline, :status).to("halted")
     end
 
-    it "updates the halted at timestamp" do
+    it "updates the halted at timestamp on the run" do
       expect do
         pipeline.halt!
-      end.to change(pipeline, :halted_at).from(nil).to be_within(1.second).of(Time.current)
+      end.to change { run.reload.halted_at }.from(nil).to(be_almost_now)
     end
 
     it "logs" do

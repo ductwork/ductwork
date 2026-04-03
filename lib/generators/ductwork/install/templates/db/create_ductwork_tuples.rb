@@ -5,10 +5,10 @@ class CreateDuctworkTuples < Ductwork::Migration
     create_ductwork_table :ductwork_tuples do |table|
       belongs_to(
         table,
-        :pipeline,
+        :run,
         index: true,
         null: false,
-        foreign_key: { to_table: :ductwork_pipelines }
+        foreign_key: { to_table: :ductwork_runs }
       )
       table.string :key, null: false
       table.string :serialized_value
@@ -17,6 +17,6 @@ class CreateDuctworkTuples < Ductwork::Migration
       table.timestamps null: false
     end
 
-    add_index :ductwork_tuples, %i[key pipeline_id], unique: true
+    add_index :ductwork_tuples, %i[key run_id], unique: true
   end
 end

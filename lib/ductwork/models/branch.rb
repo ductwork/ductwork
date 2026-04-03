@@ -2,7 +2,7 @@
 
 module Ductwork
   class Branch < Ductwork::Record # rubocop:todo Metrics/ClassLength
-    belongs_to :pipeline, class_name: "Ductwork::Pipeline"
+    belongs_to :run, class_name: "Ductwork::Run"
     has_many :transitions,
              class_name: "Ductwork::Transition",
              foreign_key: "branch_id",
@@ -56,7 +56,7 @@ module Ductwork
     end
 
     def advance!(transition, advancement) # rubocop:todo Metrics
-      edge = pipeline.parsed_definition.dig(:edges, latest_step.node)
+      edge = run.parsed_definition.dig(:edges, latest_step.node)
 
       if edge.nil? || edge[:to].blank?
         complete_branch_and_pipeline(transition, advancement)
@@ -135,11 +135,11 @@ module Ductwork
 
     def complete_branch_and_pipeline(transition, advancement)
       Ductwork::Record.transaction do
-        pipeline.lock!
+        run.lock!
         latest_step.update!(status: :completed, completed_at: Time.current)
 
-        if pipeline.branches.where.not(id:).where.not(status: :completed).none?
-          pipeline.complete!
+        if run.branches.where.not(id:).where.not(status: :completed).none?
+          run.pipeline.complete!
         end
 
         complete!
@@ -153,9 +153,9 @@ module Ductwork
     def halt_branch_and_pipeline!(transition, advancement)
       Ductwork::Record.transaction do
         latest_step.update!(status: :completed, completed_at: Time.current)
-        pipeline.branches.where(status: %w[advancing in_progress]).each(&:halt!)
+        run.branches.where(status: %w[advancing in_progress]).each(&:halt!)
         update!(claimed_for_advancing_at: nil, last_advanced_at: Time.current)
-        pipeline.halt!
+        run.pipeline.halt!
 
         now = Time.current
         advancement.update!(completed_at: now)
@@ -166,14 +166,14 @@ module Ductwork
     def chain_branch(edge, transition, advancement)
       input_arg = Ductwork::Job.find_by(step: latest_step).return_value
       node = edge[:to].sole
-      klass = pipeline.parsed_definition.dig(:edges, node, :klass)
+      klass = run.parsed_definition.dig(:edges, node, :klass)
       started_at = Time.current
 
       Ductwork::Record.transaction do
         latest_step.update!(status: :completed, completed_at: Time.current)
         # NOTE: we stay on the same branch for `chain`-ing
         next_step = steps.create!(
-          pipeline: pipeline,
+          run: run,
           node: node,
           klass: klass,
           status: "in_progress",
@@ -194,8 +194,9 @@ module Ductwork
       node = latest_step.node
 
       Ductwork::Record.transaction do # rubocop:todo Metrics/BlockLength
-        # NOTE: lock the parent branch rather than the whole pipeline because
-        # at-most we're only coordinating across child branches of the parent
+        # NOTE: lock the parent branch rather than the whole pipeline run
+        # because at-most we're only coordinating across child branches of the
+        # parent branch
         Ductwork::Branch.find(parent_branch_id).lock!
         latest_step.update!(status: :completed, completed_at: Time.current)
         complete!
@@ -214,9 +215,9 @@ module Ductwork
                       .where(ductwork_steps: { branch_id: sibling_ids, node: node })
                       .map(&:return_value)
           next_node = edge[:to].sole
-          klass = pipeline.parsed_definition.dig(:edges, next_node, :klass)
+          klass = run.parsed_definition.dig(:edges, next_node, :klass)
           started_at = Time.current
-          branch = pipeline.branches.create!(
+          branch = run.branches.create!(
             started_at: started_at,
             status: "in_progress",
             last_advanced_at: started_at,
@@ -229,7 +230,7 @@ module Ductwork
           end
 
           next_step = branch.steps.create!(
-            pipeline: pipeline,
+            run: run,
             branch: branch,
             node: next_node,
             klass: klass,
@@ -250,8 +251,9 @@ module Ductwork
       parent_branch_id = parent_junctions.pick(:parent_branch_id)
 
       Ductwork::Record.transaction do # rubocop:todo Metrics/BlockLength
-        # NOTE: lock the parent branch rather than the whole pipeline because
-        # at-most we're only coordinating across child branches of the parent
+        # NOTE: lock the parent branch rather than the whole pipeline run
+        # because at-most we're only coordinating across child branches of the
+        # parent branch
         Ductwork::Branch.find(parent_branch_id).lock!
         latest_step.update!(status: :completed, completed_at: Time.current)
         complete!
@@ -271,9 +273,9 @@ module Ductwork
                       .where(ductwork_steps: { branch_id: sibling_ids, node: nodes })
                       .map(&:return_value)
           next_node = edge[:to].sole
-          klass = pipeline.parsed_definition.dig(:edges, next_node, :klass)
+          klass = run.parsed_definition.dig(:edges, next_node, :klass)
           started_at = Time.current
-          branch = pipeline.branches.create!(
+          branch = run.branches.create!(
             started_at: started_at,
             status: "in_progress",
             last_advanced_at: started_at,
@@ -286,7 +288,7 @@ module Ductwork
           end
 
           next_step = branch.steps.create!(
-            pipeline: pipeline,
+            run: run,
             branch: branch,
             node: next_node,
             klass: klass,
@@ -306,14 +308,14 @@ module Ductwork
     def converge_branch(edge, transition, advancement)
       input_arg = Ductwork::Job.find_by(step: latest_step).return_value
       node = edge[:to].sole
-      klass = pipeline.parsed_definition.dig(:edges, node, :klass)
+      klass = run.parsed_definition.dig(:edges, node, :klass)
       started_at = Time.current
 
       Ductwork::Record.transaction do
         latest_step.update!(status: :completed, completed_at: Time.current)
         # NOTE: we stay on the same branch for `converge`-ing
         next_step = steps.create!(
-          pipeline: pipeline,
+          run: run,
           node: node,
           klass: klass,
           status: "in_progress",
@@ -332,7 +334,7 @@ module Ductwork
     def divert_branch(edge, transition, advancement)
       input_arg = Ductwork::Job.find_by(step: latest_step).return_value
       node = edge[:to][input_arg.to_s] || edge[:to]["otherwise"]
-      klass = pipeline.parsed_definition.dig(:edges, node, :klass)
+      klass = run.parsed_definition.dig(:edges, node, :klass)
       started_at = Time.current
 
       if node.nil?
@@ -341,7 +343,7 @@ module Ductwork
         Ductwork::Record.transaction do
           latest_step.update!(status: :completed, completed_at: Time.current)
           next_step = steps.create!(
-            pipeline: pipeline,
+            run: run,
             node: node,
             klass: klass,
             status: "in_progress",
@@ -376,8 +378,8 @@ module Ductwork
           latest_step.update!(status: :completed, completed_at: Time.current)
           complete!
           edge[:to].each do |to|
-            klass = pipeline.parsed_definition.dig(:edges, to, :klass)
-            branch = pipeline.branches.create!(
+            klass = run.parsed_definition.dig(:edges, to, :klass)
+            branch = run.branches.create!(
               started_at: started_at,
               status: "in_progress",
               last_advanced_at: started_at,
@@ -386,7 +388,7 @@ module Ductwork
 
             BranchLink.create!(parent_branch: self, child_branch: branch)
             next_step = branch.steps.create!(
-              pipeline: pipeline,
+              run: run,
               node: to,
               klass: klass,
               status: "in_progress",
@@ -404,7 +406,7 @@ module Ductwork
     end
 
     def expand_branch(edge, transition, advancement)
-      next_klass = pipeline.parsed_definition.dig(:edges, edge[:to].sole, :klass)
+      next_klass = run.parsed_definition.dig(:edges, edge[:to].sole, :klass)
       return_value = Ductwork::Job.find_by(step: latest_step).return_value
       max_depth = Ductwork.configuration.steps_max_depth(
         pipeline: pipeline_klass,
@@ -422,7 +424,7 @@ module Ductwork
 
     def bulk_create_steps_and_jobs(edge:, return_value:, transition:, advancement:) # rubocop:todo Metrics
       node = edge[:to].sole
-      next_klass = pipeline.parsed_definition.dig(:edges, node, :klass)
+      next_klass = run.parsed_definition.dig(:edges, node, :klass)
       now = Time.current
 
       Ductwork::Record.transaction do # rubocop:todo Metrics/BlockLength
@@ -447,7 +449,7 @@ module Ductwork
 
             branch_rows << {
               id: branch_id,
-              pipeline_id: pipeline.id,
+              run_id: run.id,
               pipeline_klass: pipeline_klass,
               status: "in_progress",
               started_at: now,
@@ -464,7 +466,7 @@ module Ductwork
             }
             step_rows << {
               id: step_id,
-              pipeline_id: pipeline.id,
+              run_id: run.id,
               branch_id: branch_id,
               node: node,
               klass: next_klass,

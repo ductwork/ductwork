@@ -14,8 +14,8 @@ RSpec.describe Ductwork::RowLockingJobClaim do
       let(:availability) { create(:availability) }
       let(:execution) { availability.execution }
       let(:step) { execution.job.step }
-      let(:pipeline) { step.pipeline }
-      let(:klass) { pipeline.klass }
+      let(:run) { step.run }
+      let(:klass) { run.pipeline_klass }
 
       before do
         availability.update!(pipeline_klass: klass)
@@ -35,11 +35,12 @@ RSpec.describe Ductwork::RowLockingJobClaim do
         end.to change { availability.reload.completed_at }.from(nil).to(be_almost_now)
       end
 
-      it "marks the step and pipeline as in-progress" do
+      it "marks the step, run, and pipeline as in-progress" do
         claim.latest
 
         expect(step.reload).to be_in_progress
-        expect(pipeline.reload).to be_in_progress
+        expect(run.reload).to be_in_progress
+        expect(run.pipeline).to be_in_progress
       end
     end
 

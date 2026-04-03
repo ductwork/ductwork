@@ -1,11 +1,9 @@
 # frozen_string_literal: true
 
 RSpec.describe Ductwork::Branch, "#advance!" do
-  subject(:branch) { create(:branch, pipeline:) }
+  subject(:branch) { create(:branch, run:) }
 
-  let(:pipeline) do
-    create(:pipeline, status: :in_progress, definition: definition)
-  end
+  let(:run) { create(:run, status: :in_progress, definition: definition) }
   let(:definition) do
     {
       nodes: %w[MyStepA.0 MyStepB.1],
@@ -22,7 +20,7 @@ RSpec.describe Ductwork::Branch, "#advance!" do
       node: "MyStepA.0",
       klass: "MyStepA",
       branch: branch,
-      pipeline: pipeline
+      run: run
     )
   end
   let(:transition) { create(:transition, branch:) }

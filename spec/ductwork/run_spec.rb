@@ -100,4 +100,13 @@ RSpec.describe Ductwork::Run do
       expect(run).to be_valid
     end
   end
+
+  describe "#parsed_definition" do
+    it "returns a JSON parsed indifferent hash" do
+      run = described_class.new(definition: JSON.dump({ foo: "bar" }))
+
+      expect(run.parsed_definition[:foo]).to eq("bar")
+      expect(run.parsed_definition["foo"]).to eq("bar")
+    end
+  end
 end

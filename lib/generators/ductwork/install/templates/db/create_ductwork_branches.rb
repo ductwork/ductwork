@@ -5,10 +5,10 @@ class CreateDuctworkBranches < Ductwork::Migration
     create_ductwork_table :ductwork_branches do |table|
       belongs_to(
         table,
-        :pipeline,
+        :run,
         index: true,
         null: false,
-        foreign_key: { to_table: :ductwork_pipelines }
+        foreign_key: { to_table: :ductwork_runs }
       )
       table.string :pipeline_klass, null: false
       table.string :status, null: false
@@ -22,6 +22,6 @@ class CreateDuctworkBranches < Ductwork::Migration
     add_index :ductwork_branches,
               %w[pipeline_klass claimed_for_advancing_at last_advanced_at],
               name: "index_ductwork_branches_on_claim_latest"
-    add_index :ductwork_branches, %w[pipeline_id started_at]
+    add_index :ductwork_branches, %w[run_id started_at]
   end
 end

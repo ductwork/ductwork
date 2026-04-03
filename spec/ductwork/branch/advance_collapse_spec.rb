@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 RSpec.describe Ductwork::Branch, "#advance" do
-  subject(:branch) { create(:branch, :in_progress, pipeline:) }
+  subject(:branch) { create(:branch, :in_progress, run:) }
 
-  let(:pipeline) do
-    create(:pipeline, status: :in_progress, definition: definition)
+  let(:run) do
+    create(:run, status: :in_progress, definition: definition)
   end
   let(:definition) do
     {
@@ -23,15 +23,15 @@ RSpec.describe Ductwork::Branch, "#advance" do
       node: "MyStepB.1",
       klass: "MyStepB",
       branch: branch,
-      pipeline: pipeline
+      run: run
     )
   end
   let(:transition) { create(:transition, branch:) }
   let(:advancement) { create(:advancement, transition:) }
   let(:output_payload) { { payload: }.to_json }
   let(:payload) { 1 }
-  let(:other_branches) { create_list(:branch, 2, :completed, pipeline:) }
-  let(:parent_branch) { create(:branch, :completed, pipeline:) }
+  let(:other_branches) { create_list(:branch, 2, :completed, run:) }
+  let(:parent_branch) { create(:branch, :completed, run:) }
 
   before do
     transition
@@ -42,7 +42,7 @@ RSpec.describe Ductwork::Branch, "#advance" do
       :completed,
       node: "MyStepB.1",
       klass: "MyStepB",
-      pipeline: pipeline,
+      run: run,
       branch: other_branches[0]
     )
     other_step2 = create(
@@ -50,7 +50,7 @@ RSpec.describe Ductwork::Branch, "#advance" do
       :completed,
       node: "MyStepB.1",
       klass: "MyStepB",
-      pipeline: pipeline,
+      run: run,
       branch: other_branches[1]
     )
 
@@ -110,7 +110,7 @@ RSpec.describe Ductwork::Branch, "#advance" do
 
   context "when there are incomplete sibling branches" do
     before do
-      in_progress_branch = create(:branch, :in_progress, pipeline:)
+      in_progress_branch = create(:branch, :in_progress, run:)
       Ductwork::BranchLink.create!(
         parent_branch: parent_branch,
         child_branch: in_progress_branch
@@ -121,7 +121,7 @@ RSpec.describe Ductwork::Branch, "#advance" do
         node: "MyStepB.1",
         klass: "MyStepB",
         branch: in_progress_branch,
-        pipeline: pipeline
+        run: run
       )
     end
 

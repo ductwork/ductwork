@@ -2,17 +2,13 @@
 
 module Ductwork
   class Pipeline < Ductwork::Record
-    has_many :branches, class_name: "Ductwork::Branch", foreign_key: "pipeline_id", dependent: :destroy
-    has_many :steps, class_name: "Ductwork::Step", foreign_key: "pipeline_id", dependent: :destroy
-    has_many :tuples, class_name: "Ductwork::Tuple", foreign_key: "pipeline_id", dependent: :destroy
+    has_many :runs,
+             class_name: "Ductwork::Run",
+             foreign_key: "pipeline_id",
+             dependent: :destroy
 
     validates :klass, presence: true
-    validates :definition, presence: true
-    validates :definition_sha1, presence: true
     validates :status, presence: true
-    validates :started_at, presence: true
-    validates :triggered_at, presence: true
-    validates :last_advanced_at, presence: true
 
     enum :status,
          pending: "pending",
@@ -54,7 +50,7 @@ module Ductwork
         Ductwork.defined_pipelines << name.to_s
       end
 
-      def trigger(*args)
+      def trigger(*args) # rubocop:todo Metrics
         if pipeline_definition.nil?
           raise DefinitionError, "Pipeline must be defined before triggering"
         end
@@ -64,24 +60,27 @@ module Ductwork
         klass = pipeline_definition.dig(:edges, node, :klass)
         definition = JSON.dump(pipeline_definition)
 
-        pipeline = Record.transaction do
+        pipeline = Record.transaction do # rubocop:todo Metrics/BlockLength
           p = create!(
             klass: name.to_s,
+            status: :in_progress
+          )
+          run = p.runs.create!(
+            pipeline_klass: name.to_s,
             status: :in_progress,
             definition: definition,
             definition_sha1: Digest::SHA1.hexdigest(definition),
             triggered_at: now,
-            started_at: now,
-            last_advanced_at: now
+            started_at: now
           )
-          branch = p.branches.create!(
+          branch = run.branches.create!(
             pipeline_klass: name.to_s,
             status: :in_progress,
             started_at: now,
             last_advanced_at: now
           )
           step = branch.steps.create!(
-            pipeline: p,
+            run: run,
             node: node,
             klass: klass,
             status: :in_progress,
@@ -103,12 +102,15 @@ module Ductwork
       end
     end
 
-    def parsed_definition
-      @parsed_definition ||= JSON.parse(definition).with_indifferent_access
+    def current_run
+      runs.in_progress.sole
     end
 
     def complete!
-      update!(status: :completed, completed_at: Time.current)
+      Ductwork::Record.transaction do
+        completed!
+        current_run.update!(status: :completed, completed_at: Time.current)
+      end
 
       Ductwork.logger.info(
         msg: "Pipeline completed",
@@ -118,7 +120,10 @@ module Ductwork
     end
 
     def halt!
-      update!(status: :halted, halted_at: Time.current)
+      Ductwork::Record.transaction do
+        halted!
+        current_run.update!(status: :halted, halted_at: Time.current)
+      end
 
       Ductwork.logger.info(
         msg: "Pipeline halted",

@@ -34,11 +34,11 @@ RSpec.describe Ductwork::Tuple do
       expect(tuple.errors.full_messages).to eq(["Last set at can't be blank"])
     end
 
-    it "is invalid if the key and pipeline id are already taken" do
-      pipeline = create(:pipeline)
-      described_class.create!(pipeline:, key:, first_set_at:, last_set_at:)
+    it "is invalid if the key and run id are already taken" do
+      run = create(:run)
+      described_class.create!(run:, key:, first_set_at:, last_set_at:)
 
-      tuple = described_class.new(pipeline:, key:, first_set_at:, last_set_at:)
+      tuple = described_class.new(run:, key:, first_set_at:, last_set_at:)
 
       expect(tuple).not_to be_valid
       expect(tuple.errors.full_messages).to eq(["Key has already been taken"])

@@ -59,7 +59,8 @@ module Ductwork
       @job = availability.execution.job
 
       job.step.in_progress!
-      job.step.pipeline.in_progress!
+      job.step.run.in_progress!
+      job.step.run.pipeline.in_progress!
     end
   end
 end

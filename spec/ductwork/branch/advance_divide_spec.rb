@@ -1,11 +1,9 @@
 # frozen_string_literal: true
 
 RSpec.describe Ductwork::Branch, "#advance!" do
-  subject(:branch) { create(:branch, :in_progress, pipeline:) }
+  subject(:branch) { create(:branch, :in_progress, run:) }
 
-  let(:pipeline) do
-    create(:pipeline, status: :in_progress, definition: definition)
-  end
+  let(:run) { create(:run, status: :in_progress, definition: definition) }
   let(:definition) do
     {
       nodes: %w[MyStepA.0 MyStepB.1 MyStepC.1],
@@ -23,7 +21,7 @@ RSpec.describe Ductwork::Branch, "#advance!" do
       node: "MyStepA.0",
       klass: "MyStepA",
       branch: branch,
-      pipeline: pipeline
+      run: run
     )
   end
   let(:transition) { create(:transition, branch:) }
@@ -108,7 +106,7 @@ RSpec.describe Ductwork::Branch, "#advance!" do
         status: :advancing,
         node: "MyStepA.0",
         klass: "MyStepA",
-        pipeline: pipeline
+        run: run
       )
     end
 
@@ -116,15 +114,15 @@ RSpec.describe Ductwork::Branch, "#advance!" do
       expect do
         branch.advance!(transition, advancement)
       end.not_to change(Ductwork::Step, :count)
-      expect(pipeline.reload).to be_halted
+      expect(run.pipeline.reload).to be_halted
     end
 
     it "halts all other branches" do
-      create(:branch, :in_progress, pipeline:)
+      create(:branch, :in_progress, run:)
       expect do
         branch.advance!(transition, advancement)
       end.not_to change(Ductwork::Step, :count)
-      expect(pipeline.branches).to all(be_halted)
+      expect(run.branches).to all(be_halted)
     end
   end
 end

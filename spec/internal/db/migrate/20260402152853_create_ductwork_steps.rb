@@ -5,10 +5,10 @@ class CreateDuctworkSteps < Ductwork::Migration
     create_ductwork_table :ductwork_steps do |table|
       belongs_to(
         table,
-        :pipeline,
+        :run,
         index: true,
         null: false,
-        foreign_key: { to_table: :ductwork_pipelines }
+        foreign_key: { to_table: :ductwork_runs }
       )
       belongs_to(
         table,
@@ -28,9 +28,9 @@ class CreateDuctworkSteps < Ductwork::Migration
       table.timestamps null: false
     end
 
-    add_index :ductwork_steps, %i[pipeline_id status node]
-    add_index :ductwork_steps, %i[pipeline_id node status]
+    add_index :ductwork_steps, %i[run_id status node]
+    add_index :ductwork_steps, %i[run_id node status]
     add_index :ductwork_steps, %i[status node]
-    add_index :ductwork_steps, %i[pipeline_id status]
+    add_index :ductwork_steps, %i[run_id status]
   end
 end

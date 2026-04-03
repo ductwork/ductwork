@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 RSpec.describe Ductwork::Context do
-  let(:pipeline_id) { create(:pipeline).id }
+  let(:run_id) { create(:run).id }
 
   describe "#get" do
-    subject(:context) { described_class.new(pipeline_id) }
+    subject(:context) { described_class.new(run_id) }
 
     it "returns nil if the key does not exist" do
       value = context.get("foobar")
@@ -16,7 +16,7 @@ RSpec.describe Ductwork::Context do
       Ductwork::Tuple.create!(
         key: "key",
         value: "value",
-        pipeline_id: pipeline_id,
+        run_id: run_id,
         first_set_at: Time.current,
         last_set_at: Time.current
       )
@@ -26,11 +26,11 @@ RSpec.describe Ductwork::Context do
       expect(value).to eq("value")
     end
 
-    it "only returns values for the specific pipeline" do
+    it "only returns values for the specific run" do
       Ductwork::Tuple.create!(
         key: "key",
         value: "value",
-        pipeline_id: create(:pipeline).id,
+        run_id: create(:run).id,
         first_set_at: Time.current,
         last_set_at: Time.current
       )
@@ -48,7 +48,7 @@ RSpec.describe Ductwork::Context do
   end
 
   describe "#set" do
-    subject(:context) { described_class.new(pipeline_id) }
+    subject(:context) { described_class.new(run_id) }
 
     it "sets the value for the given key" do
       context.set("key", "value")
@@ -68,7 +68,7 @@ RSpec.describe Ductwork::Context do
       end.to change(Ductwork::Tuple, :count).by(1)
 
       tuple = Ductwork::Tuple.sole
-      expect(tuple.pipeline_id).to eq(pipeline_id)
+      expect(tuple.run_id).to eq(run_id)
       expect(tuple.key).to eq("key")
       expect(tuple.value).to eq("value")
       expect(tuple.first_set_at).to be_within(1.second).of(Time.current)

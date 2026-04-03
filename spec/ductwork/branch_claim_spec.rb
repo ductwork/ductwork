@@ -16,12 +16,17 @@ RSpec.describe Ductwork::BranchClaim do
         create(:branch, :in_progress, last_advanced_at: 1.minute.from_now)
       end
 
-      it "returns the latest branch, transition, and advancement" do
-        record, transition, advancement = claim.latest
+      it "returns the latest branch" do
+        record = claim.latest
 
         expect(record).to eq(branch)
-        expect(transition).to eq(Ductwork::Transition.sole)
-        expect(advancement).to eq(Ductwork::Advancement.sole)
+      end
+
+      it "sets the transition and advancement" do
+        claim.latest
+
+        expect(claim.transition).to eq(Ductwork::Transition.sole)
+        expect(claim.advancement).to eq(Ductwork::Advancement.sole)
       end
 
       it "sets the branch status to advancing" do

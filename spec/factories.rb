@@ -23,7 +23,7 @@ FactoryBot.define do
     pipeline_klass { "MyPipeline" }
     started_at { Time.current }
     status { Ductwork::Branch.statuses.keys.sample }
-    pipeline
+    run
 
     trait :in_progress do
       status { "in_progress" }
@@ -50,11 +50,6 @@ FactoryBot.define do
 
   factory :pipeline, class: "Ductwork::Pipeline" do
     sequence(:klass) { |n| "MyPipeline#{n}" }
-    triggered_at { Time.current }
-    started_at { Time.current }
-    last_advanced_at { Time.current }
-    definition { JSON.dump({}) }
-    definition_sha1 { Digest::SHA1.hexdigest(definition) }
     status { Ductwork::Pipeline.statuses.keys.sample }
   end
 
@@ -73,13 +68,23 @@ FactoryBot.define do
     end
   end
 
+  factory :run, class: "Ductwork::Run" do
+    sequence(:pipeline_klass) { |n| "MyPipeline#{n}" }
+    status { Ductwork::Pipeline.statuses.keys.sample }
+    started_at { Time.current }
+    triggered_at { Time.current }
+    definition { JSON.dump({}) }
+    definition_sha1 { Digest::SHA1.hexdigest(definition) }
+    pipeline
+  end
+
   factory :step, class: "Ductwork::Step" do
     node { "MyFirstStep.0" }
     klass { "MyFirstStep" }
     started_at { Time.current }
     status { Ductwork::Step.statuses.keys.sample }
     to_transition { Ductwork::Step.to_transitions.keys.sample }
-    pipeline
+    run
     branch
 
     trait :advancing do

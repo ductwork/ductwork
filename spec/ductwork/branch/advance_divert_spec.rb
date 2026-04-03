@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 RSpec.describe Ductwork::Branch, "#advance!" do
-  subject(:branch) { create(:branch, :in_progress, pipeline:) }
+  subject(:branch) { create(:branch, :in_progress, run:) }
 
-  let(:pipeline) do
-    create(:pipeline, status: :in_progress, definition: definition)
+  let(:run) do
+    create(:run, status: :in_progress, definition: definition)
   end
   let(:definition) do
     {
@@ -28,7 +28,7 @@ RSpec.describe Ductwork::Branch, "#advance!" do
       node: "MyStepA.0",
       klass: "MyStepA",
       branch: branch,
-      pipeline: pipeline
+      run: run
     )
   end
   let(:transition) { create(:transition, branch:) }
@@ -88,13 +88,14 @@ RSpec.describe Ductwork::Branch, "#advance!" do
     end
     let(:output_payload) { { payload: "unknown" }.to_json }
 
-    it "halts the branch and pipeline" do
+    it "halts the branch, run, and run" do
       expect do
         branch.advance!(transition, advancement)
       end.not_to change(Ductwork::Step, :count)
 
       expect(branch.reload).to be_halted
-      expect(pipeline.reload).to be_halted
+      expect(run.reload).to be_halted
+      expect(run.pipeline).to be_halted
     end
   end
 end

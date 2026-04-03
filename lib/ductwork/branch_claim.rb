@@ -18,7 +18,7 @@ module Ductwork
 
       if rows_updated == 1
         Ductwork.wrap_with_app_executor do
-          [Branch.find(id), transition, advancement]
+          Ductwork::Branch.find(id)
         end
       else
         log_race_condition(id)

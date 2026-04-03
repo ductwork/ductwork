@@ -61,6 +61,21 @@ module Ductwork
         migration_template "db/create_ductwork_runs.rb",
                            "db/migrate/create_ductwork_runs.rb"
       end
+
+      if Ductwork::Branch.column_names.include?("pipeline_id")
+        migration_template "db/associate_branches_to_runs.rb",
+                           "db/migrate/associate_branches_to_runs.rb"
+      end
+
+      if Ductwork::Step.column_names.include?("pipeline_id")
+        migration_template "db/associate_steps_to_runs.rb",
+                           "db/migrate/associate_steps_to_runs.rb"
+      end
+
+      if Ductwork::Tuple.column_names.include?("pipeline_id")
+        migration_template "db/associate_tuples_to_runs.rb",
+                           "db/migrate/associate_tuples_to_runs.rb"
+      end
     end
   end
 end

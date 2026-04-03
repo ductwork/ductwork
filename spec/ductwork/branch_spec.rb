@@ -125,9 +125,18 @@ RSpec.describe Ductwork::Branch do
 
   # NOTE: the rest of the specs are in their own files by transition type
   describe "#advance!" do
-    subject(:branch) { create(:branch) }
+    subject(:branch) { create(:branch, run:) }
 
-    let(:step) { create(:step, :advancing, branch:) }
+    let(:run) { create(:run, status: "in_progress", definition: definition) }
+    let(:step) { create(:step, :advancing, branch:, run:) }
+    let(:definition) do
+      {
+        nodes: %w[MyStepA.0],
+        edges: {
+          "MyStepA.0" => { klass: "MyStepA" },
+        },
+      }.to_json
+    end
 
     before do
       step
@@ -142,44 +151,21 @@ RSpec.describe Ductwork::Branch do
     end
 
     context "when the step is the last node" do
-      let(:pipeline) do
-        branch.pipeline.tap do |p|
-          p.in_progress!
-          p.update!(definition:)
-        end
-      end
-
-      let(:definition) do
-        {
-          nodes: %w[MyStepA.0],
-          edges: {
-            "MyStepA.0" => { klass: "MyStepA" },
-          },
-        }.to_json
-      end
-
       it "completes the branch" do
         expect do
           branch.advance!(spy, spy)
         end.to change { branch.reload.completed_at }.to(be_almost_now)
       end
 
-      it "completes the pipeline" do
+      it "completes the pipeline and run" do
         expect do
           branch.advance!(spy, spy)
-        end.to change { pipeline.reload.status }.to("completed")
-          .and change(pipeline, :completed_at).to(be_almost_now)
+        end.to change { run.reload.pipeline.status }.to("completed")
+          .and change(run, :completed_at).to(be_almost_now)
       end
     end
 
     context "when there are other active branches" do
-      let(:pipeline) do
-        branch.pipeline.tap do |p|
-          p.in_progress!
-          p.update!(definition:)
-        end
-      end
-
       let(:definition) do
         {
           nodes: %w[MyStepA.0],
@@ -190,13 +176,13 @@ RSpec.describe Ductwork::Branch do
       end
 
       before do
-        create(:branch, :in_progress, pipeline:)
+        create(:branch, :in_progress, run:)
       end
 
       it "does not complete the pipeline" do
         expect do
           branch.advance!(spy, spy)
-        end.not_to change(pipeline, :status)
+        end.not_to change(run, :status)
       end
     end
 
@@ -220,11 +206,6 @@ RSpec.describe Ductwork::Branch do
       let(:advancement) { create(:advancement, transition:) }
 
       before do
-        branch.pipeline.tap do |p|
-          p.in_progress!
-          p.update!(definition:)
-        end
-        # previous steps and transition
         in_step = create(:step, :completed, started_at: 1.hour.ago, branch: branch)
         out_step = create(:step, :completed, started_at: 1.hour.ago, branch: branch)
         create(
@@ -255,13 +236,6 @@ RSpec.describe Ductwork::Branch do
       end
       let(:transition) { create(:transition, branch:) }
       let(:advancement) { create(:advancement, transition:) }
-
-      before do
-        branch.pipeline.tap do |p|
-          p.in_progress!
-          p.update!(definition:)
-        end
-      end
 
       it "completes and sets error metadata on the advancement record" do
         branch.advance!(transition, advancement)

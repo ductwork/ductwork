@@ -27,7 +27,7 @@ module Ductwork
       )
       execution.create_availability!(
         started_at: Time.current,
-        pipeline_klass: step.pipeline.klass
+        pipeline_klass: step.run.pipeline_klass
       )
 
       Ductwork.logger.info(
@@ -49,7 +49,7 @@ module Ductwork
         job_klass: klass
       )
       args = JSON.parse(input_args)["args"]
-      instance = Object.const_get(klass).build_for_execution(step.pipeline_id, *args)
+      instance = Object.const_get(klass).build_for_execution(step.run_id, *args)
       attempt = execution.create_attempt!(
         started_at: Time.current
       )
@@ -81,8 +81,6 @@ module Ductwork
     end
 
     def execution_crashed!(execution)
-      pipeline = step.pipeline
-
       Ductwork::Record.transaction do
         execution.update!(completed_at: Time.current)
         execution.attempt&.update!(completed_at: Time.current)
@@ -94,7 +92,7 @@ module Ductwork
         )
         new_execution.create_availability!(
           started_at: FAILED_EXECUTION_TIMEOUT.from_now,
-          pipeline_klass: pipeline.klass
+          pipeline_klass: step.run.pipeline_klass
         )
       end
     end
@@ -115,10 +113,11 @@ module Ductwork
 
     def execution_failed!(execution, attempt, error) # rubocop:todo Metrics
       halted = false
-      pipeline = step.pipeline
-      max_retry = Ductwork
-                  .configuration
-                  .job_worker_max_retry(pipeline: pipeline.klass, step: klass)
+      run = step.run
+      max_retry = Ductwork.configuration.job_worker_max_retry(
+        pipeline: run.pipeline_klass,
+        step: klass
+      )
 
       Ductwork::Record.transaction do
         execution.update!(completed_at: Time.current)
@@ -137,13 +136,13 @@ module Ductwork
           )
           new_execution.create_availability!(
             started_at: FAILED_EXECUTION_TIMEOUT.from_now,
-            pipeline_klass: pipeline.klass
+            pipeline_klass: run.pipeline_klass
           )
         elsif execution.retry_count >= max_retry
           halted = true
 
           step.update!(status: :failed)
-          pipeline.halt!
+          run.pipeline.halt!
         end
       end
 
@@ -153,21 +152,21 @@ module Ductwork
         error_message: error.message,
         job_id: id,
         job_klass: klass,
-        pipeline_id: pipeline.id,
+        run_id: run.id,
         role: :job_worker
       )
 
       # NOTE: perform lifecycle hook execution outside of the transaction as
       # to not unnecessarily hold it open
       if halted
-        execute_on_halt(pipeline, error)
+        execute_on_halt(run, error)
       end
     end
 
-    def execute_on_halt(pipeline, error)
-      klass = JSON
-              .parse(pipeline.definition)
-              .dig("metadata", "on_halt", "klass")
+    def execute_on_halt(run, error)
+      klass = run
+              .parsed_definition
+              .dig(:metadata, :on_halt, :klass)
 
       if klass.present?
         Object.const_get(klass).new(error).execute

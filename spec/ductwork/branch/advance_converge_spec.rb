@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 RSpec.describe Ductwork::Branch, "#advance" do
-  subject(:branch) { create(:branch, :in_progress, pipeline:) }
+  subject(:branch) { create(:branch, :in_progress, run:) }
 
-  let(:pipeline) do
-    create(:pipeline, status: :in_progress, definition: definition)
+  let(:run) do
+    create(:run, status: :in_progress, definition: definition)
   end
   let(:definition) do
     {
@@ -28,12 +28,12 @@ RSpec.describe Ductwork::Branch, "#advance" do
       node: "MyStepB.1",
       klass: "MyStepB",
       branch: branch,
-      pipeline: pipeline
+      run: run
     )
   end
   let(:transition) { create(:transition, branch:) }
   let(:advancement) { create(:advancement, transition:) }
-  let(:other_branch) { create(:branch, :completed, pipeline:) }
+  let(:other_branch) { create(:branch, :completed, run:) }
   let(:output_payload) { { payload: }.to_json }
   let(:payload) { 1 }
 
@@ -47,7 +47,7 @@ RSpec.describe Ductwork::Branch, "#advance" do
       node: "MyStepC.2",
       klass: "MyStepC",
       branch: other_branch,
-      pipeline: pipeline
+      run: run
     )
     create(:job, output_payload:, step:)
     create(:job, output_payload: output_payload, step: other_step)

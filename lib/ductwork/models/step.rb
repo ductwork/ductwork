@@ -2,7 +2,7 @@
 
 module Ductwork
   class Step < Ductwork::Record
-    belongs_to :pipeline, class_name: "Ductwork::Pipeline"
+    belongs_to :run, class_name: "Ductwork::Run"
     belongs_to :branch, class_name: "Ductwork::Branch", optional: true
     has_one :job, class_name: "Ductwork::Job", foreign_key: "step_id", dependent: :destroy
     has_one :in_transition, class_name: "Ductwork::Transition", foreign_key: "in_step_id", dependent: :destroy
@@ -32,19 +32,19 @@ module Ductwork
          converge: "converge",
          dampen: "dampen"
 
-    def self.build_for_execution(pipeline_id, *, **)
+    def self.build_for_execution(run_id, *, **)
       instance = allocate
-      instance.instance_variable_set(:@pipeline_id, pipeline_id)
+      instance.instance_variable_set(:@run_id, run_id)
       instance.send(:initialize, *, **)
       instance
     end
 
-    def pipeline_id
-      @pipeline_id || (@attributes && super)
+    def run_id
+      @run_id || (@attributes && super)
     end
 
     def context
-      @_context ||= Ductwork::Context.new(pipeline_id)
+      @_context ||= Ductwork::Context.new(run_id)
     end
   end
 end

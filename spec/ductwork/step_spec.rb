@@ -49,39 +49,39 @@ RSpec.describe Ductwork::Step do
       expect(step).to be_a(described_class)
     end
 
-    it "sets the pipeline id instance variable" do
-      pipeline_id = 1
+    it "sets the run id instance variable" do
+      run_id = 1
 
-      step = described_class.build_for_execution(pipeline_id)
+      step = described_class.build_for_execution(run_id)
 
-      expect(step.instance_variable_get(:@pipeline_id)).to eq(pipeline_id)
+      expect(step.instance_variable_get(:@run_id)).to eq(run_id)
     end
   end
 
-  describe "#pipeline_id" do
-    let(:pipeline_id) { SecureRandom.uuid_v7 }
+  describe "#run_id" do
+    let(:run_id) { SecureRandom.uuid_v7 }
 
     it "returns the value of the instance variable" do
       step = described_class.new
-      step.instance_variable_set(:@pipeline_id, pipeline_id)
+      step.instance_variable_set(:@run_id, run_id)
 
-      expect(step.pipeline_id).to eq(pipeline_id)
+      expect(step.run_id).to eq(run_id)
     end
 
     it "calls super otherwise" do
-      step = described_class.new(pipeline_id:)
+      step = described_class.new(run_id:)
 
-      expect(step.pipeline_id).to eq(pipeline_id)
+      expect(step.run_id).to eq(run_id)
     end
   end
 
   describe "#context" do
-    let(:pipeline) { build_stubbed(:pipeline) }
+    let(:run) { build_stubbed(:run) }
 
     it "returns the context object" do
-      context = described_class.new(pipeline:).context
+      ctx = described_class.new(run:).context
 
-      expect(context).to be_a(Ductwork::Context)
+      expect(ctx).to be_a(Ductwork::Context)
     end
   end
 end

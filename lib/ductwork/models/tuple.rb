@@ -2,12 +2,12 @@
 
 module Ductwork
   class Tuple < Ductwork::Record
-    belongs_to :pipeline, class_name: "Ductwork::Pipeline"
+    belongs_to :run, class_name: "Ductwork::Run"
 
     # NOTE: These model-level validations are here for symmetry. The current
     # methods used to create `Tuple` records skip validations lol
     validates :key, presence: true
-    validates :key, uniqueness: { scope: :pipeline_id }
+    validates :key, uniqueness: { scope: :run_id }
     validates :first_set_at, presence: true
     validates :last_set_at, presence: true
 

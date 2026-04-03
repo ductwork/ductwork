@@ -20,5 +20,12 @@ class CreateDuctworkRuns < Ductwork::Migration
       table.datetime :halted_at
       table.timestamps null: false
     end
+
+    add_index :ductwork_runs, %i[pipeline_id status]
+    add_index :ductwork_runs,
+              :pipeline_id,
+              unique: true,
+              where: "status = 'in_progress'",
+              name: "index_ductwork_runs_on_one_in_progress_per_pipeline"
   end
 end
