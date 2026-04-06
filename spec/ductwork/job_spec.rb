@@ -248,6 +248,7 @@ RSpec.describe Ductwork::Job do
             status: "in_progress",
             definition: { metadata: { on_halt: { klass: "MyHaltStep" } } }.to_json
           )
+          step.branch.in_progress!
           pipeline.in_progress!
           create(:execution, retry_count: 2, job: step.job)
           allow(MyHaltStep).to receive(:new).and_return(on_halt_step)
@@ -259,6 +260,12 @@ RSpec.describe Ductwork::Job do
             job.execute(pipeline_klass)
           end.to change { pipeline.reload.status }.to("halted")
             .and change { step.run.reload.status }.to("halted")
+        end
+
+        it "marks the branch as halted" do
+          expect do
+            job.execute(pipeline_klass)
+          end.to change { step.branch.reload.status }.to("halted")
         end
 
         it "marks the step as failed" do

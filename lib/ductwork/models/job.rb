@@ -142,6 +142,7 @@ module Ductwork
           halted = true
 
           step.update!(status: :failed)
+          step.branch.halt!
           run.pipeline.halt!
         end
       end

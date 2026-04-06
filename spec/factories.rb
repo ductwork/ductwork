@@ -51,6 +51,14 @@ FactoryBot.define do
   factory :pipeline, class: "Ductwork::Pipeline" do
     sequence(:klass) { |n| "MyPipeline#{n}" }
     status { Ductwork::Pipeline.statuses.keys.sample }
+
+    trait :completed do
+      status { "completed" }
+    end
+
+    trait :halted do
+      status { "halted" }
+    end
   end
 
   factory :process, class: "Ductwork::Process" do
@@ -81,6 +89,10 @@ FactoryBot.define do
     definition { JSON.dump({}) }
     definition_sha1 { Digest::SHA1.hexdigest(definition) }
     pipeline
+
+    trait :halted do
+      status { "halted" }
+    end
   end
 
   factory :step, class: "Ductwork::Step" do
@@ -107,5 +119,13 @@ FactoryBot.define do
     branch
     in_step factory: :step
     out_step factory: :step
+  end
+
+  factory :tuple, class: "Ductwork::Tuple" do
+    sequence(:key) { |n| "key#{n}" }
+    serialized_value { { raw_value: "foobar" }.to_json }
+    first_set_at { Time.current }
+    last_set_at { Time.current }
+    run
   end
 end

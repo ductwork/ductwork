@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- feat: implement `Ductwork::Pipeline#revive!`
 - chore: add `source_step_id` column on `ductwork_steps`
 - fix: protect against null error backtraces for job results
 - fix: update dashboard pages to handle `ductwork_runs`
