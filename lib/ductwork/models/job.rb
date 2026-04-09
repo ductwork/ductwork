@@ -60,7 +60,7 @@ module Ductwork
         execution_succeeded!(execution, attempt, output_payload)
         result = "success"
       rescue StandardError => e
-        execution_failed!(execution, attempt, e)
+        execution_errored!(execution, attempt, e)
         result = "failure"
       ensure
         Ductwork.logger.info(
@@ -111,15 +111,14 @@ module Ductwork
       end
     end
 
-    def execution_failed!(execution, attempt, error) # rubocop:todo Metrics
-      halted = false
+    def execution_errored!(execution, attempt, error) # rubocop:todo Metrics
       run = step.run
       max_retry = Ductwork.configuration.job_worker_max_retry(
         pipeline: run.pipeline_klass,
         step: klass
       )
 
-      Ductwork::Record.transaction do
+      Ductwork::Record.transaction do # rubocop:todo Metrics/BlockLength
         execution.update!(completed_at: Time.current)
         attempt.update!(completed_at: Time.current)
         execution.create_result!(
@@ -138,39 +137,29 @@ module Ductwork
             started_at: FAILED_EXECUTION_TIMEOUT.from_now,
             pipeline_klass: run.pipeline_klass
           )
+
+          Ductwork.logger.warn(
+            msg: "Job errored",
+            error_klass: error.class.name,
+            error_message: error.message,
+            job_id: id,
+            job_klass: klass,
+            run_id: run.id,
+            role: :job_worker
+          )
         elsif execution.retry_count >= max_retry
-          halted = true
-
           step.update!(status: :failed)
-          step.branch.halt!
-          run.pipeline.halt!
+
+          Ductwork.logger.error(
+            msg: "Job exhausted retries and failed",
+            error_klass: error.class.name,
+            error_message: error.message,
+            job_id: id,
+            job_klass: klass,
+            run_id: run.id,
+            role: :job_worker
+          )
         end
-      end
-
-      Ductwork.logger.warn(
-        msg: "Job errored",
-        error_klass: error.class.name,
-        error_message: error.message,
-        job_id: id,
-        job_klass: klass,
-        run_id: run.id,
-        role: :job_worker
-      )
-
-      # NOTE: perform lifecycle hook execution outside of the transaction as
-      # to not unnecessarily hold it open
-      if halted
-        execute_on_halt(run, error)
-      end
-    end
-
-    def execute_on_halt(run, error)
-      klass = run
-              .parsed_definition
-              .dig(:metadata, :on_halt, :klass)
-
-      if klass.present?
-        Object.const_get(klass).new(error).execute
       end
     end
   end

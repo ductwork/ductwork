@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: do not halt pipeline from job worker
 - feat: update branch claim query
 - feat: implement `Ductwork::Pipeline#revive!`
 - chore: add `source_step_id` column on `ductwork_steps`
