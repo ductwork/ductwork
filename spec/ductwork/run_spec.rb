@@ -109,4 +109,98 @@ RSpec.describe Ductwork::Run do
       expect(run.parsed_definition["foo"]).to eq("bar")
     end
   end
+
+  describe "#resolve_terminal_state!" do
+    subject(:run) { create(:run, :in_progress) }
+
+    let(:pipeline) { run.pipeline.tap(&:in_progress!) }
+
+    before do
+      allow(Ductwork.logger).to receive(:info).and_call_original
+      allow(Ductwork.logger).to receive(:warn).and_call_original
+      pipeline
+    end
+
+    it "no-ops if the run is already halted" do
+      run.halted!
+
+      expect do
+        run.resolve_terminal_state!
+      end.not_to change(run, :status)
+
+      expect(pipeline).to be_in_progress
+    end
+
+    it "no-ops if the run is already completed" do
+      run.completed!
+
+      expect do
+        run.resolve_terminal_state!
+      end.not_to change(run, :status)
+
+      expect(pipeline).to be_in_progress
+    end
+
+    it "no-ops if there are any non-terminal branches" do
+      create(:branch, :completed, run:)
+      create(:branch, :in_progress, run:)
+      create(:branch, :halted, run:)
+
+      expect do
+        run.resolve_terminal_state!
+      end.not_to change(run, :status)
+
+      expect(pipeline).to be_in_progress
+    end
+
+    context "when there are halted branches in the run" do
+      before do
+        create(:branch, :completed, run:)
+        create(:branch, :halted, run:)
+        create(:branch, :completed, run:)
+      end
+
+      it "halts the run and pipeline when any branch is halted" do
+        run.resolve_terminal_state!
+
+        expect(pipeline.reload).to be_halted
+      end
+
+      it "logs" do
+        run.resolve_terminal_state!
+
+        expect(Ductwork.logger).to have_received(:warn).with(
+          msg: "Pipeline halted",
+          pipeline_id: pipeline.id,
+          run_id: run.id
+        )
+      end
+    end
+
+    context "when all branches successfully completed" do
+      before do
+        create(:branch, :completed, run:)
+        create(:branch, :completed, run:)
+      end
+
+      it "completes the run and pipeline" do
+        expect do
+          run.resolve_terminal_state!
+        end.to change(run, :status).from("in_progress").to("completed")
+          .and change(run, :completed_at).to(be_almost_now)
+
+        expect(pipeline.reload).to be_completed
+      end
+
+      it "logs" do
+        run.resolve_terminal_state!
+
+        expect(Ductwork.logger).to have_received(:info).with(
+          msg: "Pipeline completed",
+          pipeline_id: pipeline.id,
+          run_id: run.id
+        )
+      end
+    end
+  end
 end

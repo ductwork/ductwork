@@ -35,5 +35,34 @@ module Ductwork
     def parsed_definition
       @parsed_definition ||= JSON.parse(definition).with_indifferent_access
     end
+
+    def resolve_terminal_state!
+      Ductwork::Record.transaction do
+        lock!
+
+        next if halted? || completed?
+        next if branches.where.not(status: %w[completed halted]).exists?
+
+        if branches.halted.exists?
+          pipeline.update!(status: "halted")
+          update!(status: "halted", halted_at: Time.current)
+
+          Ductwork.logger.warn(
+            msg: "Pipeline halted",
+            pipeline_id: pipeline.id,
+            run_id: id
+          )
+        else
+          pipeline.update!(status: "completed")
+          update!(status: "completed", completed_at: Time.current)
+
+          Ductwork.logger.info(
+            msg: "Pipeline completed",
+            pipeline_id: pipeline.id,
+            run_id: id
+          )
+        end
+      end
+    end
   end
 end

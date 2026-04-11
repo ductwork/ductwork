@@ -107,32 +107,6 @@ module Ductwork
       runs.in_progress.sole
     end
 
-    def complete!
-      Ductwork::Record.transaction do
-        completed!
-        current_run.update!(status: :completed, completed_at: Time.current)
-      end
-
-      Ductwork.logger.info(
-        msg: "Pipeline completed",
-        pipeline_id: id,
-        role: :pipeline_advancer
-      )
-    end
-
-    def halt!
-      Ductwork::Record.transaction do
-        halted!
-        current_run.update!(status: :halted, halted_at: Time.current)
-      end
-
-      Ductwork.logger.info(
-        msg: "Pipeline halted",
-        pipeline_id: id,
-        pipeline_klass: klass
-      )
-    end
-
     def revive!(duplicate_context: false)
       if !halted?
         raise ReviveError, "Cannot revive #{status} pipeline"

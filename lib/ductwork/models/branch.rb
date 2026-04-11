@@ -55,43 +55,12 @@ module Ductwork
       end
     end
 
-    def advance!(transition, advancement) # rubocop:todo Metrics
-      edge = run.parsed_definition.dig(:edges, latest_step.node)
-
-      if edge.nil? || edge[:to].blank?
-        complete_branch_and_pipeline(transition, advancement)
-      elsif edge[:type] == "chain"
-        chain_branch(edge, transition, advancement)
-      elsif edge[:type] == "collapse"
-        collapse_branch(edge, transition, advancement)
-      elsif edge[:type] == "combine"
-        combine_branch(edge, transition, advancement)
-      elsif edge[:type] == "converge"
-        converge_branch(edge, transition, advancement)
-      elsif edge[:type] == "divert"
-        divert_branch(edge, transition, advancement)
-      elsif edge[:type] == "divide"
-        divide_branch(edge, transition, advancement)
-      elsif edge[:type] == "expand"
-        expand_branch(edge, transition, advancement)
+    def advance!(transition, advancement)
+      if latest_step.failed?
+        halt_branch_and_resolve_run!(transition, advancement)
       else
-        raise Ductwork::Branch::TransitionError,
-              "Invalid transition type `#{edge[:type]}`"
+        route_by_edge(transition, advancement)
       end
-    rescue StandardError => e
-      Ductwork.logger.error(
-        msg: "Branch advancement errored",
-        branch_id: id,
-        error_klass: e.class.to_s,
-        error_message: e.message
-      )
-
-      advancement&.update!(
-        completed_at: Time.current,
-        error_klass: e.class.to_s,
-        error_message: e.message,
-        error_backtrace: e.backtrace.join("\n")
-      )
     end
 
     def complete!
@@ -137,10 +106,67 @@ module Ductwork
 
     private
 
+    # NOTE: we do not need to change the state of the step here because
+    # it's already in the terminal state of `failed`
+    def halt_branch_and_resolve_run!(transition, advancement)
+      Ductwork::Record.transaction do
+        now = Time.current
+        advancement.update!(completed_at: now)
+        transition.update!(completed_at: now)
+
+        halt!
+        run.resolve_terminal_state!
+      end
+    end
+
+    def route_by_edge(transition, advancement) # rubocop:todo Metrics
+      edge = run.parsed_definition.dig(:edges, latest_step.node)
+
+      if edge.nil? || edge[:to].blank?
+        complete_branch_and_pipeline(transition, advancement)
+      elsif edge[:type] == "chain"
+        chain_branch(edge, transition, advancement)
+      elsif edge[:type] == "collapse"
+        collapse_branch(edge, transition, advancement)
+      elsif edge[:type] == "combine"
+        combine_branch(edge, transition, advancement)
+      elsif edge[:type] == "converge"
+        converge_branch(edge, transition, advancement)
+      elsif edge[:type] == "divert"
+        divert_branch(edge, transition, advancement)
+      elsif edge[:type] == "divide"
+        divide_branch(edge, transition, advancement)
+      elsif edge[:type] == "expand"
+        expand_branch(edge, transition, advancement)
+      else
+        raise Ductwork::Branch::TransitionError,
+              "Invalid transition type `#{edge[:type]}`"
+      end
+    rescue StandardError => e
+      Ductwork::Record.transaction do
+        advancement&.update!(
+          completed_at: Time.current,
+          error_klass: e.class.to_s,
+          error_message: e.message,
+          error_backtrace: e.backtrace.join("\n")
+        )
+
+        if e.is_a?(Ductwork::Branch::TransitionError)
+          halt!
+          run.resolve_terminal_state!
+        end
+      end
+
+      Ductwork.logger.error(
+        msg: "Branch advancement errored",
+        branch_id: id,
+        error_klass: e.class.to_s,
+        error_message: e.message
+      )
+    end
+
     def complete_branch_and_pipeline(transition, advancement)
       Ductwork::Record.transaction do
-        run.lock!
-
         latest_step.update!(status: :completed, completed_at: Time.current)
         complete!
 
@@ -148,28 +174,7 @@ module Ductwork
         advancement.update!(completed_at: now)
         transition.update!(completed_at: now)
 
-        return if run.halted? || run.completed?
-
-        if run.branches.where.not(id:).where.not(status: :completed).none?
-          run.pipeline.complete!
-        end
-      end
-    end
-
-    def halt_branch_and_pipeline!(transition, advancement)
-      Ductwork::Record.transaction do
-        run.lock!
-
-        latest_step.update!(status: :completed, completed_at: Time.current)
-        halt!
-
-        now = Time.current
-        advancement.update!(completed_at: now)
-        transition.update!(completed_at: now)
-
-        return if run.halted? || run.completed?
-
-        run.pipeline.halt!
+        run.resolve_terminal_state!
       end
     end
 
@@ -341,14 +346,17 @@ module Ductwork
       end
     end
 
-    def divert_branch(edge, transition, advancement)
+    def divert_branch(edge, transition, advancement) # rubocop:disable Metrics/AbcSize
       input_arg = Ductwork::Job.find_by(step: latest_step).return_value
       node = edge[:to][input_arg.to_s] || edge[:to]["otherwise"]
       klass = run.parsed_definition.dig(:edges, node, :klass)
       started_at = Time.current
 
       if node.nil?
-        halt_branch_and_pipeline!(transition, advancement)
+        Ductwork::Record.transaction do
+          latest_step.update!(status: :completed, completed_at: Time.current)
+          halt_branch_and_resolve_run!(transition, advancement)
+        end
       else
         Ductwork::Record.transaction do
           latest_step.update!(status: :completed, completed_at: Time.current)
@@ -370,7 +378,7 @@ module Ductwork
       end
     end
 
-    def divide_branch(edge, transition, advancement) # rubocop:todo Metrics/AbcSize
+    def divide_branch(edge, transition, advancement) # rubocop:todo Metrics
       started_at = Time.current
       input_arg = Ductwork::Job.find_by(step: latest_step).return_value
       too_many = edge[:to].tally.any? do |to_klass, count|
@@ -382,7 +390,10 @@ module Ductwork
       end
 
       if too_many
-        halt_branch_and_pipeline!(transition, advancement)
+        Ductwork::Record.transaction do
+          latest_step.update!(status: :completed, completed_at: Time.current)
+          halt_branch_and_resolve_run!(transition, advancement)
+        end
       else
         Ductwork::Record.transaction do
           latest_step.update!(status: :completed, completed_at: Time.current)
@@ -424,7 +435,10 @@ module Ductwork
       )
 
       if max_depth != -1 && return_value.count > max_depth
-        halt_branch_and_pipeline!(transition, advancement)
+        Ductwork::Record.transaction do
+          latest_step.update!(status: :completed, completed_at: Time.current)
+          halt_branch_and_resolve_run!(transition, advancement)
+        end
       elsif return_value.none?
         complete_branch_and_pipeline(transition, advancement)
       else

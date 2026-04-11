@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- feat: properly set pipeline/run terminal states
 - fix: check for terminal status before setting status on pipeline
 - chore: do not halt pipeline from job worker
 - feat: update branch claim query

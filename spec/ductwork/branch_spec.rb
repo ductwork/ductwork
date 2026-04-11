@@ -125,7 +125,7 @@ RSpec.describe Ductwork::Branch do
 
   # NOTE: the rest of the specs are in their own files by transition type
   describe "#advance!" do
-    subject(:branch) { create(:branch, run:) }
+    subject(:branch) { create(:branch, :in_progress, run:) }
 
     let(:run) { create(:run, status: "in_progress", definition: definition) }
     let(:step) { create(:step, :advancing, branch:, run:) }
@@ -225,7 +225,39 @@ RSpec.describe Ductwork::Branch do
       end
     end
 
-    context "when the advancing errors" do
+    context "when there is an error while advancing" do
+      before do
+        allow(run).to receive(:resolve_terminal_state!).and_raise("bad times")
+      end
+
+      it "sets error metadata on the advancement record" do
+        transition = create(:transition, branch:)
+        advancement = create(:advancement, transition:)
+
+        branch.advance!(transition, advancement)
+
+        updated_advancement = branch.transitions.sole.advancements.sole
+        expect(updated_advancement.completed_at).to be_almost_now
+        expect(updated_advancement.error_klass).to eq("RuntimeError")
+        expect(updated_advancement.error_message).to eq("bad times")
+        expect(updated_advancement.error_backtrace).to be_present
+      end
+
+      it "logs" do
+        allow(Ductwork.logger).to receive(:error)
+
+        branch.advance!(spy, spy)
+
+        expect(Ductwork.logger).to have_received(:error).with(
+          msg: "Branch advancement errored",
+          branch_id: branch.id,
+          error_klass: "RuntimeError",
+          error_message: "bad times"
+        )
+      end
+    end
+
+    context "when there is a transition error" do
       let(:definition) do
         {
           nodes: %w[MyFirstStep.0],
@@ -234,10 +266,11 @@ RSpec.describe Ductwork::Branch do
           },
         }.to_json
       end
-      let(:transition) { create(:transition, branch:) }
-      let(:advancement) { create(:advancement, transition:) }
 
-      it "completes and sets error metadata on the advancement record" do
+      it "sets error metadata on the advancement record" do
+        transition = create(:transition, branch:)
+        advancement = create(:advancement, transition:)
+
         branch.advance!(transition, advancement)
 
         advancement = branch.transitions.sole.advancements.sole
@@ -247,10 +280,24 @@ RSpec.describe Ductwork::Branch do
         expect(advancement.error_backtrace).to be_present
       end
 
+      it "halts the branch" do
+        expect do
+          branch.advance!(spy, spy)
+        end.to change(branch, :status).from("in_progress").to("halted")
+      end
+
+      it "resolves the terminal state on the run" do
+        allow(run).to receive(:resolve_terminal_state!).and_call_original
+
+        branch.advance!(spy, spy)
+
+        expect(run).to have_received(:resolve_terminal_state!)
+      end
+
       it "logs" do
         allow(Ductwork.logger).to receive(:error)
 
-        branch.advance!(transition, advancement)
+        branch.advance!(spy, spy)
 
         expect(Ductwork.logger).to have_received(:error).with(
           msg: "Branch advancement errored",
