@@ -253,7 +253,11 @@ RSpec.describe Ductwork::Branch do
       let(:advancement) { create(:advancement, transition:) }
 
       before do
-        allow(run).to receive(:parsed_definition).and_raise("bad times")
+        definition = { metadata: { on_halt: { klass: "MyHaltStep" } } }
+        allow(run).to receive(:parsed_definition).and_invoke(
+          ->(*) { raise "bad times" },
+          ->(*) { definition }
+        )
       end
 
       it "sets error metadata on the advancement record" do

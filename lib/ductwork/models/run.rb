@@ -36,7 +36,9 @@ module Ductwork
       @parsed_definition ||= JSON.parse(definition).with_indifferent_access
     end
 
-    def resolve_terminal_state!
+    def resolve_terminal_state! # rubocop:todo Metrics/AbcSize
+      halted = false
+
       Ductwork::Record.transaction do
         lock!
 
@@ -44,6 +46,7 @@ module Ductwork
         next if branches.where.not(status: %w[completed halted]).exists?
 
         if branches.halted.exists?
+          halted = true
           pipeline.update!(status: "halted")
           update!(status: "halted", halted_at: Time.current)
 
@@ -52,6 +55,7 @@ module Ductwork
             pipeline_id: pipeline.id,
             run_id: id
           )
+
         else
           pipeline.update!(status: "completed")
           update!(status: "completed", completed_at: Time.current)
@@ -61,6 +65,16 @@ module Ductwork
             pipeline_id: pipeline.id,
             run_id: id
           )
+        end
+      end
+    ensure
+      if halted
+        klass = parsed_definition.dig(:metadata, :on_halt, :klass)
+
+        if klass.present?
+          reasons = branches.halted.pluck(:halt_reason)
+
+          Object.const_get(klass).new(reasons).execute
         end
       end
     end

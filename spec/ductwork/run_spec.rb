@@ -175,6 +175,18 @@ RSpec.describe Ductwork::Run do
           run_id: run.id
         )
       end
+
+      it "calls the `on_halt` DSL method if it exists" do
+        halt_step = instance_double(MyHaltStep, execute: nil)
+        definition = { metadata: { on_halt: { klass: "MyHaltStep" } } }.to_json
+        allow(MyHaltStep).to receive(:new).and_return(halt_step)
+        run.update!(definition:)
+
+        run.resolve_terminal_state!
+
+        expect(MyHaltStep).to have_received(:new).with(["advancer_retries_exhausted"])
+        expect(halt_step).to have_received(:execute)
+      end
     end
 
     context "when all branches successfully completed" do

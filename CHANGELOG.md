@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: add back in calling `on_halt` DSL method
 - feat: set `halt_reason` when halting branch
 - chore: add `halt_reason` column to `ductwork_branches` table
 - fix: update proper records and state for advancer retry

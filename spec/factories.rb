@@ -39,6 +39,11 @@ FactoryBot.define do
       status { "completed" }
       completed_at { Time.current }
     end
+
+    trait :halted do
+      status { "halted" }
+      halt_reason { "advancer_retries_exhausted" }
+    end
   end
 
   factory :execution, class: "Ductwork::Execution" do
