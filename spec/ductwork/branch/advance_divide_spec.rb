@@ -110,10 +110,14 @@ RSpec.describe Ductwork::Branch, "#advance!" do
       )
     end
 
-    it "halts the pipeline" do
+    it "halts the branch, run, and pipeline" do
       expect do
         branch.advance!(transition, advancement)
       end.not_to change(Ductwork::Step, :count)
+
+      expect(branch.reload).to be_halted
+      expect(branch.halt_reason).to eq("max_fanout_exceeded")
+      expect(run.reload).to be_halted
       expect(run.pipeline.reload).to be_halted
     end
   end

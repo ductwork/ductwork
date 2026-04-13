@@ -38,7 +38,7 @@ module Ductwork
 
     enum :halt_reason,
          job_retries_exhausted: "job_retries_exhausted",
-         pipeline_retries_exhausted: "pipeline_retries_exhausted",
+         advancer_retries_exhausted: "advancer_retries_exhausted",
          max_fanout_exceeded: "max_fanout_exceeded",
          condition_unmatched: "condition_unmatched",
          transition_invalid: "transition_invalid"
@@ -64,7 +64,7 @@ module Ductwork
 
     def advance!(transition, advancement)
       if latest_step.failed?
-        halt_branch_and_resolve_run!(transition, advancement)
+        halt_branch_and_resolve_run!(transition, advancement, "job_retries_exhausted")
       else
         route_by_edge(transition, advancement)
       end
@@ -85,7 +85,9 @@ module Ductwork
       )
     end
 
-    def halt!
+    def halt!(halt_reason)
+      self.halt_reason = halt_reason
+
       update!(
         status: "halted",
         claimed_for_advancing_at: nil,
@@ -115,13 +117,13 @@ module Ductwork
 
     # NOTE: we do not need to change the state of the step here because
     # it's already in the terminal state of `failed`
-    def halt_branch_and_resolve_run!(transition, advancement)
+    def halt_branch_and_resolve_run!(transition, advancement, halt_reason)
       Ductwork::Record.transaction do
         now = Time.current
         advancement.update!(completed_at: now)
         transition.update!(completed_at: now)
 
-        halt!
+        halt!(halt_reason)
         run.resolve_terminal_state!
       end
     end
@@ -154,6 +156,11 @@ module Ductwork
         if e.is_a?(Ductwork::Branch::TransitionError) || too_many_failed_attempts?
           latest_step.update!(status: :completed, completed_at: Time.current)
 
+          halt_reason = if e.is_a?(Ductwork::Branch::TransitionError)
+                          "transition_invalid"
+                        else
+                          "advancer_retries_exhausted"
+                        end
           now = Time.current
           advancement&.update!(
             completed_at: now,
@@ -162,7 +169,7 @@ module Ductwork
             error_backtrace: e.backtrace.join("\n")
           )
           transition.update!(completed_at: now)
-          halt!
+          halt!(halt_reason)
           run.resolve_terminal_state!
         else
           # NOTE: since the transaction rolled back from the error the step is
@@ -387,7 +394,7 @@ module Ductwork
       if node.nil?
         Ductwork::Record.transaction do
           latest_step.update!(status: :completed, completed_at: Time.current)
-          halt_branch_and_resolve_run!(transition, advancement)
+          halt_branch_and_resolve_run!(transition, advancement, "condition_unmatched")
         end
       else
         Ductwork::Record.transaction do
@@ -424,7 +431,7 @@ module Ductwork
       if too_many
         Ductwork::Record.transaction do
           latest_step.update!(status: :completed, completed_at: Time.current)
-          halt_branch_and_resolve_run!(transition, advancement)
+          halt_branch_and_resolve_run!(transition, advancement, "max_fanout_exceeded")
         end
       else
         Ductwork::Record.transaction do
@@ -469,7 +476,7 @@ module Ductwork
       if max_depth != -1 && return_value.count > max_depth
         Ductwork::Record.transaction do
           latest_step.update!(status: :completed, completed_at: Time.current)
-          halt_branch_and_resolve_run!(transition, advancement)
+          halt_branch_and_resolve_run!(transition, advancement, "max_fanout_exceeded")
         end
       elsif return_value.none?
         complete_branch_and_pipeline(transition, advancement)

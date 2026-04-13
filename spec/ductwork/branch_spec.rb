@@ -225,6 +225,29 @@ RSpec.describe Ductwork::Branch do
       end
     end
 
+    context "when the step exhausted retries" do
+      let(:transition) { create(:transition, branch:) }
+      let(:advancement) { create(:advancement, transition:) }
+
+      before do
+        step.failed!
+      end
+
+      it "completes the transition and advancement" do
+        expect do
+          branch.advance!(transition, advancement)
+        end.to change(advancement, :completed_at).to(be_almost_now)
+          .and change(transition, :completed_at).to(be_almost_now)
+      end
+
+      it "halts the branch" do
+        expect do
+          branch.advance!(transition, advancement)
+        end.to change(branch, :status).from("in_progress").to("halted")
+          .and change(branch, :halt_reason).to("job_retries_exhausted")
+      end
+    end
+
     context "when there is an error while advancing" do
       let(:transition) { create(:transition, branch:) }
       let(:advancement) { create(:advancement, transition:) }
@@ -279,6 +302,7 @@ RSpec.describe Ductwork::Branch do
           expect do
             branch.advance!(spy, spy)
           end.to change(branch, :status).from("in_progress").to("halted")
+            .and change(branch, :halt_reason).to("advancer_retries_exhausted")
         end
 
         it "completes the transition" do
@@ -331,6 +355,7 @@ RSpec.describe Ductwork::Branch do
         expect do
           branch.advance!(spy, spy)
         end.to change(branch, :status).from("in_progress").to("halted")
+          .and change(branch, :halt_reason).to("transition_invalid")
       end
 
       it "resolves the terminal state on the run" do
@@ -389,17 +414,19 @@ RSpec.describe Ductwork::Branch do
   end
 
   describe "#halt!" do
-    subject(:branch) { create(:branch, :in_progress, claimed_for_advancing_at: Time.current) }
+    subject(:branch) do
+      create(:branch, :in_progress, claimed_for_advancing_at: Time.current)
+    end
 
     it "sets the status and timestamp for the branch" do
       expect do
-        branch.halt!
+        branch.halt!(:job_retries_exhausted)
       end.to change(branch, :status).from("in_progress").to("halted")
     end
 
     it "releases the branch" do
       expect do
-        branch.halt!
+        branch.halt!("max_fanout_exceeded")
       end.to change(branch, :claimed_for_advancing_at).to(nil)
         .and change(branch, :last_advanced_at).to be_almost_now
     end
@@ -407,7 +434,7 @@ RSpec.describe Ductwork::Branch do
     it "logs" do
       allow(Ductwork.logger).to receive(:info).and_call_original
 
-      branch.halt!
+      branch.halt!("transition_invalid")
 
       expect(Ductwork.logger).to have_received(:info).with(
         msg: "Branch halted",

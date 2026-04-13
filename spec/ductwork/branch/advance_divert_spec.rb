@@ -88,12 +88,13 @@ RSpec.describe Ductwork::Branch, "#advance!" do
     end
     let(:output_payload) { { payload: "unknown" }.to_json }
 
-    it "halts the branch, run, and run" do
+    it "halts the branch, run, and pipeline" do
       expect do
         branch.advance!(transition, advancement)
       end.not_to change(Ductwork::Step, :count)
 
       expect(branch.reload).to be_halted
+      expect(branch.halt_reason).to eq("condition_unmatched")
       expect(run.reload).to be_halted
       expect(run.pipeline).to be_halted
     end
