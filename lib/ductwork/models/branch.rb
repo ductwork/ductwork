@@ -36,6 +36,13 @@ module Ductwork
          dampened: "dampened",
          completed: "completed"
 
+    enum :halt_reason,
+         job_retries_exhausted: "job_retries_exhausted",
+         pipeline_retries_exhausted: "pipeline_retries_exhausted",
+         max_fanout_exceeded: "max_fanout_exceeded",
+         condition_unmatched: "condition_unmatched",
+         transition_invalid: "transition_invalid"
+
     class TransitionError < StandardError; end
 
     def self.with_latest_claimed(pipeline_klass)

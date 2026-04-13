@@ -12,6 +12,7 @@ class CreateDuctworkBranches < Ductwork::Migration
       )
       table.string :pipeline_klass, null: false
       table.string :status, null: false
+      table.string :halt_reason
       table.datetime :claimed_for_advancing_at
       table.datetime :last_advanced_at, null: false
       table.datetime :started_at, null: false

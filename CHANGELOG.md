@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: add `halt_reason` column to `ductwork_branches` table
 - fix: update proper records and state for advancer retry
 - feat: respect pipeline advancer max retry configuration
 - feat: add pipeline advancer max retry configuration
