@@ -179,15 +179,22 @@ RSpec.describe Ductwork::Process do
       expect(process.reload.last_heartbeat_at).to be_within(1.second).of(Time.current)
     end
 
-    it "logs if the record does not exist" do
-      allow(Ductwork.logger).to receive(:error).and_call_original
+    it "re-adopts and logs a warning if the record does not exist" do
+      allow(Ductwork.logger).to receive(:warn).and_call_original
 
-      described_class.report_heartbeat!
+      expect do
+        described_class.report_heartbeat!
+      end.to change(described_class, :count).by(1)
 
-      expect(Ductwork.logger).to have_received(:error).with(
-        msg: "Process record missing, cannot report heartbeat",
+      expect(Ductwork.logger).to have_received(:warn).with(
+        msg: "Process record missing, re-adopting (likely reaped after host suspend)",
         pid: ::Process.pid
       )
+
+      record = described_class.current
+      expect(record.pid).to eq(::Process.pid)
+      expect(record.machine_identifier).to eq(Ductwork::MachineIdentifier.fetch)
+      expect(record.last_heartbeat_at).to be_almost_now
     end
   end
 

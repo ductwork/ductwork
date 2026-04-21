@@ -53,15 +53,17 @@ module Ductwork
     end
 
     def self.report_heartbeat!
-      current.tap do |process|
-        if process.present?
-          process.update!(last_heartbeat_at: Time.current)
-        else
-          Ductwork.logger.error(
-            msg: "Process record missing, cannot report heartbeat",
-            pid: ::Process.pid
-          )
-        end
+      process = current
+
+      if process.present?
+        process.update!(last_heartbeat_at: Time.current)
+        process
+      else
+        Ductwork.logger.warn(
+          msg: "Process record missing, re-adopting (likely reaped after host suspend)",
+          pid: ::Process.pid
+        )
+        adopt_or_create_current!
       end
     end
 

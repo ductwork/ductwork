@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: adopt or create process record when reporting heartbeat
 - fix: fan-in advancement checks branch status instead of step status
 - fix: add back in calling `on_halt` DSL method
 - feat: set `halt_reason` when halting branch
