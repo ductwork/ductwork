@@ -49,7 +49,10 @@ Metrics/MethodLength:
   Max: 40
   Exclude:
     - lib/generators/ductwork/install/install_generator.rb
+    - lib/generators/ductwork/install/templates/db/*.rb
     - lib/generators/ductwork/update/update_generator.rb
+    - lib/generators/ductwork/update/templates/db/*.rb
+    - spec/internal/db/migrate/*.rb
 
 Metrics/PerceivedComplexity:
   Exclude:

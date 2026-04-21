@@ -25,9 +25,16 @@ class CreateDuctworkAvailabilities < Ductwork::Migration
 
     add_index :ductwork_availabilities, :execution_id, unique: true
     add_index :ductwork_availabilities, %i[id process_id]
-    add_index :ductwork_availabilities,
-              %i[pipeline_klass started_at],
-              name: "index_ductwork_availabilities_on_claim_latest",
-              where: "completed_at IS NULL"
+
+    if mysql?
+      add_index :ductwork_availabilities,
+                %i[pipeline_klass started_at],
+                name: :index_ductwork_availabilities_on_claim_latest
+    else
+      add_index :ductwork_availabilities,
+                %i[pipeline_klass started_at],
+                name: "index_ductwork_availabilities_on_claim_latest",
+                where: "completed_at IS NULL"
+    end
   end
 end

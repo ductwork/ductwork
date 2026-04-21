@@ -22,10 +22,33 @@ class CreateDuctworkRuns < Ductwork::Migration
     end
 
     add_index :ductwork_runs, %i[pipeline_id status]
-    add_index :ductwork_runs,
-              :pipeline_id,
-              unique: true,
-              where: "status = 'in_progress'",
-              name: "index_ductwork_runs_on_one_in_progress_per_pipeline"
+
+    if mysql?
+      reversible do |direction|
+        direction.up do
+          execute <<~SQL
+            ALTER TABLE ductwork_runs
+              ADD COLUMN active_pipeline_id VARCHAR(36)
+                GENERATED ALWAYS AS (
+                  IF(status IN ('in_progress', 'paused'), pipeline_id, NULL)
+                )
+          SQL
+          add_index :ductwork_runs, :active_pipeline_id,
+                    unique: true,
+                    name: :idx_unique_active_run
+        end
+
+        direction.down do
+          remove_index :ductwork_runs, name: :idx_unique_active_run
+          remove_column :ductwork_runs, :active_pipeline_id
+        end
+      end
+    else
+      add_index :ductwork_runs,
+                :pipeline_id,
+                unique: true,
+                where: "status IN ('in_progress', 'paused')",
+                name: :idx_unique_active_run
+    end
   end
 end

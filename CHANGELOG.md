@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: don't use partial indexes for MySQL
 - fix: adopt or create process record when reporting heartbeat
 - fix: fan-in advancement checks branch status instead of step status
 - fix: add back in calling `on_halt` DSL method
