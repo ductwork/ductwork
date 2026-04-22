@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- feat: add mysql and postgresql databases to CI test matrix
 - fix: don't use partial indexes for MySQL
 - fix: adopt or create process record when reporting heartbeat
 - fix: fan-in advancement checks branch status instead of step status

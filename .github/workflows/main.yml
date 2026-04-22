@@ -10,13 +10,49 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    name: Ruby ${{ matrix.ruby }}
+    name: Ruby ${{ matrix.ruby }} / ${{ matrix.db }}
     strategy:
+      fail-fast: false
       matrix:
+        db:
+          - mysql
+          - postgresql
+          - sqlite
         ruby:
           - '4.0.2'
           - '3.4.9'
           - '3.3.11'
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: ductwork_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ductwork_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DB: ${{ matrix.db }}
 
     steps:
     - uses: actions/checkout@v6
@@ -37,4 +73,5 @@ jobs:
     - name: Run specs
       run: bundle exec appraisal rake spec
     - name: Run rubocop
+      if: matrix.db == 'sqlite'
       run: bundle exec rake rubocop

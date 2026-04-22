@@ -89,12 +89,15 @@ GEM
       nokogiri (>= 1.12.0)
     minitest (6.0.1)
       prism (~> 1.5)
+    mysql2 (0.5.7)
+      bigdecimal
     nokogiri (1.19.0-x86_64-linux-gnu)
       racc (~> 1.4)
     parallel (1.27.0)
     parser (3.3.10.1)
       ast (~> 2.4.1)
       racc
+    pg (1.6.3-x86_64-linux)
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
@@ -211,6 +214,8 @@ DEPENDENCIES
   debug
   ductwork!
   factory_bot
+  mysql2
+  pg
   rake
   rspec
   rspec-rails

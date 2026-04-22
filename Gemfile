@@ -11,6 +11,8 @@ gem "benchmark-ips"
 gem "combustion"
 gem "debug"
 gem "factory_bot"
+gem "mysql2", require: false
+gem "pg", require: false
 gem "rake"
 gem "rspec"
 gem "rspec-rails"
