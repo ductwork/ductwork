@@ -28,11 +28,15 @@ module Ductwork
         first_set_at: Time.current,
         last_set_at: Time.current,
       }
-      unique_by = %i[run_id key]
+      opts = if Ductwork::Tuple.connection.adapter_name.match?(/mysql/i)
+               {}
+             else
+               { unique_by: %i[run_id key] }
+             end
 
       if overwrite
         Ductwork.wrap_with_app_executor do
-          Ductwork::Tuple.upsert(attributes, unique_by:)
+          Ductwork::Tuple.upsert(attributes, **opts)
         end
       else
         Ductwork.wrap_with_app_executor do
