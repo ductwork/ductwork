@@ -1,24 +1,26 @@
+<% case ENV.fetch("DB", "sqlite")
+   when "mysql" %>
 test:
-  <% case ENV.fetch("DB", "sqlite") %>
-  <% when "sqlite" %>
-    adapter: sqlite3
-    database: db/combustion_test.sqlite
-    pool: 5
-    timeout: 5000
-  <% when "postgresql" %>
-    adapter: postgresql
-    database: ductwork_test
-    username: postgres
-    password: postgres
-    host: localhost
-    port: 5432
-    pool: 5
-  <% when "mysql" %>
-    adapter: mysql2
-    database: ductwork_test
-    username: root
-    password: root
-    host: 127.0.0.1
-    port: 3306
-    pool: 5
-  <% end %>
+  adapter: mysql2
+  database: ductwork_test
+  username: root
+  password: root
+  host: 127.0.0.1
+  port: 3306
+  pool: 5
+<% when "postgresql" %>
+test:
+  adapter: postgresql
+  database: ductwork_test
+  username: postgres
+  password: postgres
+  host: localhost
+  port: 5432
+  pool: 5
+<% when "sqlite" %>
+test:
+  adapter: sqlite3
+  database: db/combustion_test.sqlite
+  pool: 5
+  timeout: 5000
+<% end %>
