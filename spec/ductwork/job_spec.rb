@@ -108,7 +108,7 @@ RSpec.describe Ductwork::Job do
 
       job = described_class.sole
       expect(job.klass).to eq("MyFirstStep")
-      expect(job.started_at).to be_within(1.second).of(Time.current)
+      expect(job.started_at).to be_almost_now
       expect(job.completed_at).to be_nil
       expect(job.input_args).to eq(JSON.dump({ args: [args] }))
       expect(job.output_payload).to be_nil
@@ -122,7 +122,7 @@ RSpec.describe Ductwork::Job do
 
       job = described_class.sole
       execution = job.executions.sole
-      expect(execution.started_at).to be_within(1.second).of(Time.current)
+      expect(execution.started_at).to be_almost_now
       expect(execution.completed_at).to be_nil
     end
 
@@ -133,7 +133,7 @@ RSpec.describe Ductwork::Job do
 
       execution = Ductwork::Execution.sole
       availability = execution.availability
-      expect(availability.started_at).to be_within(1.second).of(Time.current)
+      expect(availability.started_at).to be_almost_now
       expect(availability.completed_at).to be_nil
     end
   end
