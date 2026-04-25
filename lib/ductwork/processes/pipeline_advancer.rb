@@ -58,6 +58,7 @@ module Ductwork
           Branch.with_latest_claimed(klass) do |branch, transition, advancement|
             @branch = branch
             branch.advance!(transition, advancement)
+            @branch = nil
           end
 
           @last_heartbeat_at = Time.current
