@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: add `ductwork_branches.claim_token` string column
 - chore: set `@branch` ivar after branch is claimed
 - fix: only use `unique_by` options for non-MySQL db adapters
 - feat: add mysql and postgresql databases to CI test matrix
