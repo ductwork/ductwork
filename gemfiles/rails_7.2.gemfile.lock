@@ -138,6 +138,8 @@ GEM
     marcel (1.1.0)
     mini_mime (1.1.5)
     minitest (5.27.0)
+    mysql2 (0.5.7)
+      bigdecimal
     net-imap (0.6.2)
       date
       net-protocol
@@ -168,6 +170,13 @@ GEM
     parser (3.3.10.1)
       ast (~> 2.4.1)
       racc
+    pg (1.6.3)
+    pg (1.6.3-aarch64-linux)
+    pg (1.6.3-aarch64-linux-musl)
+    pg (1.6.3-arm64-darwin)
+    pg (1.6.3-x86_64-darwin)
+    pg (1.6.3-x86_64-linux)
+    pg (1.6.3-x86_64-linux-musl)
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
@@ -316,6 +325,8 @@ DEPENDENCIES
   debug
   ductwork!
   factory_bot
+  mysql2
+  pg
   rails (= 7.2.3.1)
   rake
   rspec
