@@ -67,18 +67,21 @@ RSpec.describe Ductwork::Branch do
 
   describe ".with_latest_claimed" do
     let(:pipeline_klass) { "MyPipeline" }
+    let(:claim_token) { SecureRandom.uuid }
     let(:claim) do
       instance_double(
         Ductwork::BranchClaim,
         latest: branch,
         transition: transition,
-        advancement: advancement
+        advancement: advancement,
+        token: claim_token
       )
     end
     let(:branch) do
       create(
         :branch,
         claimed_for_advancing_at: Time.current,
+        claim_token: claim_token,
         status: "advancing",
         last_advanced_at: 5.minutes.ago
       )
@@ -118,8 +121,20 @@ RSpec.describe Ductwork::Branch do
       expect do
         described_class.with_latest_claimed(pipeline_klass) {}
       end.to change { branch.reload.claimed_for_advancing_at }.to(nil)
-        .and change(branch, :last_advanced_at).to(be_within(1.second).of(Time.current))
+        .and change(branch, :last_advanced_at).to(be_almost_now)
         .and change(branch, :status).from("advancing").to("in_progress")
+    end
+
+    context "when the claim tokens do not match" do
+      before do
+        branch.update!(claim_token: SecureRandom.uuid)
+      end
+
+      it "does not release the branch" do
+        expect do
+          described_class.with_latest_claimed(pipeline_klass) {}
+        end.to not_change(branch, :status)
+      end
     end
   end
 

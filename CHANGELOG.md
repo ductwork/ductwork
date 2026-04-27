@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- feat: prevent branch claim/release race condition by comparing tokens
 - chore: generate and set claim token on branch record during claiming
 - chore: add `ductwork_branches.claim_token` string column
 - chore: set `@branch` ivar after branch is claimed

@@ -56,7 +56,12 @@ module Ductwork
       if branch.present?
         branch.reload
 
-        if branch.advancing?
+        # NOTE: the claim token condition prevents a race condition where a
+        # branch is released during advancement atomically with the creation
+        # of the next step causing a gap between that and calling `release!`
+        # here in the `ensure` block. in that gap the branch could be claimed
+        # for advancement in another thread which would cause bad times.
+        if branch.advancing? && branch.claim_token == branch_claim.token
           branch.release!
         end
       end
