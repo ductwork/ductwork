@@ -2,7 +2,7 @@
 
 module Ductwork
   class BranchClaim
-    attr_reader :transition, :advancement
+    attr_reader :transition, :advancement, :token
 
     def initialize(pipeline_klass)
       @pipeline_klass = pipeline_klass
@@ -44,12 +44,17 @@ module Ductwork
 
     def claim_and_setup_records(id)
       now = Time.current
+      @token = SecureRandom.uuid
 
       Ductwork.wrap_with_app_executor do
         Ductwork::Record.transaction do
           rows_updated = Ductwork::Branch
                          .where(id:, claimed_for_advancing_at:)
-                         .update_all(claimed_for_advancing_at: now, status: :advancing)
+                         .update_all(
+                           claimed_for_advancing_at: now,
+                           claim_token: token,
+                           status: :advancing
+                         )
 
           if rows_updated == 1
             branch = Branch.find(id)

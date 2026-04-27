@@ -29,11 +29,21 @@ RSpec.describe Ductwork::BranchClaim do
         expect(claim.advancement).to eq(Ductwork::Advancement.sole)
       end
 
-      it "sets the branch status to advancing" do
-        record, = claim.latest
+      it "generates and sets the claim token" do
+        uuid = "9c1c9728-485b-4ca6-bb68-18d5678dd4ed"
+        allow(SecureRandom).to receive(:uuid).and_return(uuid)
+
+        record = claim.latest
+
+        expect(claim.token).to eq(uuid)
+        expect(record.claim_token).to eq(uuid)
+      end
+
+      it "sets the branch status and claim state" do
+        record = claim.latest
 
         expect(record).to be_advancing
-        expect(record.claimed_for_advancing_at).to be_present
+        expect(record.claimed_for_advancing_at).to be_almost_now
       end
 
       context "when the branch's latest step is failed" do
