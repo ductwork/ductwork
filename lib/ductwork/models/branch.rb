@@ -80,6 +80,7 @@ module Ductwork
         completed_at: Time.current,
         status: "completed",
         claimed_for_advancing_at: nil,
+        claim_token: nil,
         last_advanced_at: Time.current
       )
 
@@ -96,6 +97,7 @@ module Ductwork
       update!(
         status: "halted",
         claimed_for_advancing_at: nil,
+        claim_token: nil,
         last_advanced_at: Time.current
       )
 
@@ -113,6 +115,7 @@ module Ductwork
     def release!
       update!(
         claimed_for_advancing_at: nil,
+        claim_token: nil,
         status: :in_progress,
         last_advanced_at: Time.current
       )

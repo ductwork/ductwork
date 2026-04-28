@@ -44,6 +44,12 @@ FactoryBot.define do
       status { "halted" }
       halt_reason { "advancer_retries_exhausted" }
     end
+
+    trait :claimed do
+      status { "advancing" }
+      claimed_for_advancing_at { Time.current }
+      claim_token { SecureRandom.uuid }
+    end
   end
 
   factory :execution, class: "Ductwork::Execution" do

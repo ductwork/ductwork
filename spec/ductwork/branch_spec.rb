@@ -401,14 +401,12 @@ RSpec.describe Ductwork::Branch do
   end
 
   describe "#complete!" do
-    subject(:branch) do
-      create(:branch, :in_progress, claimed_for_advancing_at: Time.current)
-    end
+    subject(:branch) { create(:branch, :claimed) }
 
     it "sets the status and timestamp for the branch" do
       expect do
         branch.complete!
-      end.to change(branch, :status).from("in_progress").to("completed")
+      end.to change(branch, :status).from("advancing").to("completed")
         .and change(branch, :completed_at).to(be_within(1.second).of(Time.current))
     end
 
@@ -416,6 +414,7 @@ RSpec.describe Ductwork::Branch do
       expect do
         branch.complete!
       end.to change(branch, :claimed_for_advancing_at).to(nil)
+        .and change(branch, :claim_token).to(nil)
         .and change(branch, :last_advanced_at).to be_almost_now
     end
 
@@ -433,20 +432,19 @@ RSpec.describe Ductwork::Branch do
   end
 
   describe "#halt!" do
-    subject(:branch) do
-      create(:branch, :in_progress, claimed_for_advancing_at: Time.current)
-    end
+    subject(:branch) { create(:branch, :claimed) }
 
     it "sets the status and timestamp for the branch" do
       expect do
         branch.halt!(:job_retries_exhausted)
-      end.to change(branch, :status).from("in_progress").to("halted")
+      end.to change(branch, :status).from("advancing").to("halted")
     end
 
     it "releases the branch" do
       expect do
         branch.halt!("max_fanout_exceeded")
       end.to change(branch, :claimed_for_advancing_at).to(nil)
+        .and change(branch, :claim_token).to(nil)
         .and change(branch, :last_advanced_at).to be_almost_now
     end
 
@@ -480,19 +478,14 @@ RSpec.describe Ductwork::Branch do
   end
 
   describe "#release!" do
-    subject(:branch) do
-      create(
-        :branch,
-        :advancing,
-        claimed_for_advancing_at: Time.current
-      )
-    end
+    subject(:branch) { create(:branch, :claimed) }
 
     it "nullifies the claim timestamp and sets status and last advanced at" do
       expect do
         branch.release!
       end.to change { branch.reload.status }.to("in_progress")
         .and change(branch, :claimed_for_advancing_at).to(nil)
+        .and change(branch, :claim_token).to(nil)
         .and change(branch, :last_advanced_at).to be_almost_now
     end
   end
