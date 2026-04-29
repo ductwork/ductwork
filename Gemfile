@@ -9,6 +9,7 @@ gem "appraisal"
 gem "benchmark"
 gem "benchmark-ips"
 gem "combustion"
+gem "database_cleaner-active_record"
 gem "debug"
 gem "factory_bot"
 gem "mysql2", require: false

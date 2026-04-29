@@ -19,7 +19,10 @@ Combustion.initialize!(:active_record, :action_controller, :action_view) do
   config.action_dispatch.show_exceptions = :none
 end
 
+require "database_cleaner/active_record"
 require "rspec/rails"
+
+DatabaseCleaner.strategy = :truncation
 
 Dir
   .glob("support/**/*.rb", base: "spec")
@@ -28,11 +31,24 @@ Dir
 
 RSpec.configure do |config|
   config.use_transactional_fixtures = true
+
+  config.around(:each, :no_transaction) do |example|
+    group = example.example_group
+
+    group.use_transactional_tests = false
+    example.run
+  ensure
+    group.use_transactional_tests = true
+
+    DatabaseCleaner.clean
+  end
+
   config.example_status_persistence_file_path = ".rspec_status"
   config.disable_monkey_patching!
   config.order = :random
   Kernel.srand(config.seed)
   config.include Helpers
+  config.include ActiveSupport::Testing::TimeHelpers
 
   config.expect_with :rspec do |c|
     c.syntax = :expect

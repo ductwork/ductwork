@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: setup and add first durability integration test
 - chore: nullify claim token when releasing, completing, or halting branch
 - feat: prevent branch claim/release race condition by comparing tokens
 - chore: generate and set claim token on branch record during claiming

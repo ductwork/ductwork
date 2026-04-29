@@ -50,6 +50,8 @@ module Ductwork
       branch = branch_claim.latest
 
       if branch.present?
+        Ductwork::FaultInjection.checkpoint(:after_branch_claim)
+
         yield branch, branch_claim.transition, branch_claim.advancement
       end
     ensure
@@ -130,7 +132,6 @@ module Ductwork
         now = Time.current
         advancement.update!(completed_at: now)
         transition.update!(completed_at: now)
-
         halt!(halt_reason)
         run.resolve_terminal_state!
       end

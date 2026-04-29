@@ -67,6 +67,10 @@ Naming/MemoizedInstanceVariableName:
 Naming/PredicateMethod:
   AllowBangMethods: true
 
+RSpec/DescribeClass:
+  Exclude:
+    - spec/integration/durability/**/*_spec.rb
+
 RSpec/ExampleLength:
   Max: 50
 
@@ -111,6 +115,9 @@ Style/Next:
   Enabled: false
 
 Style/RedundantConstantBase:
+  Enabled: false
+
+Style/SpecialGlobalVars:
   Enabled: false
 
 Style/StringLiterals:
