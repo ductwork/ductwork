@@ -76,6 +76,11 @@ module Ductwork
         migration_template "db/associate_tuples_to_runs.rb",
                            "db/migrate/associate_tuples_to_runs.rb"
       end
+
+      if Ductwork::Execution.column_names.exclude?("crash_count")
+        migration_template "db/add_crash_count_to_ductwork_executions.rb",
+                           "db/migrate/add_crash_count_to_ductwork_executions.rb"
+      end
     end
   end
 end

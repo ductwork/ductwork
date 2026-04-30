@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- feat: add a crash count to executions and increment when job worker crashes
 - chore: setup and add first durability integration test
 - chore: nullify claim token when releasing, completing, or halting branch
 - feat: prevent branch claim/release race condition by comparing tokens

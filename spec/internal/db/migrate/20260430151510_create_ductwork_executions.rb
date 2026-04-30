@@ -13,6 +13,7 @@ class CreateDuctworkExecutions < Ductwork::Migration
       table.timestamp :started_at, null: false
       table.timestamp :completed_at
       table.integer :retry_count, null: false
+      table.integer :crash_count, null: false
       table.timestamps null: false
     end
 

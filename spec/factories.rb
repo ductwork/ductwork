@@ -55,6 +55,7 @@ FactoryBot.define do
   factory :execution, class: "Ductwork::Execution" do
     started_at { Time.current }
     retry_count { 0 }
+    crash_count { 0 }
     job
   end
 

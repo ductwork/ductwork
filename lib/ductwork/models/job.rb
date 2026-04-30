@@ -23,7 +23,8 @@ module Ductwork
       )
       execution = job.executions.create!(
         started_at: Time.current,
-        retry_count: 0
+        retry_count: 0,
+        crash_count: 0
       )
       execution.create_availability!(
         started_at: Time.current,
@@ -88,6 +89,7 @@ module Ductwork
 
         new_execution = executions.create!(
           retry_count: execution.retry_count,
+          crash_count: execution.crash_count + 1,
           started_at: FAILED_EXECUTION_TIMEOUT.from_now
         )
         new_execution.create_availability!(
@@ -131,6 +133,7 @@ module Ductwork
         if execution.retry_count < max_retry
           new_execution = executions.create!(
             retry_count: execution.retry_count + 1,
+            crash_count: execution.crash_count,
             started_at: FAILED_EXECUTION_TIMEOUT.from_now
           )
           new_execution.create_availability!(

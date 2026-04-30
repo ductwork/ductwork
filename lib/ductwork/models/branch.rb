@@ -562,6 +562,7 @@ module Ductwork
               id: execution_id,
               job_id: job_id,
               retry_count: 0,
+              crash_count: 0,
               started_at: now,
               created_at: now,
               updated_at: now,
