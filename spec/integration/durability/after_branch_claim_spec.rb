@@ -21,7 +21,7 @@ RSpec.describe "Crash after branch claim before advancement", :no_transaction do
         Ductwork::Processes::PipelineAdvancer
           .new(pipeline_klass)
           .tap(&:start)
-          .join(2)
+          .join(1)
       end
     end
 
