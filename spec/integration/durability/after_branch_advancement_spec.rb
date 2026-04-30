@@ -11,7 +11,7 @@ RSpec.describe "Crash after branch advancement", :no_transaction do
     step
   end
 
-  it "releases the branch via the reaper" do
+  it "re-claims the branch and completes it" do
     pid = fork do
       Ductwork::Record.connection.reconnect!
       Ductwork::FaultInjection.with(:after_branch_advancement, :kill) do
@@ -38,7 +38,6 @@ RSpec.describe "Crash after branch advancement", :no_transaction do
     advancer = Ductwork::Processes::PipelineAdvancer.new(pipeline_klass)
 
     travel_to(post_reap_threshold) do
-      Ductwork::Process.reap_all!(:process_supervisor)
       advancer.start
       sleep(1)
     end
