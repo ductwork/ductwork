@@ -21,7 +21,7 @@ module Ductwork
     def next_page_path
       next_page = params[:page].to_i + 1
       next_params = params
-                    .permit(:controller, :action, :klass, :status, :page)
+                    .permit(:controller, :action, :id, :klass, :status, :page)
                     .merge(page: next_page)
 
       url_for(**next_params)
@@ -30,7 +30,7 @@ module Ductwork
     def previous_page_path
       previous_page = params[:page].to_i - 1
       previous_params = params
-                        .permit(:controller, :action, :klass, :status, :page)
+                        .permit(:controller, :action, :id, :klass, :status, :page)
                         .merge(page: previous_page)
 
       url_for(**previous_params)
