@@ -58,6 +58,7 @@ module Ductwork
 
       begin
         output_payload = instance.execute
+        Ductwork::FaultInjection.checkpoint(:during_job_execution)
         execution_succeeded!(execution, attempt, output_payload)
         result = "success"
       rescue StandardError => e

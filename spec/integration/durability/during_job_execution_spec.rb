@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "Crash after job claim before execution", :no_transaction do
+RSpec.describe "Crash during job execution", :no_transaction do
   let(:pipeline) { create(:pipeline, :in_progress) }
   let(:pipeline_klass) { pipeline.klass }
   let(:id) { Kernel.rand(1..100) }
@@ -19,7 +19,7 @@ RSpec.describe "Crash after job claim before execution", :no_transaction do
   it "recovers the job and the execution completes via the reaper" do
     pid = fork do
       Ductwork::Record.connection.reconnect!
-      Ductwork::FaultInjection.with(:after_job_claim, :kill) do
+      Ductwork::FaultInjection.with(:during_job_execution, :kill) do
         # NOTE: this looks a little wonky but it basically simulates
         # creating the process record on "boot"
         create(:process, :current)
