@@ -157,9 +157,7 @@ RSpec.describe Ductwork::Process do
 
       expect do
         described_class.report_heartbeat!
-      end.to change { process.reload.last_heartbeat_at }.to(
-        be_within(1.second).of(Time.current)
-      )
+      end.to change { process.reload.last_heartbeat_at }.to(be_almost_now)
     end
 
     it "queries the record by pid and machine identifier" do
@@ -176,7 +174,7 @@ RSpec.describe Ductwork::Process do
 
       described_class.report_heartbeat!
 
-      expect(process.reload.last_heartbeat_at).to be_within(1.second).of(Time.current)
+      expect(process.reload.last_heartbeat_at).to be_almost_now
     end
 
     it "re-adopts and logs a warning if the record does not exist" do
