@@ -67,6 +67,8 @@ module Ductwork
             end
 
             if job.present?
+              Ductwork::FaultInjection.checkpoint(:after_job_claim)
+
               Ductwork.wrap_with_app_executor do
                 job.execute(pipeline)
               end

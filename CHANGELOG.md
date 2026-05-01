@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: set new execution time to be "now" when job worker crashes (ie. don't set a retry back-off as with job erroring)
 - feat: add a crash count to executions and increment when job worker crashes
 - chore: setup and add first durability integration test
 - chore: nullify claim token when releasing, completing, or halting branch

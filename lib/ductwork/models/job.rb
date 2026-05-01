@@ -90,10 +90,10 @@ module Ductwork
         new_execution = executions.create!(
           retry_count: execution.retry_count,
           crash_count: execution.crash_count + 1,
-          started_at: FAILED_EXECUTION_TIMEOUT.from_now
+          started_at: Time.current
         )
         new_execution.create_availability!(
-          started_at: FAILED_EXECUTION_TIMEOUT.from_now,
+          started_at: Time.current,
           pipeline_klass: step.run.pipeline_klass
         )
       end
