@@ -70,6 +70,7 @@ module Ductwork
         workers.each do |worker|
           if process_dead?(worker[:pid])
             old_pid = worker[:pid]
+            sig_kill_process(old_pid)
             reap_process_record!(old_pid)
             new_pid = fork do
               worker[:block].call(worker[:metadata])
@@ -135,17 +136,14 @@ module Ductwork
             pid: worker[:pid],
             signal: :KILL
           )
-          ::Process.kill(:KILL, worker[:pid])
+          sig_kill_process(worker[:pid])
           reap_process_record!(worker[:pid])
-          ::Process.wait(worker[:pid])
           workers[index] = nil
           Ductwork.logger.warn(
             msg: "Child process (#{worker[:pid]}) killed after timeout",
             role: :process_supervisor,
             pid: worker[:pid]
           )
-        rescue Errno::ESRCH, Errno::ECHILD
-          # no-op because process is already dead
         end
 
         @workers = workers.compact
@@ -161,6 +159,13 @@ module Ductwork
             .where("last_heartbeat_at < ?", threshold.ago)
             .exists?
         end
+      end
+
+      def sig_kill_process(pid)
+        ::Process.kill(:KILL, pid)
+        ::Process.wait(pid)
+      rescue Errno::ECHILD, Errno::ESRCH
+        # Process is already dead or reaped
       end
 
       def reap_process_record!(pid)
