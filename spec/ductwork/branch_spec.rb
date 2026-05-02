@@ -261,6 +261,42 @@ RSpec.describe Ductwork::Branch do
         end.to change(branch, :status).from("advancing").to("halted")
           .and change(branch, :halt_reason).to("job_retries_exhausted")
       end
+
+      context "when the method errors" do
+        before do
+          allow(transition).to receive(:update!).and_raise("bad times")
+        end
+
+        it "sets error metadata on the advancement record" do
+          branch.advance!(transition, advancement)
+
+          expect(advancement.reload.completed_at).to be_almost_now
+          expect(advancement.error_klass).to eq("RuntimeError")
+          expect(advancement.error_message).to eq("bad times")
+          expect(advancement.error_backtrace).to be_present
+        end
+
+        it "releases the branch" do
+          expect do
+            branch.advance!(transition, advancement)
+          end.to change(branch, :claimed_for_advancing_at).to(nil)
+            .and change(branch, :claim_token).to(nil)
+            .and change(branch, :last_advanced_at).to be_almost_now
+        end
+
+        it "logs" do
+          allow(Ductwork.logger).to receive(:error)
+
+          branch.advance!(transition, spy)
+
+          expect(Ductwork.logger).to have_received(:error).with(
+            msg: "Branch halt errored",
+            branch_id: branch.id,
+            error_klass: "RuntimeError",
+            error_message: "bad times"
+          )
+        end
+      end
     end
 
     context "when there is an error while advancing" do

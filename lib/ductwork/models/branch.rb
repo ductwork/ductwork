@@ -125,8 +125,6 @@ module Ductwork
 
     private
 
-    # NOTE: we do not need to change the state of the step here because
-    # it's already in the terminal state of `failed`
     def halt_branch_and_resolve_run!(transition, advancement, halt_reason)
       Ductwork::Record.transaction do
         now = Time.current
@@ -135,6 +133,23 @@ module Ductwork
         halt!(halt_reason)
         run.resolve_terminal_state!
       end
+    rescue StandardError => e
+      Ductwork::Record.transaction do
+        advancement&.update!(
+          completed_at: Time.current,
+          error_klass: e.class.to_s,
+          error_message: e.message,
+          error_backtrace: e.backtrace.join("\n")
+        )
+        release!
+      end
+
+      Ductwork.logger.error(
+        msg: "Branch halt errored",
+        branch_id: id,
+        error_klass: e.class.to_s,
+        error_message: e.message
+      )
     end
 
     def route_by_edge(transition, advancement) # rubocop:todo Metrics
@@ -161,7 +176,7 @@ module Ductwork
               "Invalid transition type `#{edge[:type]}`"
       end
     rescue StandardError => e
-      Ductwork::Record.transaction do
+      Ductwork::Record.transaction do # rubocop:todo Metrics/BlockLength
         if e.is_a?(Ductwork::Branch::TransitionError) || too_many_failed_attempts?
           latest_step.update!(status: :completed, completed_at: Time.current)
 

@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: close durability gap by rescuing branch halting
 - fix: close durability gap by releasing branch in advancement rescue
 - fix: permit `id` parameter when paginating
 - chore: set new execution time to be "now" when job worker crashes (ie. don't set a retry back-off as with job erroring)
