@@ -140,7 +140,7 @@ RSpec.describe Ductwork::Branch do
 
   # NOTE: the rest of the specs are in their own files by transition type
   describe "#advance!" do
-    subject(:branch) { create(:branch, :in_progress, run:) }
+    subject(:branch) { create(:branch, :claimed, run:) }
 
     let(:run) { create(:run, :in_progress, definition:) }
     let(:step) { create(:step, :advancing, branch:, run:) }
@@ -258,7 +258,7 @@ RSpec.describe Ductwork::Branch do
       it "halts the branch" do
         expect do
           branch.advance!(transition, advancement)
-        end.to change(branch, :status).from("in_progress").to("halted")
+        end.to change(branch, :status).from("advancing").to("halted")
           .and change(branch, :halt_reason).to("job_retries_exhausted")
       end
     end
@@ -283,6 +283,14 @@ RSpec.describe Ductwork::Branch do
         expect(updated_advancement.error_klass).to eq("RuntimeError")
         expect(updated_advancement.error_message).to eq("bad times")
         expect(updated_advancement.error_backtrace).to be_present
+      end
+
+      it "releases the branch" do
+        expect do
+          branch.advance!(transition, advancement)
+        end.to change(branch, :claimed_for_advancing_at).to(nil)
+          .and change(branch, :claim_token).to(nil)
+          .and change(branch, :last_advanced_at).to be_almost_now
       end
 
       it "logs" do
@@ -320,7 +328,7 @@ RSpec.describe Ductwork::Branch do
         it "halts the branch" do
           expect do
             branch.advance!(spy, spy)
-          end.to change(branch, :status).from("in_progress").to("halted")
+          end.to change(branch, :status).from("advancing").to("halted")
             .and change(branch, :halt_reason).to("advancer_retries_exhausted")
         end
 
@@ -373,7 +381,7 @@ RSpec.describe Ductwork::Branch do
       it "halts the branch" do
         expect do
           branch.advance!(spy, spy)
-        end.to change(branch, :status).from("in_progress").to("halted")
+        end.to change(branch, :status).from("advancing").to("halted")
           .and change(branch, :halt_reason).to("transition_invalid")
       end
 

@@ -182,16 +182,14 @@ module Ductwork
           run.resolve_terminal_state!
         else
           # NOTE: since the transaction rolled back from the error the step is
-          # back in the `advancing` status so we don't need to set it, the
-          # branch also gets released via the `ensure` block in the claim and
-          # advancements get created on branch claim so we only need to fail
-          # the current advancement.
+          # back in the `advancing` status so we don't need to set it here.
           advancement&.update!(
             completed_at: Time.current,
             error_klass: e.class.to_s,
             error_message: e.message,
             error_backtrace: e.backtrace.join("\n")
           )
+          release!
         end
       end
 
