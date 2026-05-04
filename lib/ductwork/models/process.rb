@@ -80,12 +80,11 @@ module Ductwork
         return if last_heartbeat_at > REAP_THRESHOLD.ago
 
         advancements.where(completed_at: nil).find_each(&:abandon!)
+        availabilities
+          .joins(:execution)
+          .merge(Ductwork::Execution.where(completed_at: nil))
+          .find_each(&:abandon!)
 
-        # TODO: mirror what we did with abandoning advancements
-        incomplete_executions = Ductwork::Execution.where(completed_at: nil)
-        availabilities.joins(:execution).merge(incomplete_executions).find_each do |availability|
-          availability.execution.job.execution_crashed!(availability.execution)
-        end
         destroy
       end
 
