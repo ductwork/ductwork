@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: fail abandoned advancements when reaping branches
 - fix: prevent double execution by explicitly killing process before replacing it if it failed health check
 - fix: close durability gap by rescuing branch halting
 - fix: close durability gap by releasing branch in advancement rescue

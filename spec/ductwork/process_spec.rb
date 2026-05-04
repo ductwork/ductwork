@@ -201,7 +201,7 @@ RSpec.describe Ductwork::Process do
       create(:process, :current, last_heartbeat_at: 2.minutes.ago)
     end
 
-    it "releases associated incomplete branch advancements" do
+    it "abandons associated incomplete branch advancements" do
       advancement = create(:advancement, process:)
       branch = advancement.transition.branch.tap do |b|
         b.update!(claimed_for_advancing_at: Time.current)
@@ -210,6 +210,8 @@ RSpec.describe Ductwork::Process do
       expect do
         process.reap!(:process_supervisor)
       end.to change { branch.reload.claimed_for_advancing_at }.to(nil)
+        .and change { advancement.reload.completed_at }.to(be_almost_now)
+        .and change { advancement.error_klass }.to("Ductwork::ProcessCrash")
     end
 
     it "re-enqueues claimed jobs with incomplete executions" do
