@@ -89,7 +89,13 @@ module Ductwork
 
     def execution_crashed!(execution)
       Ductwork::Record.transaction do
-        execution.update!(completed_at: Time.current)
+        rows_updated = Ductwork::Execution
+                       .where(id: execution.id, completed_at: nil)
+                       .update_all(completed_at: Time.current)
+
+        return if rows_updated.zero?
+
+        execution.reload
         execution.attempt&.update!(completed_at: Time.current)
         execution.create_result!(result_type: "process_crashed")
 
