@@ -1,5 +1,11 @@
 # Ductwork Pro Changelog
 
+## [0.8.0]
+
+- feat: support delay and timeout arguments for `divert` and `converge` transitions - this is the last of adding support for the new transitions
+- fix: wrap code with rails app executor
+- feat: support `divert` and `converge` transitions in pipeline advancement
+
 ## [0.7.0]
 
 - feat: allow for passing an argument when resuming a pipeline - this will replace passing the previous step's output payload as the input arguments to the next step
