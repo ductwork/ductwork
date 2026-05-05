@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: swap locking for atomic update in `Ductwork::Availability#abandon!`
 - chore: swap locking for atomic update in `Ductwork::Advancement#abandon!`
 - fix: make `Ductwork::Job#execution_crashed!` idempotent to prevent race condition with the reaper
 - fix: prevent possible double job execution by only wrapping user code in rescue

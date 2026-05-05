@@ -39,26 +39,16 @@ RSpec.describe Ductwork::Availability do
     let(:pipeline_klass) { "MyPipeline" }
     let(:started_at) { Time.current }
 
-    it "locks the execution" do
-      execution = instance_double(
-        Ductwork::Execution,
-        job: spy,
-        lock!: nil,
-        reload: nil,
-        completed_at: Time.current
-      )
-
-      # rubocop:disable RSpec/SubjectStub
-      allow(availability).to receive(:execution).and_return(execution)
-      # rubocop:enable RSpec/SubjectStub
-
-      availability.abandon!
-
-      expect(execution).to have_received(:lock!)
-    end
-
     it "no-ops if the execution is completed" do
       execution.update!(completed_at: Time.current)
+
+      expect do
+        availability.abandon!
+      end.to not_change(execution.job.executions, :count)
+    end
+
+    it "is idempotent" do
+      availability.abandon!
 
       expect do
         availability.abandon!
