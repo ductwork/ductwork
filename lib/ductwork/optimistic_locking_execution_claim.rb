@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 module Ductwork
-  class OptimisticLockingJobClaim
+  class OptimisticLockingExecutionClaim
     def initialize(klass)
       @id = nil
-      @job = nil
+      @execution = nil
       @klass = klass
       @process_id = Ductwork::Process.current.id
     end
@@ -24,7 +24,7 @@ module Ductwork
               availability_id: id
             )
 
-            @job = find_job
+            @execution = find_execution
 
             update_state
           else
@@ -45,12 +45,12 @@ module Ductwork
         end
       end
 
-      job
+      execution
     end
 
     private
 
-    attr_reader :id, :job, :klass, :process_id
+    attr_reader :id, :execution, :klass, :process_id
 
     def latest_availability_id
       Ductwork::Availability
@@ -68,16 +68,18 @@ module Ductwork
         .update_all(completed_at: Time.current, process_id: process_id)
     end
 
-    def find_job
-      Ductwork::Job
-        .joins(executions: :availability)
+    def find_execution
+      Ductwork::Execution
+        .joins(:availability)
         .find_by!(ductwork_availabilities: { id:, process_id: })
     end
 
     def update_state
-      job.step.in_progress!
-      job.step.run.in_progress!
-      job.step.run.pipeline.in_progress!
+      step = execution.job.step
+
+      step.in_progress!
+      step.run.in_progress!
+      step.run.pipeline.in_progress!
     end
   end
 end

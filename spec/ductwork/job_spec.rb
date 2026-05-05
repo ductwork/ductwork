@@ -34,68 +34,6 @@ RSpec.describe Ductwork::Job do
     end
   end
 
-  describe ".claim_latest" do
-    let(:availability) { create(:availability) }
-    let(:execution) { availability.execution }
-    let(:klass) { execution.job.step.run.pipeline_klass }
-    let(:process) { create(:process, :current) }
-
-    before do
-      process
-      availability.update!(pipeline_klass: klass)
-    end
-
-    it "calls the job claim class" do
-      claim = instance_double(Ductwork::JobClaim, latest: nil)
-      allow(Ductwork::JobClaim).to receive(:new).and_return(claim)
-
-      described_class.claim_latest(klass)
-
-      expect(Ductwork::JobClaim).to have_received(:new).with(klass)
-      expect(claim).to have_received(:latest)
-    end
-
-    it "updates the the availability record" do
-      expect do
-        described_class.claim_latest(klass)
-      end.to change { availability.reload.completed_at }.from(nil).to(be_almost_now)
-        .and change(availability, :process_id).from(nil).to(process.id)
-    end
-
-    it "only claims jobs for the specified pipeline klass" do
-      other_availability = create(:availability)
-      pipeline = other_availability.execution.job.step.run.pipeline
-
-      expect do
-        described_class.claim_latest(pipeline.class.name)
-      end.not_to change { other_availability.reload.process_id }.from(nil)
-    end
-
-    it "does not claim job execution availabilities in the future" do
-      future_availability = create(:availability, started_at: 5.seconds.from_now)
-
-      expect do
-        described_class.claim_latest(klass)
-      end.not_to change { future_availability.reload.completed_at }.from(nil)
-    end
-
-    it "changes waiting pipeline and step statuses to in-progress" do
-      step = execution.job.step
-      run = step.run
-      pipeline = run.pipeline
-
-      step.update!(status: "waiting")
-      run.update!(status: "waiting")
-      pipeline.update!(status: "waiting")
-
-      expect do
-        described_class.claim_latest(klass)
-      end.to change { pipeline.reload.status }.from("waiting").to("in_progress")
-        .and change { run.reload.status }.from("waiting").to("in_progress")
-        .and change { step.reload.status }.from("waiting").to("in_progress")
-    end
-  end
-
   describe ".enqueue" do
     let(:step) { create(:step) }
     let(:args) { %i[foo bar] }
@@ -135,65 +73,6 @@ RSpec.describe Ductwork::Job do
       availability = execution.availability
       expect(availability.started_at).to be_almost_now
       expect(availability.completed_at).to be_nil
-    end
-  end
-
-  describe "#execution_crashed!" do
-    subject(:job) { create(:job) }
-
-    let(:execution) { create(:execution, job:) }
-
-    it "completes the execution" do
-      expect do
-        job.execution_crashed!(execution)
-      end.to change { execution.reload.completed_at }.to(be_almost_now)
-    end
-
-    it "completes the attempt if it exists" do
-      attempt = create(:attempt, execution:)
-
-      expect do
-        job.execution_crashed!(execution)
-      end.to change { attempt.reload.completed_at }.to(be_almost_now)
-    end
-
-    it "creates a 'process crashed' result record" do
-      expect do
-        job.execution_crashed!(execution)
-      end.to change(Ductwork::Result, :count).by(1)
-      expect(execution.result.result_type).to eq("process_crashed")
-    end
-
-    it "creates new execution and availability records" do
-      execution
-
-      expect do
-        job.execution_crashed!(execution)
-      end.to change(Ductwork::Execution, :count).by(1)
-        .and change(Ductwork::Availability, :count).by(1)
-    end
-
-    it "no-ops if the execution is already completed" do
-      execution.update!(completed_at: Time.current)
-
-      expect do
-        job.execution_crashed!(execution)
-      end.to not_change(Ductwork::Execution, :count)
-        .and not_change(Ductwork::Availability, :count)
-        .and not_change(Ductwork::Result, :count)
-    end
-
-    # NOTE: protects against the reaper racing the worker's rescue path where
-    # both can converge on the same execution and otherwise produce duplicate
-    # process_crashed results, replacement executions, and availabilities
-    it "is idempotent when called twice on the same execution" do
-      job.execution_crashed!(execution)
-
-      expect do
-        job.execution_crashed!(execution)
-      end.to not_change(Ductwork::Execution, :count)
-        .and not_change(Ductwork::Availability, :count)
-        .and not_change(Ductwork::Result, :count)
     end
   end
 

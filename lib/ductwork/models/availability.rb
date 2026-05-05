@@ -11,7 +11,7 @@ module Ductwork
     # NOTE: this method is essentially the middleman antipattern, but we keep
     # it for symmetry with `Ductwork::Advancement#abandon!`
     def abandon!
-      execution.job.execution_crashed!(execution)
+      execution.crashed!
     end
   end
 end

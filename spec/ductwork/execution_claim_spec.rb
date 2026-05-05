@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe Ductwork::JobClaim do
+RSpec.describe Ductwork::ExecutionClaim do
   describe "latest" do
     let(:klass) { "MyPipeline" }
 
@@ -10,12 +10,12 @@ RSpec.describe Ductwork::JobClaim do
       end
 
       it "calls the row locking job claim class" do
-        claim = instance_double(Ductwork::RowLockingJobClaim, latest: nil)
-        allow(Ductwork::RowLockingJobClaim).to receive(:new).and_return(claim)
+        claim = instance_double(Ductwork::RowLockingExecutionClaim, latest: nil)
+        allow(Ductwork::RowLockingExecutionClaim).to receive(:new).and_return(claim)
 
         described_class.new(klass).latest
 
-        expect(Ductwork::RowLockingJobClaim).to have_received(:new).with(klass)
+        expect(Ductwork::RowLockingExecutionClaim).to have_received(:new).with(klass)
         expect(claim).to have_received(:latest)
       end
     end
@@ -26,12 +26,12 @@ RSpec.describe Ductwork::JobClaim do
       end
 
       it "calls the row locking job claim class" do
-        claim = instance_double(Ductwork::RowLockingJobClaim, latest: nil)
-        allow(Ductwork::RowLockingJobClaim).to receive(:new).and_return(claim)
+        claim = instance_double(Ductwork::RowLockingExecutionClaim, latest: nil)
+        allow(Ductwork::RowLockingExecutionClaim).to receive(:new).and_return(claim)
 
         described_class.new(klass).latest
 
-        expect(Ductwork::RowLockingJobClaim).to have_received(:new).with(klass)
+        expect(Ductwork::RowLockingExecutionClaim).to have_received(:new).with(klass)
         expect(claim).to have_received(:latest)
       end
     end
@@ -42,12 +42,12 @@ RSpec.describe Ductwork::JobClaim do
       end
 
       it "calls the row locking job claim class" do
-        claim = instance_double(Ductwork::RowLockingJobClaim, latest: nil)
-        allow(Ductwork::RowLockingJobClaim).to receive(:new).and_return(claim)
+        claim = instance_double(Ductwork::RowLockingExecutionClaim, latest: nil)
+        allow(Ductwork::RowLockingExecutionClaim).to receive(:new).and_return(claim)
 
         described_class.new(klass).latest
 
-        expect(Ductwork::RowLockingJobClaim).to have_received(:new).with(klass)
+        expect(Ductwork::RowLockingExecutionClaim).to have_received(:new).with(klass)
         expect(claim).to have_received(:latest)
       end
     end
@@ -58,12 +58,12 @@ RSpec.describe Ductwork::JobClaim do
       end
 
       it "calls the optimistic locking job claim class" do
-        claim = instance_double(Ductwork::OptimisticLockingJobClaim, latest: nil)
-        allow(Ductwork::OptimisticLockingJobClaim).to receive(:new).and_return(claim)
+        claim = instance_double(Ductwork::OptimisticLockingExecutionClaim, latest: nil)
+        allow(Ductwork::OptimisticLockingExecutionClaim).to receive(:new).and_return(claim)
 
         described_class.new(klass).latest
 
-        expect(Ductwork::OptimisticLockingJobClaim).to have_received(:new).with(klass)
+        expect(Ductwork::OptimisticLockingExecutionClaim).to have_received(:new).with(klass)
         expect(claim).to have_received(:latest)
       end
     end
@@ -74,12 +74,12 @@ RSpec.describe Ductwork::JobClaim do
       end
 
       it "calls the optimistic locking job claim class" do
-        claim = instance_double(Ductwork::OptimisticLockingJobClaim, latest: nil)
-        allow(Ductwork::OptimisticLockingJobClaim).to receive(:new).and_return(claim)
+        claim = instance_double(Ductwork::OptimisticLockingExecutionClaim, latest: nil)
+        allow(Ductwork::OptimisticLockingExecutionClaim).to receive(:new).and_return(claim)
 
         described_class.new(klass).latest
 
-        expect(Ductwork::OptimisticLockingJobClaim).to have_received(:new).with(klass)
+        expect(Ductwork::OptimisticLockingExecutionClaim).to have_received(:new).with(klass)
         expect(claim).to have_received(:latest)
       end
     end
@@ -90,12 +90,12 @@ RSpec.describe Ductwork::JobClaim do
       end
 
       it "calls the optimistic locking job claim class" do
-        claim = instance_double(Ductwork::OptimisticLockingJobClaim, latest: nil)
-        allow(Ductwork::OptimisticLockingJobClaim).to receive(:new).and_return(claim)
+        claim = instance_double(Ductwork::OptimisticLockingExecutionClaim, latest: nil)
+        allow(Ductwork::OptimisticLockingExecutionClaim).to receive(:new).and_return(claim)
 
         described_class.new(klass).latest
 
-        expect(Ductwork::OptimisticLockingJobClaim).to have_received(:new).with(klass)
+        expect(Ductwork::OptimisticLockingExecutionClaim).to have_received(:new).with(klass)
         expect(claim).to have_received(:latest)
       end
     end

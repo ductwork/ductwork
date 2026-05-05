@@ -1,22 +1,20 @@
 # frozen_string_literal: true
 
-RSpec.describe Ductwork::Job, "#execute" do
-  subject(:job) do
-    described_class.create!(klass:, started_at:, input_args:, step:)
-  end
+RSpec.describe Ductwork::Execution, "#call" do
+  subject(:execution) { create(:execution, job:) }
 
+  let(:job) { Ductwork::Job.create!(klass:, started_at:, input_args:, step:) }
   let(:klass) { "MyFirstStep" }
   let(:started_at) { Time.current }
   let(:input_args) { JSON.dump({ args: 1 }) }
   let(:step) { create(:step, status: :in_progress) }
   let(:pipeline_klass) { step.run.pipeline_klass }
-  let!(:execution) { create(:execution, job:) }
 
   it "deserializes the step constant, initializes, and executes it" do
     user_step = instance_double(MyFirstStep, execute: nil)
     allow(MyFirstStep).to receive(:build_for_execution).and_return(user_step)
 
-    job.execute(pipeline_klass)
+    execution.call(pipeline_klass)
 
     expect(MyFirstStep).to have_received(:build_for_execution).with(step.run.id, 1)
     expect(user_step).to have_received(:execute)
@@ -26,14 +24,14 @@ RSpec.describe Ductwork::Job, "#execute" do
     payload = JSON.dump(payload: "return_value")
 
     expect do
-      job.execute(pipeline_klass)
+      execution.call(pipeline_klass)
     end.to change(job, :output_payload).from(nil).to(payload)
       .and change(job, :completed_at).from(nil).to(be_almost_now)
   end
 
   it "creates an attempt record" do
     expect do
-      job.execute(pipeline_klass)
+      execution.call(pipeline_klass)
     end.to change(Ductwork::Attempt, :count).by(1)
     attempt = Ductwork::Attempt.sole
     expect(attempt.started_at).to be_almost_now
@@ -42,13 +40,13 @@ RSpec.describe Ductwork::Job, "#execute" do
 
   it "updates the timestamp on the execution" do
     expect do
-      job.execute(pipeline_klass)
+      execution.call(pipeline_klass)
     end.to change { execution.reload.completed_at }.from(nil).to(be_almost_now)
   end
 
   it "creates a success result record when execution succeeds" do
     expect do
-      job.execute(pipeline_klass)
+      execution.call(pipeline_klass)
     end.to change(Ductwork::Result, :count).by(1)
     result = Ductwork::Result.sole
     expect(result.result_type).to eq("success")
@@ -56,7 +54,7 @@ RSpec.describe Ductwork::Job, "#execute" do
 
   it "marks the step as 'advancing' when the job execution completes" do
     expect do
-      job.execute(pipeline_klass)
+      execution.call(pipeline_klass)
     end.to change { step.reload.status }.from("in_progress").to("advancing")
   end
 
@@ -66,7 +64,7 @@ RSpec.describe Ductwork::Job, "#execute" do
     allow(MyFirstStep).to receive(:build_for_execution).and_return(user_step)
 
     expect do
-      job.execute(pipeline_klass)
+      execution.call(pipeline_klass)
     end.not_to change { step.reload.status }.from("in_progress")
   end
 
@@ -80,7 +78,7 @@ RSpec.describe Ductwork::Job, "#execute" do
     it "creates a failure result record" do
       expect do
         expect do
-          job.execute(pipeline_klass)
+          execution.call(pipeline_klass)
         end.not_to raise_error
       end.to change(Ductwork::Result, :count).by(1)
       result = Ductwork::Result.sole
@@ -91,20 +89,22 @@ RSpec.describe Ductwork::Job, "#execute" do
     end
 
     it "creates a new future available execution" do
+      execution
+
       expect do
-        job.execute(pipeline_klass)
-      end.to change(Ductwork::Execution, :count).by(1)
+        execution.call(pipeline_klass)
+      end.to change(described_class, :count).by(1)
         .and change(Ductwork::Availability, :count).by(1)
-      execution = job.executions.last
-      expect(execution.retry_count).to eq(1)
-      expect(execution.started_at).to be_within(1.second).of(10.seconds.from_now)
-      expect(execution.availability.started_at).to be_within(1.second).of(10.seconds.from_now)
+      next_execution = job.executions.last
+      expect(next_execution.retry_count).to eq(1)
+      expect(next_execution.started_at).to be_within(1.second).of(10.seconds.from_now)
+      expect(next_execution.availability.started_at).to be_within(1.second).of(10.seconds.from_now)
     end
 
     it "logs" do
       allow(Ductwork.logger).to receive(:warn).and_call_original
 
-      job.execute(pipeline_klass)
+      execution.call(pipeline_klass)
 
       expect(Ductwork.logger).to have_received(:warn).with(
         msg: "Job errored",
@@ -118,22 +118,23 @@ RSpec.describe Ductwork::Job, "#execute" do
     end
 
     context "when retries are exhausted" do
+      subject!(:execution) { create(:execution, retry_count: 2, job: job) }
+
       before do
         step.branch.in_progress!
-        create(:execution, retry_count: 2, job: step.job)
         Ductwork.configuration.job_worker_max_retry = 2
       end
 
       it "marks the step as failed" do
         expect do
-          job.execute(pipeline_klass)
+          execution.call(pipeline_klass)
         end.to change { step.reload.status }.from("in_progress").to("failed")
       end
 
       it "logs" do
         allow(Ductwork.logger).to receive(:error).and_call_original
 
-        job.execute(pipeline_klass)
+        execution.call(pipeline_klass)
 
         expect(Ductwork.logger).to have_received(:error).with(
           msg: "Job exhausted retries and failed",

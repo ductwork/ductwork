@@ -56,12 +56,12 @@ RSpec.describe Ductwork::Availability do
     end
 
     it "crashes the execution" do
-      job = instance_double(Ductwork::Job, execution_crashed!: nil)
-      allow(execution).to receive(:job).and_return(job)
+      allow(execution).to receive(:crashed!)
+      allow(availability).to receive(:execution).and_return(execution) # rubocop:disable RSpec/SubjectStub
 
       availability.abandon!
 
-      expect(execution.job).to have_received(:execution_crashed!).with(execution)
+      expect(execution).to have_received(:crashed!)
     end
   end
 end

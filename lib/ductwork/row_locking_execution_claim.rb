@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 module Ductwork
-  class RowLockingJobClaim
+  class RowLockingExecutionClaim
     def initialize(klass)
       @availability = nil
-      @job = nil
+      @execution = nil
       @klass = klass
       @process_id = Ductwork::Process.current.id
     end
@@ -31,12 +31,12 @@ module Ductwork
         end
       end
 
-      job
+      execution
     end
 
     private
 
-    attr_reader :availability, :job, :klass, :process_id
+    attr_reader :availability, :execution, :klass, :process_id
 
     def claim_availability
       @availability = Ductwork::Availability
@@ -56,11 +56,12 @@ module Ductwork
     end
 
     def update_state
-      @job = availability.execution.job
+      @execution = availability.execution
+      step = execution.job.step
 
-      job.step.in_progress!
-      job.step.run.in_progress!
-      job.step.run.pipeline.in_progress!
+      step.in_progress!
+      step.run.in_progress!
+      step.run.pipeline.in_progress!
     end
   end
 end

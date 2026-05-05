@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: refactor `Job` methods and claiming onto `Execution`
 - fix: prevent possible double job execution by using "current" `execution` record
 - chore: swap locking for atomic update in `Ductwork::Availability#abandon!`
 - chore: swap locking for atomic update in `Ductwork::Advancement#abandon!`

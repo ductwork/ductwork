@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Ductwork
-  class JobClaim
+  class ExecutionClaim
     def initialize(klass)
       @klass = klass
       @adapter = Ductwork::Record.connection.adapter_name.downcase
@@ -9,9 +9,9 @@ module Ductwork
 
     def latest
       claim = if supports_row_locking?
-                RowLockingJobClaim
+                RowLockingExecutionClaim
               else
-                OptimisticLockingJobClaim
+                OptimisticLockingExecutionClaim
               end
 
       claim.new(klass).latest
