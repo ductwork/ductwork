@@ -23,16 +23,6 @@ RSpec.describe Ductwork::Advancement do
     let(:branch) { create(:branch, :claimed) }
     let(:transition) { create(:transition, branch:) }
 
-    it "locks the branch" do
-      branch = instance_double(Ductwork::Branch, lock!: nil, release!: nil)
-
-      allow(transition).to receive(:branch).and_return(branch)
-
-      advancement.abandon!
-
-      expect(branch).to have_received(:lock!)
-    end
-
     # NOTE: this protects against a worker racing against the reaper where an
     # advancement can be incomplete at read-time but completed by write-time
     it "no-ops if the advancement is completed" do
@@ -43,10 +33,18 @@ RSpec.describe Ductwork::Advancement do
       end.to not_change(advancement, :completed_at)
     end
 
+    it "is idempotent" do
+      advancement.abandon!
+
+      expect do
+        advancement.abandon!
+      end.to not_change(advancement, :completed_at)
+    end
+
     it "sets error metadata on itself" do
       expect do
         advancement.abandon!
-      end.to change(advancement, :completed_at).from(nil).to(be_almost_now)
+      end.to change { advancement.reload.completed_at }.from(nil).to(be_almost_now)
         .and change(advancement, :error_klass).to("Ductwork::ProcessCrash")
         .and change(advancement, :error_message).to("Reaped from orphaned process")
     end

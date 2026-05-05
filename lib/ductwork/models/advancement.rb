@@ -8,20 +8,18 @@ module Ductwork
     validates :started_at, presence: true
 
     def abandon!
-      branch = transition.branch
-
       Ductwork::Record.transaction do
-        branch.lock!
-        reload
+        rows_updated = self.class
+                           .where(id: id, completed_at: nil)
+                           .update_all(
+                             completed_at: Time.current,
+                             error_klass: "Ductwork::ProcessCrash",
+                             error_message: "Reaped from orphaned process"
+                           )
 
-        return if completed_at.present?
+        return if rows_updated.zero?
 
-        update!(
-          completed_at: Time.current,
-          error_klass: "Ductwork::ProcessCrash",
-          error_message: "Reaped from orphaned process"
-        )
-        branch.release!
+        transition.branch.release!
       end
     end
   end
