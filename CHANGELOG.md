@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: prevent possible double job execution by only wrapping user code in rescue
 - fix: atomically release branches conditioned on claim token
 - fix: fail abandoned availabilities and executions when reaping jobs
 - fix: fail abandoned advancements when reaping branches

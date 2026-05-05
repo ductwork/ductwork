@@ -51,29 +51,34 @@ module Ductwork
       )
       args = JSON.parse(input_args)["args"]
       instance = Object.const_get(klass).build_for_execution(step.run_id, *args)
-      attempt = execution.create_attempt!(
-        started_at: Time.current
-      )
-      result = nil
+      attempt = execution.create_attempt!(started_at: Time.current)
+      output_payload = nil
 
       begin
         output_payload = instance.execute
         Ductwork::FaultInjection.checkpoint(:during_job_execution)
-        execution_succeeded!(execution, attempt, output_payload)
-        result = "success"
       rescue StandardError => e
         execution_errored!(execution, attempt, e)
-        result = "failure"
-      ensure
         Ductwork.logger.info(
           msg: "Job executed",
           pipeline: pipeline,
           job_id: id,
           job_klass: klass,
-          result: result || "killed",
+          result: "error",
           role: :job_worker
         )
+        return
       end
+
+      execution_succeeded!(execution, attempt, output_payload)
+      Ductwork.logger.info(
+        msg: "Job executed",
+        pipeline: pipeline,
+        job_id: id,
+        job_klass: klass,
+        result: "succeeded",
+        role: :job_worker
+      )
     end
 
     def return_value
