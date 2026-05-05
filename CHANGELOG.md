@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: atomically release branches conditioned on claim token
 - fix: fail abandoned availabilities and executions when reaping jobs
 - fix: fail abandoned advancements when reaping branches
 - fix: prevent double execution by explicitly killing process before replacing it if it failed health check

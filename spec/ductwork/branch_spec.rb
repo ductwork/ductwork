@@ -279,7 +279,7 @@ RSpec.describe Ductwork::Branch do
         it "releases the branch" do
           expect do
             branch.advance!(transition, advancement)
-          end.to change(branch, :claimed_for_advancing_at).to(nil)
+          end.to change { branch.reload.claimed_for_advancing_at }.to(nil)
             .and change(branch, :claim_token).to(nil)
             .and change(branch, :last_advanced_at).to be_almost_now
         end
@@ -324,7 +324,7 @@ RSpec.describe Ductwork::Branch do
       it "releases the branch" do
         expect do
           branch.advance!(transition, advancement)
-        end.to change(branch, :claimed_for_advancing_at).to(nil)
+        end.to change { branch.reload.claimed_for_advancing_at }.to(nil)
           .and change(branch, :claim_token).to(nil)
           .and change(branch, :last_advanced_at).to be_almost_now
       end

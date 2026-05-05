@@ -57,7 +57,11 @@ module Ductwork
         while running_context.running?
           Branch.with_latest_claimed(klass) do |branch, transition, advancement|
             @branch = branch
-            branch.advance!(transition, advancement)
+
+            Ductwork.wrap_with_app_executor do
+              branch.advance!(transition, advancement)
+            end
+
             Ductwork::FaultInjection.checkpoint(:after_branch_advancement)
           ensure
             @branch = nil

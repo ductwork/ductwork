@@ -89,10 +89,9 @@ RSpec.describe Ductwork::Process do
   describe ".reap_all!" do
     it "releases associated incomplete branch advancements" do
       process = create(:process, last_heartbeat_at: 2.minutes.ago)
-      advancement = create(:advancement, process:)
-      branch = advancement.transition.branch.tap do |b|
-        b.update!(claimed_for_advancing_at: Time.current)
-      end
+      branch = create(:branch, :claimed)
+      transition = create(:transition, branch:)
+      create(:advancement, process:, transition:)
 
       expect do
         described_class.reap_all!(:thread_supervisor)
@@ -202,10 +201,9 @@ RSpec.describe Ductwork::Process do
     end
 
     it "abandons associated incomplete branch advancements" do
-      advancement = create(:advancement, process:)
-      branch = advancement.transition.branch.tap do |b|
-        b.update!(claimed_for_advancing_at: Time.current)
-      end
+      branch = create(:branch, :claimed)
+      transition = create(:transition, branch:)
+      advancement = create(:advancement, process:, transition:)
 
       expect do
         process.reap!(:process_supervisor)

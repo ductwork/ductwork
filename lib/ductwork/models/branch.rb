@@ -55,17 +55,8 @@ module Ductwork
         yield branch, branch_claim.transition, branch_claim.advancement
       end
     ensure
-      if branch.present?
-        branch.reload
-
-        # NOTE: the claim token condition prevents a race condition where a
-        # branch is released during advancement atomically with the creation
-        # of the next step causing a gap between that and calling `release!`
-        # here in the `ensure` block. in that gap the branch could be claimed
-        # for advancement in another thread which would cause bad times.
-        if branch.advancing? && branch.claim_token == branch_claim.token
-          branch.release!
-        end
+      Ductwork.wrap_with_app_executor do
+        branch&.release!(branch_claim.token)
       end
     end
 
@@ -114,13 +105,15 @@ module Ductwork
       steps.order(started_at: :desc).limit(1).first
     end
 
-    def release!
-      update!(
-        claimed_for_advancing_at: nil,
-        claim_token: nil,
-        status: :in_progress,
-        last_advanced_at: Time.current
-      )
+    def release!(expected_token = claim_token)
+      Ductwork::Branch
+        .where(id: id, claim_token: expected_token, status: :advancing)
+        .update_all(
+          claimed_for_advancing_at: nil,
+          claim_token: nil,
+          status: :in_progress,
+          last_advanced_at: Time.current
+        )
     end
 
     private
