@@ -173,6 +173,16 @@ RSpec.describe Ductwork::Job do
         .and change(Ductwork::Availability, :count).by(1)
     end
 
+    it "no-ops if the execution is already completed" do
+      execution.update!(completed_at: Time.current)
+
+      expect do
+        job.execution_crashed!(execution)
+      end.to not_change(Ductwork::Execution, :count)
+        .and not_change(Ductwork::Availability, :count)
+        .and not_change(Ductwork::Result, :count)
+    end
+
     # NOTE: protects against the reaper racing the worker's rescue path where
     # both can converge on the same execution and otherwise produce duplicate
     # process_crashed results, replacement executions, and availabilities
