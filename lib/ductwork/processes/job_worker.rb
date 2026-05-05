@@ -55,6 +55,8 @@ module Ductwork
         )
 
         while running_context.running?
+          execution = nil
+
           begin
             Ductwork.logger.debug(
               msg: "Attempting to claim job",
@@ -67,6 +69,7 @@ module Ductwork
             end
 
             if job.present?
+              execution = job.executions.order(:created_at).last
               Ductwork::FaultInjection.checkpoint(:after_job_claim)
 
               Ductwork.wrap_with_app_executor do
@@ -83,9 +86,8 @@ module Ductwork
               sleep(polling_timeout)
             end
           rescue StandardError => e
-            if job.present?
+            if execution.present?
               Ductwork.wrap_with_app_executor do
-                execution = job.executions.order(:created_at).last
                 job.execution_crashed!(execution)
               end
             end
