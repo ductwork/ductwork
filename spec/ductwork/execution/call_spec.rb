@@ -1,9 +1,10 @@
 # frozen_string_literal: true
 
 RSpec.describe Ductwork::Execution, "#call" do
-  subject(:execution) { create(:execution, job:) }
+  subject(:execution) { create(:execution, job:, process:) }
 
   let(:job) { Ductwork::Job.create!(klass:, started_at:, input_args:, step:) }
+  let(:process) { create(:process, :current) }
   let(:klass) { "MyFirstStep" }
   let(:started_at) { Time.current }
   let(:input_args) { JSON.dump({ args: 1 }) }
@@ -118,11 +119,13 @@ RSpec.describe Ductwork::Execution, "#call" do
     end
 
     context "when retries are exhausted" do
-      subject!(:execution) { create(:execution, retry_count: 2, job: job) }
+      subject!(:execution) { create(:execution, retry_count:, job:, process:) }
+
+      let(:retry_count) { 2 }
 
       before do
         step.branch.in_progress!
-        Ductwork.configuration.job_worker_max_retry = 2
+        Ductwork.configuration.job_worker_max_retry = retry_count
       end
 
       it "marks the step as failed" do

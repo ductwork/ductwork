@@ -53,11 +53,18 @@ module Ductwork
     end
 
     def succeeded!(output_payload)
+      completed_at = Time.current
       payload = JSON.dump({ payload: output_payload })
+      process_id = Ductwork::Process.current.id
 
       Ductwork::Record.transaction do
+        rows_updated = Ductwork::Execution
+                       .where(id: id, completed_at: nil, process_id: process_id)
+                       .update_all(completed_at:)
+
+        return if rows_updated.zero?
+
         job.update!(output_payload: payload, completed_at: Time.current)
-        update!(completed_at: Time.current)
         attempt.update!(completed_at: Time.current)
         create_result!(result_type: "success")
         job.step.update!(status: :advancing)
@@ -90,13 +97,20 @@ module Ductwork
 
     def errored!(error) # rubocop:todo Metrics
       run = job.step.run
+      completed_at = Time.current
+      process_id = Ductwork::Process.current.id
       max_retry = Ductwork.configuration.job_worker_max_retry(
         pipeline: run.pipeline_klass,
         step: job.klass
       )
 
       Ductwork::Record.transaction do # rubocop:todo Metrics/BlockLength
-        update!(completed_at: Time.current)
+        rows_updated = Ductwork::Execution
+                       .where(id: id, completed_at: nil, process_id: process_id)
+                       .update_all(completed_at:)
+
+        return if rows_updated.zero?
+
         attempt.update!(completed_at: Time.current)
         create_result!(
           result_type: "failure",
