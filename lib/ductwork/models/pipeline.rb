@@ -161,45 +161,81 @@ module Ductwork
       end
     end
 
-    def duplicate_halted_branches_and_steps(new_run, last_run, now) # rubocop:todo Metrics/AbcSize
-      status = %i[advancing waiting completed]
-
-      last_run.branches.where(status: :halted).find_each do |branch| # rubocop:todo Metrics/BlockLength
+    def duplicate_halted_branches_and_steps(new_run, last_run, now)
+      last_run.branches.where(status: :halted).find_each do |branch|
         new_branch = branch.dup
         new_branch.run = new_run
         new_branch.status = "in_progress"
         new_branch.started_at = now
         new_branch.completed_at = nil
         new_branch.last_advanced_at = now
+
         new_branch.save!
-
-        branch.steps.where(status:).find_each do |step|
-          new_step = step.dup
-          new_step.source_step = step
-          new_step.branch = new_branch
-          new_step.run = new_run
-          new_step.started_at = now
-          new_step.completed_at = now
-
-          new_step.save!
-        end
-
-        failed_step = branch.steps.find_by(status: :failed)
-
-        if failed_step.present?
-          step = new_branch.steps.create!(
-            run: new_run,
-            node: failed_step.node,
-            klass: failed_step.klass,
-            status: :in_progress,
-            to_transition: failed_step.to_transition,
-            started_at: now
-          )
-          args = JSON.parse(failed_step.job.input_args)["args"]
-
-          Ductwork::Job.enqueue(step, *args)
-        end
+        revive_branch_steps(branch, new_branch, new_run, now)
       end
+    end
+
+    def revive_branch_steps(branch, new_branch, new_run, now)
+      duplicate_prior_steps_as_completed(branch, new_branch, new_run, now)
+
+      if branch.job_retries_exhausted?
+        re_enqueue_failed_step(branch, new_branch, new_run, now)
+      else
+        re_advance_latest_step(branch, new_branch, new_run, now)
+      end
+    end
+
+    def duplicate_prior_steps_as_completed(branch, new_branch, new_run, now)
+      latest_step = branch.steps.order(started_at: :desc).first
+
+      return if latest_step.blank?
+
+      status = %i[advancing waiting completed]
+      id = latest_step.id
+
+      branch.steps.where(status:).where.not(id:).find_each do |step|
+        new_step = step.dup
+        new_step.source_step = step
+        new_step.branch = new_branch
+        new_step.run = new_run
+        new_step.started_at = now
+        new_step.completed_at = now
+
+        new_step.save!
+      end
+    end
+
+    def re_enqueue_failed_step(branch, new_branch, new_run, now)
+      failed_step = branch.steps.find_by(status: :failed)
+      args = JSON.parse(failed_step.job.input_args).fetch("args")
+      step = new_branch.steps.create!(
+        run: new_run,
+        source_step: failed_step,
+        node: failed_step.node,
+        klass: failed_step.klass,
+        to_transition: failed_step.to_transition,
+        status: :in_progress,
+        started_at: now
+      )
+      Ductwork::Job.enqueue(step, *args)
+    end
+
+    def re_advance_latest_step(branch, new_branch, new_run, now)
+      latest_step = branch.steps.order(started_at: :desc).first
+      step = new_branch.steps.create!(
+        run: new_run,
+        source_step: latest_step,
+        node: latest_step.node,
+        klass: latest_step.klass,
+        to_transition: latest_step.to_transition,
+        status: :advancing,
+        started_at: now
+      )
+      job = latest_step.job.dup
+      job.step = step
+      job.started_at = now
+      job.completed_at = now
+      job.save!
     end
 
     def conditionally_duplicate_context(last_run, new_run, now, duplicate_context)
