@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: pass failed job input arguments to new job when reviving a pipeline
 - fix: pass in owner process id when executing job - this ensures the process finishing the job is the one that claimed it
 - fix: make `Execution#succeeded!` and `#errored!` idempotent and fence with process id
 - feat: set `ductwork_execution.process_id` when claiming availability

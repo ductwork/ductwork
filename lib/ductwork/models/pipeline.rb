@@ -195,7 +195,9 @@ module Ductwork
             to_transition: failed_step.to_transition,
             started_at: now
           )
-          Ductwork::Job.enqueue(step)
+          args = JSON.parse(failed_step.job.input_args)["args"]
+
+          Ductwork::Job.enqueue(step, *args)
         end
       end
     end

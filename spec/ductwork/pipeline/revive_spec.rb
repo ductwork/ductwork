@@ -90,6 +90,7 @@ RSpec.describe Ductwork::Pipeline, "#revive!" do
   it "re-creates the failed step and job on the halted branch" do
     branch = create(:branch, :halted, run: previous_run)
     failed_step = create(:step, :failed, run: previous_run, branch: branch)
+    _failed_job = create(:job, step: failed_step)
 
     expect do
       pipeline.revive!
@@ -103,6 +104,20 @@ RSpec.describe Ductwork::Pipeline, "#revive!" do
     expect(step.to_transition).to eq(failed_step.to_transition)
     expect(step.started_at).to be_almost_now
     expect(step.completed_at).to be_nil
+  end
+
+  it "re-creates the failed job on the halted branch" do
+    branch = create(:branch, :halted, run: previous_run)
+    failed_step = create(:step, :failed, run: previous_run, branch: branch)
+    failed_job = create(:job, step: failed_step)
+
+    expect do
+      pipeline.revive!
+    end.to change(Ductwork::Job, :count).by(1)
+
+    job = pipeline.current_run.steps.sole.job
+    expect(job.klass).to eq(failed_step.klass)
+    expect(job.input_args).to eq(failed_job.input_args)
   end
 
   it "does not duplicate the context by default" do
