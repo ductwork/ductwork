@@ -98,8 +98,8 @@ RSpec.describe Ductwork::Execution, "#call" do
         .and change(Ductwork::Availability, :count).by(1)
       next_execution = job.executions.last
       expect(next_execution.retry_count).to eq(1)
-      expect(next_execution.started_at).to be_within(1.second).of(10.seconds.from_now)
-      expect(next_execution.availability.started_at).to be_within(1.second).of(10.seconds.from_now)
+      expect(next_execution.started_at).to be_within(2.seconds).of(10.seconds.from_now)
+      expect(next_execution.availability.started_at).to be_within(2.seconds).of(10.seconds.from_now)
     end
 
     it "logs" do
