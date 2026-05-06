@@ -55,6 +55,8 @@ module Ductwork
         )
 
         while running_context.running?
+          owner_process_id = nil
+
           begin
             Ductwork.logger.debug(
               msg: "Attempting to claim job",
@@ -62,8 +64,8 @@ module Ductwork
               pipeline: pipeline
             )
 
-            owner_process_id = Ductwork::Process.current.id
             @execution = Ductwork.wrap_with_app_executor do
+              owner_process_id = Ductwork::Process.current.id
               Ductwork::ExecutionClaim.new(pipeline).latest
             end
 
