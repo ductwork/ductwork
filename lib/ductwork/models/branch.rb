@@ -55,9 +55,7 @@ module Ductwork
         yield branch, branch_claim.transition, branch_claim.advancement
       end
     ensure
-      Ductwork.wrap_with_app_executor do
-        branch&.release!(branch_claim.token)
-      end
+      branch&.release!(branch_claim.token)
     end
 
     def advance!(transition, advancement)

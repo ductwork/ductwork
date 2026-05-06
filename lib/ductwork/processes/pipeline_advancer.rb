@@ -55,16 +55,16 @@ module Ductwork
         )
 
         while running_context.running?
-          Branch.with_latest_claimed(klass) do |branch, transition, advancement|
-            @branch = branch
+          Ductwork.wrap_with_app_executor do
+            Branch.with_latest_claimed(klass) do |branch, transition, advancement|
+              @branch = branch
 
-            Ductwork.wrap_with_app_executor do
               branch.advance!(transition, advancement)
-            end
 
-            Ductwork::FaultInjection.checkpoint(:after_branch_advancement)
-          ensure
-            @branch = nil
+              Ductwork::FaultInjection.checkpoint(:after_branch_advancement)
+            ensure
+              @branch = nil
+            end
           end
 
           @last_heartbeat_at = Time.current

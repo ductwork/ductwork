@@ -11,12 +11,10 @@ module Ductwork
     def get(key)
       raise ArgumentError, "Key must be a string" if !key.is_a?(String)
 
-      Ductwork.wrap_with_app_executor do
-        Ductwork::Tuple
-          .select(:serialized_value)
-          .find_by(run_id:, key:)
-          &.value
-      end
+      Ductwork::Tuple
+        .select(:serialized_value)
+        .find_by(run_id:, key:)
+        &.value
     end
 
     def set(key, value, overwrite: false)
@@ -35,11 +33,9 @@ module Ductwork
              end
 
       if overwrite
-        Ductwork.wrap_with_app_executor do
-          Ductwork::Tuple.upsert(attributes, **opts)
-        end
+        Ductwork::Tuple.upsert(attributes, **opts)
       else
-        Ductwork.wrap_with_app_executor do
+        begin
           Ductwork::Tuple.create!(attributes)
         rescue ActiveRecord::RecordNotUnique
           raise Ductwork::Context::OverwriteError, "Can only set value once"

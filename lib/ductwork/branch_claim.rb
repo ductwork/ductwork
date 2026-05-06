@@ -17,9 +17,7 @@ module Ductwork
       rows_updated = claim_and_setup_records(id)
 
       if rows_updated == 1
-        Ductwork.wrap_with_app_executor do
-          Ductwork::Branch.find(id)
-        end
+        Ductwork::Branch.find(id)
       else
         log_race_condition(id)
       end
@@ -30,43 +28,39 @@ module Ductwork
     attr_reader :pipeline_klass, :claimed_for_advancing_at
 
     def find_candidate_branch_id
-      Ductwork.wrap_with_app_executor do
-        Ductwork::Branch
-          .in_progress
-          .where(pipeline_klass:, claimed_for_advancing_at:)
-          .where(steps: Ductwork::Step.where(status: %w[advancing failed]))
-          .order(:last_advanced_at)
-          .limit(1)
-          .pluck(:id)
-          .first
-      end
+      Ductwork::Branch
+        .in_progress
+        .where(pipeline_klass:, claimed_for_advancing_at:)
+        .where(steps: Ductwork::Step.where(status: %w[advancing failed]))
+        .order(:last_advanced_at)
+        .limit(1)
+        .pluck(:id)
+        .first
     end
 
     def claim_and_setup_records(id)
       now = Time.current
       @token = SecureRandom.uuid
 
-      Ductwork.wrap_with_app_executor do
-        Ductwork::Record.transaction do
-          rows_updated = Ductwork::Branch
-                         .where(id:, claimed_for_advancing_at:)
-                         .update_all(
-                           claimed_for_advancing_at: now,
-                           claim_token: token,
-                           status: :advancing
-                         )
+      Ductwork::Record.transaction do
+        rows_updated = Ductwork::Branch
+                       .where(id:, claimed_for_advancing_at:)
+                       .update_all(
+                         claimed_for_advancing_at: now,
+                         claim_token: token,
+                         status: :advancing
+                       )
 
-          if rows_updated == 1
-            branch = Branch.find(id)
-            @transition = find_or_create_transition(branch, now)
-            @advancement = transition.advancements.create!(
-              process: Ductwork::Process.current,
-              started_at: now
-            )
-          end
-
-          rows_updated
+        if rows_updated == 1
+          branch = Branch.find(id)
+          @transition = find_or_create_transition(branch, now)
+          @advancement = transition.advancements.create!(
+            process: Ductwork::Process.current,
+            started_at: now
+          )
         end
+
+        rows_updated
       end
     end
 
