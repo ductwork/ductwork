@@ -32,6 +32,12 @@ RSpec.describe Ductwork::OptimisticLockingExecutionClaim do
           .and change(availability, :process_id).from(nil).to(process.id)
       end
 
+      it "assigns the process to the execution" do
+        expect do
+          claim.latest
+        end.to change { execution.reload.process_id }.from(nil).to(process.id)
+      end
+
       it "moves the step, run, and pipeline from waiting to in-progress" do
         step.update!(status: "waiting")
         run.update!(status: "waiting")

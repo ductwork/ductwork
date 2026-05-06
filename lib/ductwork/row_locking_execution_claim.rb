@@ -49,14 +49,14 @@ module Ductwork
 
       return unless availability
 
-      availability.update_columns(
-        completed_at: Time.current,
-        process_id: process_id
-      )
+      completed_at = Time.current
+      @execution = availability.execution
+
+      availability.update_columns(completed_at:, process_id:)
+      execution.update_columns(process_id:)
     end
 
     def update_state
-      @execution = availability.execution
       step = execution.job.step
 
       step.in_progress!

@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- feat: set `ductwork_execution.process_id` when claiming availability
 - chore: associate `ductwork_executions` to `ductwork_processes`
 - chore: hoist usages of app executor out of models and services
 - chore: refactor `Job` methods and claiming onto `Execution`

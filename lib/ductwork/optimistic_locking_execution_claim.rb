@@ -25,6 +25,7 @@ module Ductwork
             )
 
             @execution = find_execution
+            execution.update_columns(process_id:)
 
             update_state
           else
