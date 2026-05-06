@@ -27,23 +27,9 @@ class AddProcessIdToDuctworkExecution < Ductwork::Migration
   end
 
   def down
-    options = if postgresql?
-                {
-                  type: uuid_column_type,
-                  index: true,
-                  null: true,
-                  foreign_key: { to_table: :ductwork_processes },
-                }
-              else
-                {
-                  type: uuid_column_type,
-                  limit: 36,
-                  index: true,
-                  null: true,
-                  foreign_key: { to_table: :ductwork_processes },
-                }
-              end
-
-    add_reference :ductwork_executions, :process, **options
+    remove_reference :ductwork_executions,
+                     :process,
+                     foreign_key: { to_table: :ductwork_processes },
+                     index: true
   end
 end
