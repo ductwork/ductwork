@@ -10,6 +10,10 @@ module Ductwork
              class_name: "Ductwork::Availability",
              foreign_key: "process_id",
              dependent: :nullify
+    has_many :executions,
+             class_name: "Ductwork::Execution",
+             foreign_key: "process_id",
+             dependent: :nullify
 
     REAP_THRESHOLD = 1.minute.freeze
 

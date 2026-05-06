@@ -81,6 +81,11 @@ module Ductwork
         migration_template "db/add_crash_count_to_ductwork_executions.rb",
                            "db/migrate/add_crash_count_to_ductwork_executions.rb"
       end
+
+      if Ductwork::Execution.column_names.exclude?("process_id")
+        migration_template "db/add_process_id_to_ductwork_executions.rb",
+                           "db/migrate/add_process_id_to_ductwork_executions.rb"
+      end
     end
   end
 end

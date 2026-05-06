@@ -3,6 +3,7 @@
 module Ductwork
   class Execution < Ductwork::Record
     belongs_to :job, class_name: "Ductwork::Job"
+    belongs_to :process, class_name: "Ductwork::Process", optional: true
     has_one :availability, class_name: "Ductwork::Availability", foreign_key: "execution_id", dependent: :destroy
     has_one :attempt, class_name: "Ductwork::Attempt", foreign_key: "execution_id", dependent: :destroy
     has_one :result, class_name: "Ductwork::Result", foreign_key: "execution_id", dependent: :destroy
