@@ -100,8 +100,7 @@ RSpec.describe Ductwork::Process do
 
     it "re-enqueues claimed jobs with incomplete executions" do
       process = create(:process, last_heartbeat_at: 2.minutes.ago)
-      availability = create(:availability, process: process, completed_at: Time.current)
-      execution = availability.execution
+      execution = create(:execution, process:)
 
       described_class.reap_all!(:thread_supervisor)
 
@@ -213,8 +212,7 @@ RSpec.describe Ductwork::Process do
     end
 
     it "re-enqueues claimed jobs with incomplete executions" do
-      availability = create(:availability, process: process, completed_at: Time.current)
-      execution = availability.execution
+      execution = create(:execution, process:)
 
       process.reap!(:thread_supervisor)
 
