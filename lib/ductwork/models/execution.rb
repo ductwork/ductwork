@@ -55,7 +55,6 @@ module Ductwork
     def succeeded!(output_payload)
       completed_at = Time.current
       payload = JSON.dump({ payload: output_payload })
-      process_id = Ductwork::Process.current.id
 
       Ductwork::Record.transaction do
         rows_updated = Ductwork::Execution
@@ -98,7 +97,6 @@ module Ductwork
     def errored!(error) # rubocop:todo Metrics
       run = job.step.run
       completed_at = Time.current
-      process_id = Ductwork::Process.current.id
       max_retry = Ductwork.configuration.job_worker_max_retry(
         pipeline: run.pipeline_klass,
         step: job.klass
