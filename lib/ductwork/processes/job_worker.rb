@@ -62,6 +62,7 @@ module Ductwork
               pipeline: pipeline
             )
 
+            owner_process_id = Ductwork::Process.current.id
             @execution = Ductwork.wrap_with_app_executor do
               Ductwork::ExecutionClaim.new(pipeline).latest
             end
@@ -70,7 +71,7 @@ module Ductwork
               Ductwork::FaultInjection.checkpoint(:after_job_claim)
 
               Ductwork.wrap_with_app_executor do
-                execution.call(pipeline)
+                execution.call(pipeline, owner_process_id)
               end
 
               @execution = nil

@@ -40,20 +40,20 @@ RSpec.describe Ductwork::Execution do
 
     it "atomically completes the execution" do
       expect do
-        execution.succeeded!(output_payload)
+        execution.succeeded!(output_payload, process.id)
       end.to change { execution.reload.completed_at }.from(nil).to(be_almost_now)
     end
 
     it "sets the payload and completes the job" do
       expect do
-        execution.succeeded!(output_payload)
+        execution.succeeded!(output_payload, process.id)
       end.to change(execution.job, :output_payload).to(serialized_payload)
         .and change(execution.job, :completed_at).from(nil).to(be_almost_now)
     end
 
     it "completes the attempt" do
       expect do
-        execution.succeeded!(output_payload)
+        execution.succeeded!(output_payload, process.id)
       end.to change { attempt.reload.completed_at }.from(nil).to(be_almost_now)
     end
 
@@ -61,23 +61,43 @@ RSpec.describe Ductwork::Execution do
       execution.job.step.update!(status: "in_progress")
 
       expect do
-        execution.succeeded!(output_payload)
+        execution.succeeded!(output_payload, process.id)
       end.to change(execution.job.step, :status).to("advancing")
     end
 
     it "creates a result" do
       expect do
-        execution.succeeded!(output_payload)
+        execution.succeeded!(output_payload, process.id)
       end.to change(Ductwork::Result, :count).by(1)
       expect(execution.result).to be_success
     end
 
-    it "is idempotent" do
-      execution.succeeded!(output_payload)
+    it "no-ops when the execution is already completed" do
+      execution.succeeded!(output_payload, process.id)
 
       expect do
-        execution.succeeded!("another_output_payload")
+        execution.succeeded!("another_output_payload", process.id)
       end.to not_change { execution.job.output_payload }.from(serialized_payload)
+        .and not_change(Ductwork::Result, :count)
+    end
+
+    it "no-ops when the execution is owned by another process" do
+      other_process = create(:process)
+
+      expect do
+        execution.succeeded!(output_payload, other_process.id)
+      end.to not_change { execution.reload.completed_at }.from(nil)
+        .and not_change(Ductwork::Result, :count)
+    end
+
+    # NOTE: this case is when the reaper cleans up an old process record
+    it "no-ops when the execution has been disowned" do
+      execution.update!(process_id: nil)
+
+      expect do
+        execution.succeeded!(output_payload, process.id)
+      end.to not_change { execution.reload.completed_at }.from(nil)
+        .and not_change(Ductwork::Result, :count)
     end
   end
 
@@ -99,19 +119,19 @@ RSpec.describe Ductwork::Execution do
 
     it "atomically completes the execution" do
       expect do
-        execution.errored!(error)
+        execution.errored!(error, process.id)
       end.to change { execution.reload.completed_at }.from(nil).to(be_almost_now)
     end
 
     it "completes the attempt" do
       expect do
-        execution.errored!(error)
+        execution.errored!(error, process.id)
       end.to change { attempt.reload.completed_at }.from(nil).to(be_almost_now)
     end
 
     it "creates a result" do
       expect do
-        execution.errored!(error)
+        execution.errored!(error, process.id)
       end.to change(Ductwork::Result, :count).by(1)
 
       result = execution.result
@@ -121,13 +141,32 @@ RSpec.describe Ductwork::Execution do
       expect(result.error_backtrace).to be_present
     end
 
-    it "is idempotent" do
-      execution.errored!(error)
+    it "no-ops when the execution is already completed" do
+      execution.errored!(error, process.id)
 
       expect do
-        execution.errored!(error)
+        execution.errored!(error, process.id)
       end.to not_change(described_class, :count)
         .and not_change(Ductwork::Availability, :count)
+    end
+
+    it "no-ops when the execution is owned by another process" do
+      other_process = create(:process)
+
+      expect do
+        execution.errored!(error, other_process.id)
+      end.to not_change { execution.reload.completed_at }.from(nil)
+        .and not_change(Ductwork::Result, :count)
+    end
+
+    # NOTE: this case is when the reaper cleans up an old process record
+    it "no-ops when the execution has been disowned" do
+      execution.update!(process_id: nil)
+
+      expect do
+        execution.errored!(error, process.id)
+      end.to not_change { execution.reload.completed_at }.from(nil)
+        .and not_change(Ductwork::Result, :count)
     end
 
     context "when there are more retries left" do
@@ -137,7 +176,7 @@ RSpec.describe Ductwork::Execution do
 
       it "creates a new execution and availability" do
         expect do
-          execution.errored!(error)
+          execution.errored!(error, process.id)
         end.to change(described_class, :count).by(1)
           .and change(Ductwork::Availability, :count).by(1)
 
@@ -150,7 +189,7 @@ RSpec.describe Ductwork::Execution do
       it "logs" do
         allow(Ductwork.logger).to receive(:warn).and_call_original
 
-        execution.errored!(error)
+        execution.errored!(error, process.id)
 
         expect(Ductwork.logger).to have_received(:warn).with(
           msg: "Job errored",
@@ -172,14 +211,14 @@ RSpec.describe Ductwork::Execution do
 
       it "fails the step" do
         expect do
-          execution.errored!(error)
+          execution.errored!(error, process.id)
         end.to change(execution.job.step, :status).to("failed")
       end
 
       it "logs" do
         allow(Ductwork.logger).to receive(:error).and_call_original
 
-        execution.errored!(error)
+        execution.errored!(error, process.id)
 
         expect(Ductwork.logger).to have_received(:error).with(
           msg: "Job exhausted retries and failed",
