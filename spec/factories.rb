@@ -52,6 +52,11 @@ FactoryBot.define do
     end
   end
 
+  factory :branch_link, class: "Ductwork::BranchLink" do
+    parent_branch factory: :branch
+    child_branch factory: :branch
+  end
+
   factory :execution, class: "Ductwork::Execution" do
     started_at { Time.current }
     retry_count { 0 }

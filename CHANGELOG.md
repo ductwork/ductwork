@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: duplicate `Ductwork::BranchLink` records when reviving a pipeline
 - fix: prevent possible double execution in `Pipeline#revive!` by only retrying advancing if it was the halt reason, otherwise retry the job
 - fix: pass failed job input arguments to new job when reviving a pipeline
 - fix: pass in owner process id when executing job - this ensures the process finishing the job is the one that claimed it

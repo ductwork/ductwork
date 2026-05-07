@@ -244,6 +244,165 @@ RSpec.describe Ductwork::Pipeline, "#revive!" do
     expect(returned_pipeline).to eq(pipeline)
   end
 
+  context "when the previous run had branch links" do
+    context "with a divide shape (one parent, many halted children)" do
+      let(:parent_branch) { create(:branch, :completed, run: previous_run) }
+      let(:child_branch1) { create(:branch, :halted, run: previous_run) }
+      let(:child_branch2) { create(:branch, :halted, run: previous_run) }
+
+      before do
+        create(:step, :completed, run: previous_run, branch: parent_branch)
+        child_step1 = create(:step, :completed, run: previous_run, branch: child_branch1)
+        child_step2 = create(:step, :completed, run: previous_run, branch: child_branch2)
+        create(:job, step: child_step1)
+        create(:job, step: child_step2)
+        create(:branch_link, parent_branch: parent_branch, child_branch: child_branch1)
+        create(:branch_link, parent_branch: parent_branch, child_branch: child_branch2)
+      end
+
+      it "duplicates each branch link" do
+        expect do
+          pipeline.revive!
+        end.to change(Ductwork::BranchLink, :count).by(2)
+      end
+
+      it "scopes the new links to branches in the new run" do
+        pipeline.revive!
+
+        new_branch_ids = pipeline.current_run.branches.pluck(:id)
+        new_links = Ductwork::BranchLink.where(
+          parent_branch_id: new_branch_ids,
+          child_branch_id: new_branch_ids
+        )
+
+        expect(new_links.count).to eq(2)
+      end
+
+      it "preserves the topology of the previous run" do
+        pipeline.revive!
+
+        old_to_new = map_old_to_new_branch_ids(pipeline.current_run)
+
+        expect(
+          Ductwork::BranchLink.exists?(
+            parent_branch_id: old_to_new.fetch(parent_branch.id),
+            child_branch_id: old_to_new.fetch(child_branch1.id)
+          )
+        ).to be(true)
+        expect(
+          Ductwork::BranchLink.exists?(
+            parent_branch_id: old_to_new.fetch(parent_branch.id),
+            child_branch_id: old_to_new.fetch(child_branch2.id)
+          )
+        ).to be(true)
+      end
+    end
+
+    context "with a collapse shape (many parents, one halted child)" do
+      let(:parent_branch1) { create(:branch, :completed, run: previous_run) }
+      let(:parent_branch2) { create(:branch, :completed, run: previous_run) }
+      let(:child_branch) { create(:branch, :halted, run: previous_run) }
+
+      before do
+        create(:step, :completed, run: previous_run, branch: parent_branch1)
+        create(:step, :completed, run: previous_run, branch: parent_branch2)
+        child_step = create(:step, :completed, run: previous_run, branch: child_branch)
+        create(:job, step: child_step)
+        create(:branch_link, parent_branch: parent_branch1, child_branch: child_branch)
+        create(:branch_link, parent_branch: parent_branch2, child_branch: child_branch)
+      end
+
+      it "duplicates each branch link" do
+        expect do
+          pipeline.revive!
+        end.to change(Ductwork::BranchLink, :count).by(2)
+      end
+
+      it "preserves the topology of the previous run" do
+        pipeline.revive!
+
+        old_to_new = map_old_to_new_branch_ids(pipeline.current_run)
+
+        expect(
+          Ductwork::BranchLink.exists?(
+            parent_branch_id: old_to_new.fetch(parent_branch1.id),
+            child_branch_id: old_to_new.fetch(child_branch.id)
+          )
+        ).to be(true)
+        expect(
+          Ductwork::BranchLink.exists?(
+            parent_branch_id: old_to_new.fetch(parent_branch2.id),
+            child_branch_id: old_to_new.fetch(child_branch.id)
+          )
+        ).to be(true)
+      end
+    end
+
+    context "with a multi-level divide-then-collapse topology" do
+      let(:grandparent) { create(:branch, :completed, run: previous_run) }
+      let(:middle1) { create(:branch, :completed, run: previous_run) }
+      let(:middle2) { create(:branch, :completed, run: previous_run) }
+      let(:grandchild) { create(:branch, :halted, run: previous_run) }
+
+      before do
+        create(:step, :completed, run: previous_run, branch: grandparent)
+        create(:step, :completed, run: previous_run, branch: middle1)
+        create(:step, :completed, run: previous_run, branch: middle2)
+        grandchild_step = create(:step, :completed, run: previous_run, branch: grandchild)
+        create(:job, step: grandchild_step)
+
+        Ductwork::BranchLink.create!(parent_branch: grandparent, child_branch: middle1)
+        Ductwork::BranchLink.create!(parent_branch: grandparent, child_branch: middle2)
+        Ductwork::BranchLink.create!(parent_branch: middle1, child_branch: grandchild)
+        Ductwork::BranchLink.create!(parent_branch: middle2, child_branch: grandchild)
+      end
+
+      it "duplicates every branch link in the topology" do
+        expect do
+          pipeline.revive!
+        end.to change(Ductwork::BranchLink, :count).by(4)
+      end
+
+      it "preserves the topology transitively" do
+        pipeline.revive!
+
+        old_to_new = map_old_to_new_branch_ids(pipeline.current_run)
+        expected_pairs = [
+          [grandparent, middle1],
+          [grandparent, middle2],
+          [middle1, grandchild],
+          [middle2, grandchild],
+        ]
+
+        expected_pairs.each do |parent, child|
+          expect(
+            Ductwork::BranchLink.exists?(
+              parent_branch_id: old_to_new.fetch(parent.id),
+              child_branch_id: old_to_new.fetch(child.id)
+            )
+          ).to be(true), "expected link from old #{parent.id} -> #{child.id}"
+        end
+      end
+    end
+
+    context "when a branch_link references a branch that was not duplicated" do
+      let(:duplicated_branch) { create(:branch, :completed, run: previous_run) }
+      let(:undeduplicated_branch) { create(:branch, status: "pending", run: previous_run) }
+
+      before do
+        create(:step, :completed, run: previous_run, branch: duplicated_branch)
+        Ductwork::BranchLink.create!(
+          parent_branch: undeduplicated_branch,
+          child_branch: duplicated_branch
+        )
+      end
+
+      it "raises a KeyError" do
+        expect { pipeline.revive! }.to raise_error(KeyError)
+      end
+    end
+  end
+
   # NOTE: this case is purely defensive
   context "when there is no previous run" do
     before do
@@ -270,6 +429,15 @@ RSpec.describe Ductwork::Pipeline, "#revive!" do
         described_class::ReviveError,
         "Cannot revive #{pipeline.status} pipeline"
       )
+    end
+  end
+
+  def map_old_to_new_branch_ids(new_run)
+    new_run.branches.each_with_object({}) do |branch, map|
+      sourced = branch.steps.where.not(source_step_id: nil).first
+      next if sourced.nil?
+
+      map[sourced.source_step.branch_id] = branch.id
     end
   end
 end

@@ -129,6 +129,7 @@ module Ductwork
         duplicate_successful_branches_and_steps(new_run, last_run, now)
         duplicate_halted_branches_and_steps(new_run, last_run, now)
         conditionally_duplicate_context(last_run, new_run, now, duplicate_context)
+        duplicate_all_branch_links(new_run, last_run)
         in_progress!
       end
 
@@ -249,6 +250,26 @@ module Ductwork
           new_tuple.save!
         end
       end
+    end
+
+    def duplicate_all_branch_links(new_run, last_run)
+      map = Ductwork::Step
+            .where(branch_id: new_run.branches.select(:id))
+            .where.not(source_step_id: nil)
+            .joins("INNER JOIN ductwork_steps src ON src.id = ductwork_steps.source_step_id")
+            .pluck("src.branch_id", "ductwork_steps.branch_id")
+            .uniq
+            .to_h
+      old_branch_ids = last_run.branches.select(:id)
+
+      Ductwork::BranchLink
+        .where(parent_branch_id: old_branch_ids, child_branch_id: old_branch_ids)
+        .find_each do |old_link|
+          Ductwork::BranchLink.create!(
+            parent_branch_id: map.fetch(old_link.parent_branch_id),
+            child_branch_id: map.fetch(old_link.child_branch_id)
+          )
+        end
     end
   end
 end
