@@ -141,9 +141,11 @@ module Ductwork
       end
 
       def report_heartbeat!
+        Ductwork.logger.debug(msg: "Reporting heartbeat", role: :thread_supervisor)
         Ductwork.wrap_with_app_executor do
           Ductwork::Process.report_heartbeat!
         end
+        Ductwork.logger.debug(msg: "Reported heartbeat", role: :thread_supervisor)
       end
 
       def reap_process_records
