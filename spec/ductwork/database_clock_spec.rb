@@ -12,7 +12,7 @@ RSpec.describe Ductwork::DatabaseClock do
       it "returns a valid string" do
         sql = described_class.ago_sql("last_heartbeat_at", 1.second)
 
-        expect(sql).to eq("last_heartbeat_at <= CURRENT_TIMESTAMP - INTERVAL '1 seconds'")
+        expect(sql).to eq("last_heartbeat_at <= clock_timestamp() - INTERVAL '1 seconds'")
       end
     end
 
@@ -22,7 +22,7 @@ RSpec.describe Ductwork::DatabaseClock do
       it "returns a valid string" do
         sql = described_class.ago_sql("last_heartbeat_at", 5.minutes)
 
-        expect(sql).to eq("last_heartbeat_at <= CURRENT_TIMESTAMP - INTERVAL '300 seconds'")
+        expect(sql).to eq("last_heartbeat_at <= clock_timestamp() - INTERVAL '300 seconds'")
       end
     end
 
@@ -111,7 +111,7 @@ RSpec.describe Ductwork::DatabaseClock do
       it "returns a valid string" do
         sql = described_class.now_sql("started_at")
 
-        expect(sql).to eq("started_at <= CURRENT_TIMESTAMP")
+        expect(sql).to eq("started_at <= clock_timestamp()")
       end
     end
 

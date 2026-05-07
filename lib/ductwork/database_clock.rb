@@ -24,7 +24,7 @@ module Ductwork
 
       case adapter
       when /postgresql|cockroach/i
-        "#{column} <= CURRENT_TIMESTAMP - INTERVAL '#{seconds} seconds'"
+        "#{column} <= clock_timestamp() - INTERVAL '#{seconds} seconds'"
       when /mysql|trilogy/i
         "#{column} <= CURRENT_TIMESTAMP(6) - INTERVAL #{seconds} SECOND"
       when /sqlite/i
@@ -42,7 +42,9 @@ module Ductwork
         "julianday(#{column}) <= julianday('now')"
       when /mysql|trilogy/i
         "#{column} <= CURRENT_TIMESTAMP(6)"
-      when /postgresql|cockroach|oracle/i
+      when /postgresql|cockroach/i
+        "#{column} <= clock_timestamp()"
+      when /oracle/i
         "#{column} <= CURRENT_TIMESTAMP"
       else
         raise NotImplementedError, "Database clock does not support adapter #{adapter}"
