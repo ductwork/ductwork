@@ -146,6 +146,13 @@ module Ductwork
           Ductwork::Process.report_heartbeat!
         end
         Ductwork.logger.debug(msg: "Reported heartbeat", role: :thread_supervisor)
+      rescue StandardError => e
+        Ductwork.logger.warn(
+          msg: "Reporting heartbeat failed",
+          error_klass: e.class.to_s,
+          error_message: e.message,
+          role: :thread_supervisor
+        )
       end
 
       def reap_process_records

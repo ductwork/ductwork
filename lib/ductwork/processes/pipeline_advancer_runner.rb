@@ -99,6 +99,13 @@ module Ductwork
           Ductwork::Process.report_heartbeat!
         end
         Ductwork.logger.debug(msg: "Reported heartbeat", role: :pipeline_advancer_runner)
+      rescue StandardError => e
+        Ductwork.logger.warn(
+          msg: "Reporting heartbeat failed",
+          error_klass: e.class.to_s,
+          error_message: e.message,
+          role: :pipeline_advancer_runner
+        )
       end
 
       def shutdown!
