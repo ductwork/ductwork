@@ -34,14 +34,13 @@ RSpec.describe "Crash after branch claim before advancement", :no_transaction do
     expect(transition.advancements.sole.completed_at).to be_nil
     expect(branch.reload.claimed_for_advancing_at).to be_present
 
-    post_reap_threshold = Ductwork::Process::REAP_THRESHOLD.from_now + 1.second
+    Ductwork::Process.where(pid:).update_all(last_heartbeat_at: 2.minutes.ago)
+
     advancer = Ductwork::Processes::PipelineAdvancer.new(pipeline_klass)
 
-    travel_to(post_reap_threshold) do
-      Ductwork::Process.reap_all!(:process_supervisor)
-      advancer.start
-      sleep(1)
-    end
+    Ductwork::Process.reap_all!(:process_supervisor)
+    advancer.start
+    sleep(1)
 
     expect(branch.reload.claimed_for_advancing_at).to be_nil
     expect(branch.reload.status).to eq("halted")

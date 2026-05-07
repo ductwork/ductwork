@@ -54,8 +54,10 @@ module Ductwork
     attr_reader :id, :execution, :klass, :process_id
 
     def latest_availability_id
+      sql = Ductwork::DatabaseClock.now_sql("ductwork_availabilities.started_at")
+
       Ductwork::Availability
-        .where("ductwork_availabilities.started_at <= ?", Time.current)
+        .where(sql)
         .where(completed_at: nil, pipeline_klass: klass)
         .order(:started_at)
         .limit(1)

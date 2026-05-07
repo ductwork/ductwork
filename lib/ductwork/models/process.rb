@@ -38,13 +38,14 @@ module Ductwork
 
     def self.reap_all!(role)
       count = 0
+      sql = Ductwork::DatabaseClock.ago_sql("last_heartbeat_at", REAP_THRESHOLD)
 
       Ductwork.logger.debug(
         msg: "Reaping orphaned process records",
         role: role
       )
 
-      where("last_heartbeat_at < ?", REAP_THRESHOLD.ago).find_each do |process|
+      where(sql).find_each do |process|
         process.reap!(role)
         count += 1
       end
@@ -72,6 +73,8 @@ module Ductwork
     end
 
     def reap!(role)
+      sql = Ductwork::DatabaseClock.ago_sql("last_heartbeat_at", REAP_THRESHOLD)
+
       Ductwork.logger.debug(
         msg: "Reaping orphaned process record #{id}",
         id: id,
@@ -79,9 +82,13 @@ module Ductwork
       )
 
       Ductwork::Record.transaction do
-        lock!
+        fresh = Ductwork::Process
+                .where(id:)
+                .where(sql)
+                .lock
+                .exists?
 
-        return if last_heartbeat_at > REAP_THRESHOLD.ago
+        return unless fresh
 
         advancements.where(completed_at: nil).find_each(&:abandon!)
         executions.where(completed_at: nil).find_each(&:crashed!)

@@ -35,22 +35,22 @@ RSpec.describe "Crash during job execution", :no_transaction do
     expect(execution.reload.completed_at).to be_nil
     expect(availability.reload.completed_at).to be_almost_now
 
-    post_reap_threshold = Ductwork::Process::REAP_THRESHOLD.from_now + 1.second
+    # NOTE: simulate time passing because we use db time checks
+    Ductwork::Process.where(pid:).update_all(last_heartbeat_at: 2.minutes.ago)
+
     # NOTE: again, simulating the parent process creating the process record
     # on "boot" post-reaping
-    create(:process, :current, last_heartbeat_at: post_reap_threshold)
+    create(:process, :current)
     worker = Ductwork::Processes::JobWorker.new(pipeline_klass, id)
 
-    travel_to(post_reap_threshold) do
-      Ductwork::Process.reap_all!(:process_supervisor)
-      worker.start
-      sleep(1)
-    end
+    Ductwork::Process.reap_all!(:process_supervisor)
+    worker.start
+    sleep(1)
 
     new_execution = job.executions.last
     expect(job.executions.count).to eq(2)
-    expect(execution.reload.completed_at).to be_within(5.seconds).of(post_reap_threshold)
-    expect(new_execution.completed_at).to be_within(5.seconds).of(post_reap_threshold)
+    expect(execution.reload.completed_at).to be_almost_now
+    expect(new_execution.completed_at).to be_almost_now
 
     worker.stop
     worker.join(2)

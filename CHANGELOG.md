@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: protect against cross-host clock skew with database time comparisons
 - chore: rescue heartbeat errors to prevent killing process
 - fix: duplicate `Ductwork::BranchLink` records when reviving a pipeline
 - fix: prevent possible double execution in `Pipeline#revive!` by only retrying advancing if it was the halt reason, otherwise retry the job

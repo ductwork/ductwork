@@ -39,8 +39,9 @@ module Ductwork
     attr_reader :availability, :execution, :klass, :process_id
 
     def claim_availability
+      sql = Ductwork::DatabaseClock.now_sql("ductwork_availabilities.started_at")
       @availability = Ductwork::Availability
-                      .where("ductwork_availabilities.started_at <= ?", Time.current)
+                      .where(sql)
                       .where(completed_at: nil, pipeline_klass: klass)
                       .order(:started_at)
                       .lock("FOR UPDATE SKIP LOCKED")
