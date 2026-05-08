@@ -19,6 +19,8 @@ module Ductwork
 
     validates :pid, uniqueness: { scope: :machine_identifier }
 
+    scope :top_level, -> { all }
+
     def self.adopt_or_create_current!
       pid = ::Process.pid
       machine_identifier = Ductwork::MachineIdentifier.fetch
@@ -82,13 +84,13 @@ module Ductwork
       )
 
       Ductwork::Record.transaction do
-        fresh = Ductwork::Process
+        stale = Ductwork::Process
                 .where(id:)
                 .where(sql)
                 .lock
                 .exists?
 
-        return unless fresh
+        return unless stale
 
         advancements.where(completed_at: nil).find_each(&:abandon!)
         executions.where(completed_at: nil).find_each(&:crashed!)
@@ -106,6 +108,12 @@ module Ductwork
         id: id,
         role: role
       )
+    end
+
+    def healthy?
+      sql = Ductwork::DatabaseClock.ago_sql("last_heartbeat_at", REAP_THRESHOLD)
+
+      self.class.where(id:).where(sql).none?
     end
   end
 end

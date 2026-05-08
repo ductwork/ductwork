@@ -248,4 +248,18 @@ RSpec.describe Ductwork::Process do
       )
     end
   end
+
+  describe "#healthy?" do
+    it "returns true when the process is healthy" do
+      process = create(:process, last_heartbeat_at: 1.second.ago)
+
+      expect(process).to be_healthy
+    end
+
+    it "returns false when the process is unhealthy" do
+      process = create(:process, last_heartbeat_at: 1.hour.ago)
+
+      expect(process).not_to be_healthy
+    end
+  end
 end

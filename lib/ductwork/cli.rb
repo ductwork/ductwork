@@ -116,12 +116,12 @@ module Ductwork
       OptionParser.new do |op|
         op.banner = "ductwork health [options]"
 
-        op.on("-V", "--verbose", "Prints all the health check data") do
-          health_check_options[:verbose] = true
+        op.on("-p", "--pid PID") do |arg|
+          health_check_options[:pid] = arg.to_i
         end
 
-        op.on("-a", "--all", "Prints health checks for all top-level processes") do
-          health_check_options[:all] = true
+        op.on("-V", "--verbose", "Prints all the health check data") do
+          health_check_options[:verbose] = true
         end
       end
     end
