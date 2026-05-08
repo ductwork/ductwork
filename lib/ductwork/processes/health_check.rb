@@ -14,7 +14,7 @@ module Ductwork
       end
 
       def run
-        exit_code = top_level_processes.reduce(0) do |acc, process|
+        exit_code = supervisor_processes.reduce(0) do |acc, process|
           if process.healthy?
             puts_healthy(process)
             acc
@@ -24,7 +24,7 @@ module Ductwork
           end
         end
 
-        if pid.present? && top_level_processes.none?
+        if pid.present? && supervisor_processes.none?
           puts_dead
           exit_code = 1
         end
@@ -36,8 +36,8 @@ module Ductwork
 
       attr_reader :pid, :machine_identifier, :verbose
 
-      def top_level_processes
-        Ductwork::Process.top_level.then do |relation|
+      def supervisor_processes
+        Ductwork::Process.supervisors.then do |relation|
           if pid.present?
             relation.where(pid:, machine_identifier:)
           else

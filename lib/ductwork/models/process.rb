@@ -19,7 +19,7 @@ module Ductwork
 
     validates :pid, uniqueness: { scope: :machine_identifier }
 
-    scope :top_level, -> { all }
+    scope :supervisors, -> { all }
 
     def self.adopt_or_create_current!
       pid = ::Process.pid
