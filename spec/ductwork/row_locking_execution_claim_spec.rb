@@ -2,7 +2,7 @@
 
 RSpec.describe Ductwork::RowLockingExecutionClaim do
   describe "#latest" do
-    subject(:claim) { described_class.new(klass) }
+    subject(:claim) { described_class.new(klass, process.id) }
 
     let(:process) { create(:process, :current) }
 

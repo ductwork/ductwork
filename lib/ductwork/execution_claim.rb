@@ -2,8 +2,9 @@
 
 module Ductwork
   class ExecutionClaim
-    def initialize(klass)
+    def initialize(klass, owner_process_id)
       @klass = klass
+      @owner_process_id = owner_process_id
       @adapter = Ductwork::Record.connection.adapter_name.downcase
     end
 
@@ -14,12 +15,12 @@ module Ductwork
                 OptimisticLockingExecutionClaim
               end
 
-      claim.new(klass).latest
+      claim.new(klass, owner_process_id).latest
     end
 
     private
 
-    attr_reader :klass, :adapter
+    attr_reader :klass, :owner_process_id, :adapter
 
     def supports_row_locking?
       adapter.match?(/postgresql/i) ||

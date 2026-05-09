@@ -2,11 +2,11 @@
 
 module Ductwork
   class RowLockingExecutionClaim
-    def initialize(klass)
+    def initialize(klass, owner_process_id)
       @availability = nil
       @execution = nil
       @klass = klass
-      @process_id = Ductwork::Process.current.id
+      @process_id = owner_process_id
     end
 
     def latest

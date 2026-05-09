@@ -66,7 +66,7 @@ module Ductwork
 
             @execution = Ductwork.wrap_with_app_executor do
               owner_process_id = Ductwork::Process.current.id
-              Ductwork::ExecutionClaim.new(pipeline).latest
+              Ductwork::ExecutionClaim.new(pipeline, owner_process_id).latest
             end
 
             if execution.present?

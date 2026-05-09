@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: do not re-query current process ID in execution claiming
 - fix: use database clock in process supervisor to avoid cross-host clock drift
 - feat: add CLI health check command that reports supervisor processes health
 - fix: protect against cross-host clock skew with database time comparisons

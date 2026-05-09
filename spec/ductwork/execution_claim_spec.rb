@@ -3,6 +3,7 @@
 RSpec.describe Ductwork::ExecutionClaim do
   describe "latest" do
     let(:klass) { "MyPipeline" }
+    let(:owner_process_id) { SecureRandom.uuid }
 
     context "when the database adapter is postgresql" do
       before do
@@ -13,9 +14,12 @@ RSpec.describe Ductwork::ExecutionClaim do
         claim = instance_double(Ductwork::RowLockingExecutionClaim, latest: nil)
         allow(Ductwork::RowLockingExecutionClaim).to receive(:new).and_return(claim)
 
-        described_class.new(klass).latest
+        described_class.new(klass, owner_process_id).latest
 
-        expect(Ductwork::RowLockingExecutionClaim).to have_received(:new).with(klass)
+        expect(Ductwork::RowLockingExecutionClaim).to have_received(:new).with(
+          klass,
+          owner_process_id
+        )
         expect(claim).to have_received(:latest)
       end
     end
@@ -29,9 +33,12 @@ RSpec.describe Ductwork::ExecutionClaim do
         claim = instance_double(Ductwork::RowLockingExecutionClaim, latest: nil)
         allow(Ductwork::RowLockingExecutionClaim).to receive(:new).and_return(claim)
 
-        described_class.new(klass).latest
+        described_class.new(klass, owner_process_id).latest
 
-        expect(Ductwork::RowLockingExecutionClaim).to have_received(:new).with(klass)
+        expect(Ductwork::RowLockingExecutionClaim).to have_received(:new).with(
+          klass,
+          owner_process_id
+        )
         expect(claim).to have_received(:latest)
       end
     end
@@ -45,9 +52,12 @@ RSpec.describe Ductwork::ExecutionClaim do
         claim = instance_double(Ductwork::RowLockingExecutionClaim, latest: nil)
         allow(Ductwork::RowLockingExecutionClaim).to receive(:new).and_return(claim)
 
-        described_class.new(klass).latest
+        described_class.new(klass, owner_process_id).latest
 
-        expect(Ductwork::RowLockingExecutionClaim).to have_received(:new).with(klass)
+        expect(Ductwork::RowLockingExecutionClaim).to have_received(:new).with(
+          klass,
+          owner_process_id
+        )
         expect(claim).to have_received(:latest)
       end
     end
@@ -61,9 +71,12 @@ RSpec.describe Ductwork::ExecutionClaim do
         claim = instance_double(Ductwork::OptimisticLockingExecutionClaim, latest: nil)
         allow(Ductwork::OptimisticLockingExecutionClaim).to receive(:new).and_return(claim)
 
-        described_class.new(klass).latest
+        described_class.new(klass, owner_process_id).latest
 
-        expect(Ductwork::OptimisticLockingExecutionClaim).to have_received(:new).with(klass)
+        expect(Ductwork::OptimisticLockingExecutionClaim).to have_received(:new).with(
+          klass,
+          owner_process_id
+        )
         expect(claim).to have_received(:latest)
       end
     end
@@ -77,9 +90,12 @@ RSpec.describe Ductwork::ExecutionClaim do
         claim = instance_double(Ductwork::OptimisticLockingExecutionClaim, latest: nil)
         allow(Ductwork::OptimisticLockingExecutionClaim).to receive(:new).and_return(claim)
 
-        described_class.new(klass).latest
+        described_class.new(klass, owner_process_id).latest
 
-        expect(Ductwork::OptimisticLockingExecutionClaim).to have_received(:new).with(klass)
+        expect(Ductwork::OptimisticLockingExecutionClaim).to have_received(:new).with(
+          klass,
+          owner_process_id
+        )
         expect(claim).to have_received(:latest)
       end
     end
@@ -93,9 +109,12 @@ RSpec.describe Ductwork::ExecutionClaim do
         claim = instance_double(Ductwork::OptimisticLockingExecutionClaim, latest: nil)
         allow(Ductwork::OptimisticLockingExecutionClaim).to receive(:new).and_return(claim)
 
-        described_class.new(klass).latest
+        described_class.new(klass, owner_process_id).latest
 
-        expect(Ductwork::OptimisticLockingExecutionClaim).to have_received(:new).with(klass)
+        expect(Ductwork::OptimisticLockingExecutionClaim).to have_received(:new).with(
+          klass,
+          owner_process_id
+        )
         expect(claim).to have_received(:latest)
       end
     end
