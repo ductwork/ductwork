@@ -49,7 +49,7 @@ module Ductwork
 
       def adopt_or_create_process!
         Ductwork.wrap_with_app_executor do
-          Ductwork::Process.adopt_or_create_current!
+          Ductwork::Process.adopt_or_create_current!(:job_worker)
         end
       end
 
@@ -102,7 +102,7 @@ module Ductwork
       def report_heartbeat!
         Ductwork.logger.debug(msg: "Reporting heartbeat", role: :job_worker_runner)
         Ductwork.wrap_with_app_executor do
-          Ductwork::Process.report_heartbeat!
+          Ductwork::Process.report_heartbeat!(:job_worker)
         end
         Ductwork.logger.debug(msg: "Reported heartbeat", role: :job_worker_runner)
       rescue StandardError => e

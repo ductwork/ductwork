@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- feat: add CLI health check command that reports supervisor processes health
 - fix: protect against cross-host clock skew with database time comparisons
 - chore: rescue heartbeat errors to prevent killing process
 - fix: duplicate `Ductwork::BranchLink` records when reviving a pipeline

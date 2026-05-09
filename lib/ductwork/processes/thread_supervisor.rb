@@ -136,14 +136,14 @@ module Ductwork
 
       def adopt_or_create_process!
         Ductwork.wrap_with_app_executor do
-          Ductwork::Process.adopt_or_create_current!
+          Ductwork::Process.adopt_or_create_current!(:supervisor)
         end
       end
 
       def report_heartbeat!
         Ductwork.logger.debug(msg: "Reporting heartbeat", role: :thread_supervisor)
         Ductwork.wrap_with_app_executor do
-          Ductwork::Process.report_heartbeat!
+          Ductwork::Process.report_heartbeat!(:supervisor)
         end
         Ductwork.logger.debug(msg: "Reported heartbeat", role: :thread_supervisor)
       rescue StandardError => e

@@ -7,11 +7,13 @@ RSpec.describe Ductwork::Process do
   rescue Errno::ENOENT
     Socket.gethostname
   end
+  let(:role) { described_class.roles.keys.sample }
   let(:other_process) do
     machine_identifier = "foobar"
 
     described_class.create!(
       pid:,
+      role:,
       machine_identifier:,
       last_heartbeat_at:
     )
@@ -21,7 +23,7 @@ RSpec.describe Ductwork::Process do
     let(:last_heartbeat_at) { Time.current }
 
     it "is invalid if pid and machine identifier are not unique" do
-      described_class.create!(pid:, machine_identifier:, last_heartbeat_at:)
+      described_class.create!(pid:, role:, machine_identifier:, last_heartbeat_at:)
 
       process = described_class.new(pid:, machine_identifier:, last_heartbeat_at:)
 
@@ -43,7 +45,7 @@ RSpec.describe Ductwork::Process do
       record = nil
 
       expect do
-        record = described_class.adopt_or_create_current!
+        record = described_class.adopt_or_create_current!(:supervisor)
       end.to change(described_class, :count).by(1)
 
       expect(record.pid).to eq(::Process.pid)
@@ -54,7 +56,7 @@ RSpec.describe Ductwork::Process do
     it "returns an existing process record" do
       existing_record = create(:process, :current)
 
-      record = described_class.adopt_or_create_current!
+      record = described_class.adopt_or_create_current!(:supervisor)
 
       expect(record).to eq(existing_record)
     end
@@ -63,7 +65,7 @@ RSpec.describe Ductwork::Process do
       existing_record = create(:process, :current, last_heartbeat_at: 5.seconds.ago)
 
       expect do
-        described_class.adopt_or_create_current!
+        described_class.adopt_or_create_current!(:supervisor)
       end.to change { existing_record.reload.last_heartbeat_at }.to(be_almost_now)
     end
   end
@@ -74,6 +76,7 @@ RSpec.describe Ductwork::Process do
     it "returns the process by PID and machine identifier" do
       process = described_class.create!(
         pid:,
+        role:,
         machine_identifier:,
         last_heartbeat_at:
       )
@@ -149,28 +152,31 @@ RSpec.describe Ductwork::Process do
       last_heartbeat_at = 1.day.ago
       process = described_class.create!(
         pid:,
+        role:,
         machine_identifier:,
         last_heartbeat_at:
       )
 
       expect do
-        described_class.report_heartbeat!
+        described_class.report_heartbeat!(:supervisor)
       end.to change { process.reload.last_heartbeat_at }.to(be_almost_now)
     end
 
     it "queries the record by pid and machine identifier" do
       described_class.create!(
         pid: pid,
+        role: role,
         machine_identifier: "foobar",
         last_heartbeat_at: 1.day.ago
       )
       process = described_class.create!(
         pid: pid,
+        role: role,
         machine_identifier: machine_identifier,
         last_heartbeat_at: 1.day.ago
       )
 
-      described_class.report_heartbeat!
+      described_class.report_heartbeat!(:supervisor)
 
       expect(process.reload.last_heartbeat_at).to be_almost_now
     end
@@ -179,7 +185,7 @@ RSpec.describe Ductwork::Process do
       allow(Ductwork.logger).to receive(:warn).and_call_original
 
       expect do
-        described_class.report_heartbeat!
+        described_class.report_heartbeat!(:supervisor)
       end.to change(described_class, :count).by(1)
 
       expect(Ductwork.logger).to have_received(:warn).with(

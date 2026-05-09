@@ -201,7 +201,7 @@ RSpec.describe Ductwork::Pipeline, "#revive!" do
     end
 
     it "produces a branch the advancer can claim" do
-      Ductwork::Process.adopt_or_create_current!
+      Ductwork::Process.adopt_or_create_current!(:pipeline_advancer)
       pipeline.revive!
 
       expected = pipeline.current_run.branches.sole

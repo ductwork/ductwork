@@ -87,6 +87,7 @@ FactoryBot.define do
   factory :process, class: "Ductwork::Process" do
     sequence(:pid, &:itself)
     sequence(:machine_identifier) { |n| "Machine#{n}" }
+    role { Ductwork::Process.roles.keys.sample }
     last_heartbeat_at { Time.current }
 
     trait :current do

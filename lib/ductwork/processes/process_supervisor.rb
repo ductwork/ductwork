@@ -29,6 +29,8 @@ module Ductwork
       end
 
       def run
+        adopt_or_create_process!
+
         Ductwork.logger.debug(
           msg: "Entering main work loop",
           role: :process_supervisor,
@@ -60,6 +62,12 @@ module Ductwork
       private
 
       attr_reader :running_context
+
+      def adopt_or_create_process!
+        Ductwork.wrap_with_app_executor do
+          Ductwork::Process.adopt_or_create_current!(:supervisor)
+        end
+      end
 
       def check_workers
         Ductwork.logger.debug(

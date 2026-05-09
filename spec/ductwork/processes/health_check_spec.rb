@@ -3,8 +3,8 @@
 RSpec.describe Ductwork::Processes::HealthCheck do
   describe "#run" do
     context "when given no pid option" do
-      let(:process1) { create(:process, last_heartbeat_at: 1.hour.ago) }
-      let(:process2) { create(:process, last_heartbeat_at: 1.second.ago) }
+      let(:process1) { create(:process, :supervisor, last_heartbeat_at: 1.hour.ago) }
+      let(:process2) { create(:process, :supervisor, last_heartbeat_at: 1.second.ago) }
 
       it "reports the health of all top-level parent processes simply" do
         process1
@@ -64,7 +64,9 @@ RSpec.describe Ductwork::Processes::HealthCheck do
     context "when the process is healthy" do
       subject(:health_check) { described_class.new(pid: process.pid) }
 
-      let(:process) { create(:process, :current, last_heartbeat_at: 1.second.ago) }
+      let(:process) do
+        create(:process, :current, :supervisor, last_heartbeat_at: 1.second.ago)
+      end
 
       it "reports healthy" do
         expect do
@@ -102,7 +104,9 @@ RSpec.describe Ductwork::Processes::HealthCheck do
     context "when the process is not healthy" do
       subject(:health_check) { described_class.new(pid: process.pid) }
 
-      let(:process) { create(:process, :current, last_heartbeat_at: 1.hour.ago) }
+      let(:process) do
+        create(:process, :current, :supervisor, last_heartbeat_at: 1.hour.ago)
+      end
 
       it "reports unhealthy" do
         expect do

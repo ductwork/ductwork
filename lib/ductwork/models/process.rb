@@ -19,16 +19,19 @@ module Ductwork
 
     validates :pid, uniqueness: { scope: :machine_identifier }
 
-    scope :supervisors, -> { all }
+    enum :role,
+         supervisor: "supervisor",
+         pipeline_advancer: "pipeline_advancer",
+         job_worker: "job_worker"
 
-    def self.adopt_or_create_current!
+    def self.adopt_or_create_current!(role)
       pid = ::Process.pid
       machine_identifier = Ductwork::MachineIdentifier.fetch
       last_heartbeat_at = Time.current
 
       Ductwork::Process
         .find_or_initialize_by(pid:, machine_identifier:)
-        .tap { |process| process.update!(last_heartbeat_at:) }
+        .tap { |process| process.update!(last_heartbeat_at:, role:) }
     end
 
     def self.current
@@ -59,7 +62,7 @@ module Ductwork
       )
     end
 
-    def self.report_heartbeat!
+    def self.report_heartbeat!(role)
       process = current
 
       if process.present?
@@ -70,7 +73,7 @@ module Ductwork
           msg: "Process record missing, re-adopting (likely reaped after host suspend)",
           pid: ::Process.pid
         )
-        adopt_or_create_current!
+        adopt_or_create_current!(role)
       end
     end
 

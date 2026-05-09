@@ -5,6 +5,7 @@ class CreateDuctworkProcesses < Ductwork::Migration
     create_ductwork_table :ductwork_processes do |table|
       table.integer :pid, null: false
       table.string :machine_identifier, null: false
+      table.string :role, null: false
       table.timestamp :last_heartbeat_at, null: false
       table.timestamps null: false
     end

@@ -37,7 +37,7 @@ module Ductwork
       attr_reader :pid, :machine_identifier, :verbose
 
       def supervisor_processes
-        Ductwork::Process.supervisors.then do |relation|
+        Ductwork::Process.supervisor.then do |relation|
           if pid.present?
             relation.where(pid:, machine_identifier:)
           else
