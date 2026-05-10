@@ -13,6 +13,8 @@ module Ductwork
 
     FAILED_EXECUTION_TIMEOUT = 10.seconds
 
+    class CommitFailed < StandardError; end
+
     def call(pipeline, owner_process_id)
       Ductwork.logger.debug(
         msg: "Executing job",
@@ -48,7 +50,9 @@ module Ductwork
                        .where(id: id, completed_at: nil, process_id: owner_process_id)
                        .update_all(completed_at:)
 
-        return if rows_updated.zero?
+        if rows_updated.zero?
+          raise Ductwork::Execution::CommitFailed, "Reaper clobbered claimed job execution"
+        end
 
         job.update!(output_payload: payload, completed_at: Time.current)
         attempt.update!(completed_at: Time.current)
@@ -94,7 +98,9 @@ module Ductwork
                        .where(id: id, completed_at: nil, process_id: owner_process_id)
                        .update_all(completed_at:)
 
-        return if rows_updated.zero?
+        if rows_updated.zero?
+          raise Ductwork::Execution::CommitFailed, "Reaper clobbered claimed job execution"
+        end
 
         attempt.update!(completed_at: Time.current)
         create_result!(

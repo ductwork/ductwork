@@ -85,6 +85,18 @@ module Ductwork
               )
               sleep(polling_timeout)
             end
+          rescue Ductwork::Execution::CommitFailed => e
+            Ductwork.logger.error(
+              msg: "Execution commit failed",
+              error_klass: e.class.name,
+              error_message: e.message,
+              job_id: execution&.job_id,
+              job_klass: execution&.job&.klass,
+              role: :job_worker,
+              pipeline: pipeline
+            )
+
+            @execution = nil
           rescue StandardError => e
             if execution.present?
               Ductwork.wrap_with_app_executor do

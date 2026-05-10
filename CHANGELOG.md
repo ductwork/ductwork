@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: raise `Execution::CommitFailed` from `#succeeded!`/`#errored!` instead of silently dropping the result when the reaper has clobbered an in-flight execution
 - fix: do not re-query current process ID in execution claiming
 - fix: use database clock in process supervisor to avoid cross-host clock drift
 - feat: add CLI health check command that reports supervisor processes health

@@ -72,31 +72,41 @@ RSpec.describe Ductwork::Execution do
       expect(execution.result).to be_success
     end
 
-    it "no-ops when the execution is already completed" do
+    it "raises when the execution is already completed" do
       execution.succeeded!(output_payload, process.id)
 
       expect do
         execution.succeeded!("another_output_payload", process.id)
-      end.to not_change { execution.job.output_payload }.from(serialized_payload)
+      end.to raise_error(
+        described_class::CommitFailed,
+        "Reaper clobbered claimed job execution"
+      )
+        .and not_change { execution.job.output_payload }.from(serialized_payload)
         .and not_change(Ductwork::Result, :count)
     end
 
-    it "no-ops when the execution is owned by another process" do
+    it "raises when the execution is owned by another process" do
       other_process = create(:process)
 
       expect do
         execution.succeeded!(output_payload, other_process.id)
-      end.to not_change { execution.reload.completed_at }.from(nil)
-        .and not_change(Ductwork::Result, :count)
+      end.to raise_error(
+        described_class::CommitFailed,
+        "Reaper clobbered claimed job execution"
+      )
     end
 
     # NOTE: this case is when the reaper cleans up an old process record
-    it "no-ops when the execution has been disowned" do
+    it "raises when the execution has been disowned" do
       execution.update!(process_id: nil)
 
       expect do
         execution.succeeded!(output_payload, process.id)
-      end.to not_change { execution.reload.completed_at }.from(nil)
+      end.to raise_error(
+        described_class::CommitFailed,
+        "Reaper clobbered claimed job execution"
+      )
+        .and not_change { execution.reload.completed_at }.from(nil)
         .and not_change(Ductwork::Result, :count)
     end
   end
@@ -141,31 +151,43 @@ RSpec.describe Ductwork::Execution do
       expect(result.error_backtrace).to be_present
     end
 
-    it "no-ops when the execution is already completed" do
+    it "raises when the execution is already completed" do
       execution.errored!(error, process.id)
 
       expect do
         execution.errored!(error, process.id)
-      end.to not_change(described_class, :count)
+      end.to raise_error(
+        described_class::CommitFailed,
+        "Reaper clobbered claimed job execution"
+      )
+        .and not_change(described_class, :count)
         .and not_change(Ductwork::Availability, :count)
     end
 
-    it "no-ops when the execution is owned by another process" do
+    it "raises when the execution is owned by another process" do
       other_process = create(:process)
 
       expect do
         execution.errored!(error, other_process.id)
-      end.to not_change { execution.reload.completed_at }.from(nil)
+      end.to raise_error(
+        described_class::CommitFailed,
+        "Reaper clobbered claimed job execution"
+      )
+        .and not_change { execution.reload.completed_at }.from(nil)
         .and not_change(Ductwork::Result, :count)
     end
 
     # NOTE: this case is when the reaper cleans up an old process record
-    it "no-ops when the execution has been disowned" do
+    it "raises when the execution has been disowned" do
       execution.update!(process_id: nil)
 
       expect do
         execution.errored!(error, process.id)
-      end.to not_change { execution.reload.completed_at }.from(nil)
+      end.to raise_error(
+        described_class::CommitFailed,
+        "Reaper clobbered claimed job execution"
+      )
+        .and not_change { execution.reload.completed_at }.from(nil)
         .and not_change(Ductwork::Result, :count)
     end
 
