@@ -12,4 +12,6 @@ Check for:
 1. **Stuck pipelines**: claims without transition records, advancements without completion, missing reaper coverage
 2. **Lost data**: writes after observable side effects, missing "write before you act" ordering, places where partial failure is not handled
 3. **Double execution**: missing fencing on claim token or process ID, missing idempotency on transitions, gaps in two-phase commit
-4. **Reaper clobberins**: heartbeat updates racing reaper swwps, stale claim token assumptions, missing recoery count increments
+4. **Reaper clobbering**: heartbeat updates racing reaper swwps, stale claim token assumptions, missing recoery count increments
+
+For each finding: file:line, severity, why it matters, suggested fix. Do not modify files.
