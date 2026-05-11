@@ -41,6 +41,8 @@ module Ductwork
       instance
     end
 
+    alias_attribute :idempotency_key, :id
+
     def run_id
       @run_id || (@attributes && super)
     end
