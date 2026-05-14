@@ -19,7 +19,7 @@ jobs:
           - postgresql
           - sqlite
         ruby:
-          - '4.0.2'
+          - '4.0.4'
           - '3.4.9'
           - '3.3.11'
 
