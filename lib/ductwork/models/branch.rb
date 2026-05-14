@@ -43,6 +43,7 @@ module Ductwork
          condition_unmatched: "condition_unmatched",
          transition_invalid: "transition_invalid"
 
+    class StaleClaimError < StandardError; end
     class TransitionError < StandardError; end
 
     def self.with_latest_claimed(pipeline_klass)
@@ -56,6 +57,18 @@ module Ductwork
       end
     ensure
       branch&.release!(branch_claim.token)
+    end
+
+    def with_claim_fence!(&block)
+      Ductwork::Record.transaction do
+        current_token = self.class.where(id:).lock.pick(:claim_token)
+
+        if current_token != claim_token
+          raise StaleClaimError, "Branch claim diverged, claim tokens do not match"
+        end
+
+        block.call
+      end
     end
 
     def advance!(transition, advancement)
@@ -117,13 +130,21 @@ module Ductwork
     private
 
     def halt_branch_and_resolve_run!(transition, advancement, halt_reason)
-      Ductwork::Record.transaction do
+      with_claim_fence! do
         now = Time.current
         advancement.update!(completed_at: now)
         transition.update!(completed_at: now)
         halt!(halt_reason)
         run.resolve_terminal_state!
       end
+    rescue StaleClaimError => e
+      Ductwork.logger.info(
+        msg: "Branch claim no longer held",
+        branch_id: id,
+        pipeline_klass: pipeline_klass,
+        error_klass: e.class.to_s,
+        error_message: e.message
+      )
     rescue StandardError => e
       Ductwork::Record.transaction do
         advancement&.update!(
@@ -166,6 +187,14 @@ module Ductwork
         raise Ductwork::Branch::TransitionError,
               "Invalid transition type `#{edge[:type]}`"
       end
+    rescue StaleClaimError => e
+      Ductwork.logger.info(
+        msg: "Branch claim no longer held",
+        branch_id: id,
+        pipeline_klass: pipeline_klass,
+        error_klass: e.class.to_s,
+        error_message: e.message
+      )
     rescue StandardError => e
       Ductwork::Record.transaction do # rubocop:todo Metrics/BlockLength
         if e.is_a?(Ductwork::Branch::TransitionError) || too_many_failed_attempts?
@@ -218,7 +247,7 @@ module Ductwork
     end
 
     def complete_branch_and_pipeline(transition, advancement)
-      Ductwork::Record.transaction do
+      with_claim_fence! do
         latest_step.update!(status: :completed, completed_at: Time.current)
         complete!
 
@@ -236,7 +265,7 @@ module Ductwork
       klass = run.parsed_definition.dig(:edges, node, :klass)
       started_at = Time.current
 
-      Ductwork::Record.transaction do
+      with_claim_fence! do
         latest_step.update!(status: :completed, completed_at: Time.current)
         # NOTE: we stay on the same branch for sequential `chain`-ing
         next_step = steps.create!(
@@ -259,7 +288,7 @@ module Ductwork
     def collapse_branch(edge, transition, advancement) # rubocop:todo Metrics
       parent_branch_id = parent_junctions.pick(:parent_branch_id)
 
-      Ductwork::Record.transaction do # rubocop:todo Metrics/BlockLength
+      with_claim_fence! do # rubocop:todo Metrics/BlockLength
         # NOTE: lock the parent branch rather than the whole pipeline run
         # because at-most we're only coordinating across child branches of the
         # parent branch
@@ -318,7 +347,7 @@ module Ductwork
     def combine_branch(edge, transition, advancement) # rubocop:todo Metrics
       parent_branch_id = parent_junctions.pick(:parent_branch_id)
 
-      Ductwork::Record.transaction do # rubocop:todo Metrics/BlockLength
+      with_claim_fence! do # rubocop:todo Metrics/BlockLength
         # NOTE: lock the parent branch rather than the whole pipeline run
         # because at-most we're only coordinating across child branches of the
         # parent branch
@@ -379,7 +408,7 @@ module Ductwork
       klass = run.parsed_definition.dig(:edges, node, :klass)
       started_at = Time.current
 
-      Ductwork::Record.transaction do
+      with_claim_fence! do
         latest_step.update!(status: :completed, completed_at: Time.current)
         # NOTE: we stay on the same branch for `converge`-ing
         next_step = steps.create!(
@@ -406,12 +435,12 @@ module Ductwork
       started_at = Time.current
 
       if node.nil?
-        Ductwork::Record.transaction do
+        with_claim_fence! do
           latest_step.update!(status: :completed, completed_at: Time.current)
           halt_branch_and_resolve_run!(transition, advancement, "condition_unmatched")
         end
       else
-        Ductwork::Record.transaction do
+        with_claim_fence! do
           latest_step.update!(status: :completed, completed_at: Time.current)
           next_step = steps.create!(
             run: run,
@@ -443,12 +472,12 @@ module Ductwork
       end
 
       if too_many
-        Ductwork::Record.transaction do
+        with_claim_fence! do
           latest_step.update!(status: :completed, completed_at: Time.current)
           halt_branch_and_resolve_run!(transition, advancement, "max_fanout_exceeded")
         end
       else
-        Ductwork::Record.transaction do
+        with_claim_fence! do
           latest_step.update!(status: :completed, completed_at: Time.current)
           complete!
           edge[:to].each do |to|
@@ -488,7 +517,7 @@ module Ductwork
       )
 
       if max_depth != -1 && return_value.count > max_depth
-        Ductwork::Record.transaction do
+        with_claim_fence! do
           latest_step.update!(status: :completed, completed_at: Time.current)
           halt_branch_and_resolve_run!(transition, advancement, "max_fanout_exceeded")
         end
@@ -504,7 +533,7 @@ module Ductwork
       next_klass = run.parsed_definition.dig(:edges, node, :klass)
       now = Time.current
 
-      Ductwork::Record.transaction do # rubocop:todo Metrics/BlockLength
+      with_claim_fence! do # rubocop:todo Metrics/BlockLength
         latest_step.update!(status: :completed, completed_at: Time.current)
         complete!
 
