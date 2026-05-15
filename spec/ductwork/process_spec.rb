@@ -68,6 +68,20 @@ RSpec.describe Ductwork::Process do
         described_class.adopt_or_create_current!(:supervisor)
       end.to change { existing_record.reload.last_heartbeat_at }.to(be_almost_now)
     end
+
+    context "when the existing process record is unhealthy" do
+      let(:process) { create(:process, :current, last_heartbeat_at: 2.minutes.ago) }
+
+      before do
+        process
+      end
+
+      it "reaps the existing record" do
+        described_class.adopt_or_create_current!(:supervisor)
+
+        expect(described_class.exists?(process.id)).to be(false)
+      end
+    end
   end
 
   describe ".current" do

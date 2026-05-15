@@ -28,6 +28,11 @@ module Ductwork
       pid = ::Process.pid
       machine_identifier = Ductwork::MachineIdentifier.fetch
       last_heartbeat_at = Time.current
+      existing = Ductwork::Process.find_by(pid:, machine_identifier:)
+
+      if existing.present? && !existing.healthy?
+        existing.reap!(role)
+      end
 
       Ductwork::Process
         .find_or_initialize_by(pid:, machine_identifier:)
