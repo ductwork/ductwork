@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: fence `Execution#crashed!` with process ID so a reclaimed execution isn't clobbered by the reaper
 - fix: check claim tokens before advancing branch
 - feat: create in-scope `idempotency_key` attribute for the `Step` model
 - fix: raise `Execution::CommitFailed` from `#succeeded!`/`#errored!` instead of silently dropping the result when the reaper has clobbered an in-flight execution

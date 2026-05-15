@@ -57,4 +57,28 @@ RSpec.describe Ductwork::Execution, "#crashed!" do
       .and not_change(Ductwork::Availability, :count)
       .and not_change(Ductwork::Result, :count)
   end
+
+  # NOTE: the reaper loads an execution owned by one process and later calls
+  # crashed! on that now-stale in-memory copy. If another process atomically
+  # re-claims the same row in the meantime (new process_id, completed_at still
+  # nil), the process_id fence must stop crashed! from clobbering that fresh
+  # claim and spawning a duplicate replacement execution/availability/result.
+  it "no-ops when the execution was reclaimed by another process" do
+    owning_process = create(:process)
+    execution.update!(process: owning_process)
+
+    reclaiming_process = create(:process)
+    described_class
+      .where(id: execution.id)
+      .update_all(process_id: reclaiming_process.id)
+
+    expect do
+      execution.crashed!
+    end.to not_change(described_class, :count)
+      .and not_change(Ductwork::Availability, :count)
+      .and not_change(Ductwork::Result, :count)
+
+    expect(execution.reload.completed_at).to be_nil
+    expect(execution.process_id).to eq(reclaiming_process.id)
+  end
 end

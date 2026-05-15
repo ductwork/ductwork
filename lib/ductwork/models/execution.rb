@@ -64,7 +64,7 @@ module Ductwork
     def crashed!
       Ductwork::Record.transaction do
         rows_updated = Ductwork::Execution
-                       .where(id: id, completed_at: nil)
+                       .where(id: id, process_id: process_id, completed_at: nil)
                        .update_all(completed_at: Time.current)
 
         return if rows_updated.zero?
