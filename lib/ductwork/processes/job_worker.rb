@@ -113,6 +113,14 @@ module Ductwork
               role: :job_worker,
               pipeline: pipeline
             )
+          ensure
+            if execution.present? && execution.reload.completed_at.nil?
+              Ductwork.wrap_with_app_executor do
+                execution.crashed!
+              rescue StandardError
+                nil
+              end
+            end
 
             @execution = nil
           end
