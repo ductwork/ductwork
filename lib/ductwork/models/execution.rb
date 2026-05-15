@@ -37,6 +37,16 @@ module Ductwork
         return
       end
 
+      # AT-LEAST-ONCE CONTRACT: `instance.execute` has already run and any
+      # side effects it performed are now durable. The commit below can still
+      # fail (CommitFailed) if the reaper clobbered this claim, in which case
+      # `crashed!` creates a fresh availability and the job runs AGAIN.
+      # Ductwork guarantees at-least-once, never exactly-once, execution for
+      # the forking worker model: a job body may be re-run after a successful
+      # side effect. Jobs with non-idempotent effects MUST guard them at the
+      # application layer (use `Step#idempotency_key`). The reuse window is
+      # widened by transient stale claims; narrowing that is a separate fix,
+      # but it cannot eliminate this contract.
       succeeded!(output_payload, owner_process_id)
       log_job_executed(pipeline, "succeeded")
     end
