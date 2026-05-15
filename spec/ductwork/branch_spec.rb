@@ -107,12 +107,22 @@ RSpec.describe Ductwork::Branch do
     end
 
     it "does not yield if there is no branch to claim" do
-      claim = instance_double(Ductwork::BranchClaim, latest: nil)
+      claim = instance_double(Ductwork::BranchClaim, latest: nil, advancement: nil)
       allow(Ductwork::BranchClaim).to receive(:new).and_return(claim)
 
       expect do |block|
         described_class.with_latest_claimed(pipeline_klass, &block)
       end.not_to yield_control
+    end
+
+    it "cleans up the advancement if the thread crashes" do
+      expect do
+        described_class.with_latest_claimed(pipeline_klass) {}
+      end.to change(advancement, :completed_at).from(nil).to(be_almost_now)
+        .and change(advancement, :error_klass).to("Ductwork::ThreadCrash")
+        .and change(advancement, :error_message).to(
+          "Advancement was abandoned from a thread crash"
+        )
     end
 
     it "releases the claim on the branch" do

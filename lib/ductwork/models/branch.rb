@@ -56,6 +56,16 @@ module Ductwork
         yield branch, branch_claim.transition, branch_claim.advancement
       end
     ensure
+      advancement = branch_claim.advancement
+
+      if advancement&.persisted? && advancement.completed_at.nil?
+        advancement.update_columns(
+          completed_at: Time.current,
+          error_klass: "Ductwork::ThreadCrash",
+          error_message: "Advancement was abandoned from a thread crash"
+        )
+      end
+
       branch&.release!(branch_claim.token)
     end
 

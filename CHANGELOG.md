@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: abandon advancements if thread crashes without process crashing
 - fix: prevent OS-level PID reuse from adopting stale `Ductwork::Process` record
 - fix: fence `Execution#crashed!` with process ID so a reclaimed execution isn't clobbered by the reaper
 - fix: check claim tokens before advancing branch
