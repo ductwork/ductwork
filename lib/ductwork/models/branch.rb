@@ -59,11 +59,7 @@ module Ductwork
       advancement = branch_claim.advancement
 
       if advancement&.persisted? && advancement.completed_at.nil?
-        advancement.update_columns(
-          completed_at: Time.current,
-          error_klass: "Ductwork::ThreadCrash",
-          error_message: "Advancement was abandoned from a thread crash"
-        )
+        advancement.thread_crashed!
       end
 
       branch&.release!(branch_claim.token)

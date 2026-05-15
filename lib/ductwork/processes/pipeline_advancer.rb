@@ -94,11 +94,7 @@ module Ductwork
                         &.advancements
                         &.find_by(completed_at: nil)
 
-          advancement&.update_columns(
-            completed_at: Time.current,
-            error_klass: "Ductwork::ThreadCrash",
-            error_message: "Advancement abandoned by supervisor on thread restart"
-          )
+          advancement&.thread_crashed!
           branch.reload.release!(branch.claim_token)
         end
       ensure

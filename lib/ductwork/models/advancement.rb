@@ -22,5 +22,13 @@ module Ductwork
         transition.branch.release!
       end
     end
+
+    def thread_crashed!
+      update_columns(
+        completed_at: Time.current,
+        error_klass: "Ductwork::ThreadCrash",
+        error_message: "Advancement abandoned from a thread crash"
+      )
+    end
   end
 end

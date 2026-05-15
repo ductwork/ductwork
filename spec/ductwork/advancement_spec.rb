@@ -57,4 +57,21 @@ RSpec.describe Ductwork::Advancement do
         .and change(branch, :status).to("in_progress")
     end
   end
+
+  describe "#thread_crashed!" do
+    subject(:advancement) { described_class.create!(transition:, started_at:) }
+
+    let(:started_at) { Time.current }
+    let(:transition) { create(:transition) }
+
+    it "completes and sets thread crash error metadata" do
+      expect do
+        advancement.thread_crashed!
+      end.to change(advancement, :completed_at).from(nil).to(be_almost_now)
+        .and change(advancement, :error_klass).to("Ductwork::ThreadCrash")
+        .and change(advancement, :error_message).to(
+          "Advancement abandoned from a thread crash"
+        )
+    end
+  end
 end

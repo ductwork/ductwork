@@ -121,7 +121,7 @@ RSpec.describe Ductwork::Branch do
       end.to change(advancement, :completed_at).from(nil).to(be_almost_now)
         .and change(advancement, :error_klass).to("Ductwork::ThreadCrash")
         .and change(advancement, :error_message).to(
-          "Advancement was abandoned from a thread crash"
+          "Advancement abandoned from a thread crash"
         )
     end
 

@@ -55,7 +55,7 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
         .and change { advancement.reload.completed_at }.to(be_almost_now)
         .and change(advancement, :error_klass).to("Ductwork::ThreadCrash")
         .and change(advancement, :error_message).to(
-          "Advancement abandoned by supervisor on thread restart"
+          "Advancement abandoned from a thread crash"
         )
       expect(pipeline_advancer.branch).to be_nil
 
