@@ -100,7 +100,7 @@ module Ductwork
 
         return unless stale
 
-        advancements.where(completed_at: nil).find_each(&:abandon!)
+        advancements.where(completed_at: nil).find_each(&:process_crashed!)
         executions.where(completed_at: nil).find_each(&:crashed!)
         destroy
       end

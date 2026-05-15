@@ -16,7 +16,7 @@ RSpec.describe Ductwork::Advancement do
     end
   end
 
-  describe "#abandon!" do
+  describe "#process_crashed!" do
     subject(:advancement) { described_class.create!(transition:, started_at:) }
 
     let(:started_at) { Time.current }
@@ -29,21 +29,21 @@ RSpec.describe Ductwork::Advancement do
       advancement.update!(completed_at: Time.current)
 
       expect do
-        advancement.abandon!
+        advancement.process_crashed!
       end.to not_change(advancement, :completed_at)
     end
 
     it "is idempotent" do
-      advancement.abandon!
+      advancement.process_crashed!
 
       expect do
-        advancement.abandon!
+        advancement.process_crashed!
       end.to not_change(advancement, :completed_at)
     end
 
     it "sets error metadata on itself" do
       expect do
-        advancement.abandon!
+        advancement.process_crashed!
       end.to change { advancement.reload.completed_at }.from(nil).to(be_almost_now)
         .and change(advancement, :error_klass).to("Ductwork::ProcessCrash")
         .and change(advancement, :error_message).to("Reaped from orphaned process")
@@ -51,7 +51,7 @@ RSpec.describe Ductwork::Advancement do
 
     it "releases the branch" do
       expect do
-        advancement.abandon!
+        advancement.process_crashed!
       end.to change { branch.reload.claimed_for_advancing_at }.to(nil)
         .and change(branch, :last_advanced_at).to(be_almost_now)
         .and change(branch, :status).to("in_progress")

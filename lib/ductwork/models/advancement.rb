@@ -7,7 +7,7 @@ module Ductwork
 
     validates :started_at, presence: true
 
-    def abandon!
+    def process_crashed!
       Ductwork::Record.transaction do
         rows_updated = self.class
                            .where(id: id, completed_at: nil)
