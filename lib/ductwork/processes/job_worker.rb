@@ -18,7 +18,10 @@ module Ductwork
         @thread.name = name
       end
 
-      alias restart start
+      def restart
+        cleanup_dead_thread!
+        start
+      end
 
       def alive?
         thread&.alive? || false
@@ -135,6 +138,14 @@ module Ductwork
         )
 
         run_hooks_for(:stop)
+      end
+
+      def cleanup_dead_thread!
+        if execution.present? && execution.reload.completed_at.nil?
+          execution.crashed!
+        end
+      ensure
+        @execution = nil
       end
 
       def run_hooks_for(event)

@@ -35,6 +35,34 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
     end
   end
 
+  describe "#restart" do
+    subject(:pipeline_advancer) { described_class.new(klass) }
+
+    let(:branch) { create(:branch, :claimed) }
+    let(:transition) { create(:transition, branch:) }
+    let(:advancement) { create(:advancement, transition:) }
+
+    before do
+      advancement
+    end
+
+    it "cleans up claimed resources from a thread crash" do
+      pipeline_advancer.instance_variable_set(:@branch, branch)
+
+      expect do
+        pipeline_advancer.restart
+      end.to change { branch.reload.claimed_for_advancing_at }.to(nil)
+        .and change { advancement.reload.completed_at }.to(be_almost_now)
+        .and change(advancement, :error_klass).to("Ductwork::ThreadCrash")
+        .and change(advancement, :error_message).to(
+          "Advancement abandoned by supervisor on thread restart"
+        )
+      expect(pipeline_advancer.branch).to be_nil
+
+      shutdown(pipeline_advancer)
+    end
+  end
+
   describe "#alive?" do
     it "returns true when the thread is alive" do
       pipeline_advancer = described_class.new(klass)

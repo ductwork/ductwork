@@ -41,6 +41,24 @@ RSpec.describe Ductwork::Processes::JobWorker do
     end
   end
 
+  describe "#restart" do
+    subject(:job_worker) { described_class.new(pipeline, id) }
+
+    let(:execution) { create(:execution) }
+
+    it "cleans up claimed resources from a thread crash" do
+      allow(execution).to receive(:crashed!)
+      job_worker.instance_variable_set(:@execution, execution)
+
+      job_worker.restart
+
+      expect(execution).to have_received(:crashed!)
+      expect(job_worker.execution).to be_nil
+
+      shutdown(job_worker)
+    end
+  end
+
   describe "#alive?" do
     it "returns true when the thread is alive" do
       job_worker = described_class.new(pipeline, id)

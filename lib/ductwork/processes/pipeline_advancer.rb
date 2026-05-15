@@ -18,7 +18,10 @@ module Ductwork
         @thread.name = name
       end
 
-      alias restart start
+      def restart
+        cleanup_dead_thread!
+        start
+      end
 
       def alive?
         thread&.alive? || false
@@ -79,6 +82,27 @@ module Ductwork
         )
 
         run_hooks_for(:stop)
+      end
+
+      def cleanup_dead_thread!
+        if branch.present?
+          advancement = branch
+                        .transitions
+                        .joins(:advancements)
+                        .where(ductwork_advancements: { completed_at: nil })
+                        .first
+                        &.advancements
+                        &.find_by(completed_at: nil)
+
+          advancement&.update_columns(
+            completed_at: Time.current,
+            error_klass: "Ductwork::ThreadCrash",
+            error_message: "Advancement abandoned by supervisor on thread restart"
+          )
+          branch.reload.release!(branch.claim_token)
+        end
+      ensure
+        @branch = nil
       end
 
       def run_hooks_for(event)

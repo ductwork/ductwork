@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: cleanup claimed resources on worker/advancer restart
 - fix: crash execution if thread crashes without process crashing
 - fix: abandon advancements if thread crashes without process crashing
 - fix: prevent OS-level PID reuse from adopting stale `Ductwork::Process` record
