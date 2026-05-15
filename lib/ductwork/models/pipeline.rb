@@ -125,6 +125,7 @@ module Ductwork
       new_run.status = "in_progress"
 
       Ductwork::Record.transaction do
+        lock!
         new_run.save!
         duplicate_successful_branches_and_steps(new_run, last_run, now)
         duplicate_halted_branches_and_steps(new_run, last_run, now)
