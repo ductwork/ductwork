@@ -17,7 +17,7 @@ Gem::Specification.new do |spec|
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/main/CHANGELOG.md"
   spec.metadata["rubygems_mfa_required"] = "true"
-  spec.metadata["documentation_uri"] = "https://docs.getductwork.io/"
+  spec.metadata["documentation_uri"] = "https://www.getductwork.io/docs/"
 
   gemspec = File.basename(__FILE__)
   excludes = %w[

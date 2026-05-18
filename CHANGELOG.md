@@ -355,4 +355,4 @@
 
 ## [0.1.0]
 
-- Initial release - see [documentation](https://docs.getductwork.io/) for details
+- Initial release - see [documentation](https://www.getductwork.io/docs/) for details

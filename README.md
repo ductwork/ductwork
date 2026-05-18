@@ -9,7 +9,7 @@ Ductwork lets you build complex pipelines quickly and easily using intuitive Rub
 
 There is also a paid [Ductwork Pro](https://www.getductwork.io/) version with more features and support. See the [Pricing](https://www.getductwork.io/#pricing) page to buy a license.
 
-**[Full Documentation](https://docs.getductwork.io/)**
+**[Full Documentation](https://www.getductwork.io/docs/)**
 
 ## Installation
 
@@ -52,7 +52,7 @@ default: &default
   pipelines: "*"
 ```
 
-See the [Configuration Guide](https://docs.getductwork.io/getting-started/configuration.html) for all available options including thread counts, timeouts, and database settings.
+See the [Configuration Guide](https://www.getductwork.io/docs/getting-started/configuration/) for all available options including thread counts, timeouts, and database settings.
 
 ## Usage
 
@@ -111,7 +111,7 @@ end
 
 **Important:** Return values must be JSON-serializable.
 
-See [Defining Pipelines](https://docs.getductwork.io/getting-started/defining-pipelines.html) for detailed documentation.
+See [Defining Pipelines](https://www.getductwork.io/docs/getting-started/defining-pipelines/) for detailed documentation.
 
 ### 4. Run Ductwork
 
