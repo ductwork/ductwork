@@ -8,7 +8,7 @@ RSpec.describe Ductwork::Processes::JobWorker do
     Ductwork.configuration.job_worker_polling_timeout = 0.1
   end
 
-  describe "#start" do
+  describe "#start", :not_transaction do
     before do
       create(:process, :current)
     end
@@ -41,7 +41,7 @@ RSpec.describe Ductwork::Processes::JobWorker do
     end
   end
 
-  describe "#restart" do
+  describe "#restart", :not_transaction do
     subject(:job_worker) { described_class.new(pipeline, id) }
 
     let(:execution) { create(:execution) }
