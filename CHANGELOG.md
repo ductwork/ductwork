@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: do not call `on_halt` lifecycle event if transaction rolls back
 - fix: cleanup claimed resources on worker/advancer restart
 - fix: crash execution if thread crashes without process crashing
 - fix: abandon advancements if thread crashes without process crashing

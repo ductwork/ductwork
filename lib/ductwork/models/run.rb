@@ -37,16 +37,13 @@ module Ductwork
     end
 
     def resolve_terminal_state! # rubocop:todo Metrics/AbcSize
-      halted = false
-
-      Ductwork::Record.transaction do
+      halted = Ductwork::Record.transaction do
         lock!
 
-        next if halted? || completed?
-        next if branches.where.not(status: %w[completed halted]).exists?
+        next false if halted? || completed?
+        next false if branches.where.not(status: %w[completed halted]).exists?
 
         if branches.halted.exists?
-          halted = true
           pipeline.update!(status: "halted")
           update!(status: "halted", halted_at: Time.current)
 
@@ -56,6 +53,7 @@ module Ductwork
             run_id: id
           )
 
+          true
         else
           pipeline.update!(status: "completed")
           update!(status: "completed", completed_at: Time.current)
@@ -65,6 +63,8 @@ module Ductwork
             pipeline_id: pipeline.id,
             run_id: id
           )
+
+          false
         end
       end
     ensure
