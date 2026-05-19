@@ -39,6 +39,7 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
     subject(:pipeline_advancer) { described_class.new(klass) }
 
     let(:branch) { create(:branch, :claimed) }
+    let(:claim_token) { branch.claim_token }
     let(:transition) { create(:transition, branch:) }
     let(:advancement) { create(:advancement, transition:) }
 
@@ -48,6 +49,7 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
 
     it "cleans up claimed resources from a thread crash" do
       pipeline_advancer.instance_variable_set(:@branch, branch)
+      pipeline_advancer.instance_variable_set(:@original_claim_token, claim_token)
 
       expect do
         pipeline_advancer.restart

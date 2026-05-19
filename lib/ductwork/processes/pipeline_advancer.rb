@@ -46,7 +46,7 @@ module Ductwork
 
       private
 
-      attr_reader :klass, :index, :running_context
+      attr_reader :klass, :index, :running_context, :original_claim_token
 
       def work_loop
         run_hooks_for(:start)
@@ -61,12 +61,14 @@ module Ductwork
           Ductwork.wrap_with_app_executor do
             Branch.with_latest_claimed(klass) do |branch, transition, advancement|
               @branch = branch
+              @original_claim_token = branch.claim_token
 
               branch.advance!(transition, advancement)
 
               Ductwork::FaultInjection.checkpoint(:after_branch_advancement)
             ensure
               @branch = nil
+              @original_claim_token = nil
             end
           end
 
@@ -95,10 +97,11 @@ module Ductwork
                         &.find_by(completed_at: nil)
 
           advancement&.thread_crashed!
-          branch.reload.release!(branch.claim_token)
+          branch.release!(original_claim_token)
         end
       ensure
         @branch = nil
+        @original_claim_token = nil
       end
 
       def run_hooks_for(event)
