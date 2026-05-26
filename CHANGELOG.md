@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: use partial index for resolving run's terminal state for performance
 - fix: use partial index in branch claim query for performance
 - fix: use original claim token when cleaning up dead pipeline advancer threads
 - fix: do not call `on_halt` lifecycle event if transaction rolls back
