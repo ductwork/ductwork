@@ -36,7 +36,7 @@ module Ductwork
     end
 
     def mysql?
-      connection.adapter_name.match?(/mysql/i)
+      connection.adapter_name.match?(/mysql|trilogy/i)
     end
   end
 end

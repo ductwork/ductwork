@@ -21,9 +21,16 @@ class CreateDuctworkBranches < Ductwork::Migration
       table.timestamps null: false
     end
 
-    add_index :ductwork_branches,
-              %w[pipeline_klass claimed_for_advancing_at last_advanced_at],
-              name: "index_ductwork_branches_on_claim_latest"
+    if mysql?
+      add_index :ductwork_branches,
+                %w[pipeline_klass status claimed_for_advancing_at last_advanced_at],
+                name: "index_ductwork_branches_on_claim_latest"
+    else
+      add_index :ductwork_branches,
+                %w[pipeline_klass status last_advanced_at],
+                where: "claimed_for_advancing_at IS NULL",
+                name: "index_ductwork_branches_on_claim_latest"
+    end
     add_index :ductwork_branches, %w[pipeline_id started_at]
   end
 end
