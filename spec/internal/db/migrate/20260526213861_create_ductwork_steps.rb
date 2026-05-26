@@ -37,8 +37,8 @@ class CreateDuctworkSteps < Ductwork::Migration
 
     add_index :ductwork_steps, %i[branch_id started_at]
     add_index :ductwork_steps, %i[run_id node status]
-    add_index :ductwork_steps, %i[run_id status]
     add_index :ductwork_steps, %i[run_id status node]
+    add_index :ductwork_steps, %i[status branch_id]
     add_index :ductwork_steps, %i[status node]
   end
 end

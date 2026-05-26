@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: add composite index for branch claim step subquery
 - chore: add composite index for `latest_step` lookup
 - chore: add index on processes for last_heartbeat_at timestamp
 - fix: use partial index for resolving run's terminal state for performance
