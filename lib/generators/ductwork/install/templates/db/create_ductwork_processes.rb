@@ -10,6 +10,7 @@ class CreateDuctworkProcesses < Ductwork::Migration
       table.timestamps null: false
     end
 
+    add_index :ductwork_processes, :last_heartbeat_at
     add_index :ductwork_processes, %i[pid machine_identifier], unique: true
   end
 end
