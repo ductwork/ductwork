@@ -3,9 +3,9 @@
 [![CI](https://github.com/ductwork/ductwork/actions/workflows/main.yml/badge.svg)](https://github.com/ductwork/ductwork/actions/workflows/main.yml)
 [![Gem Version](https://badge.fury.io/rb/ductwork.svg?icon=si%3Arubygems)](https://rubygems.org/gems/ductwork)
 
-A Ruby durable pipeline and workflow framework.
+A durable workflow orchestration platform for Ruby.
 
-Ductwork lets you build complex pipelines quickly and easily using intuitive Ruby tooling and a natural DSL. No need to learn complicated unified object models or stand up separate runner instances—just write Ruby code and let Ductwork handle the orchestration.
+Ductwork lets you build complex pipelines and workflows quickly and easily using intuitive Ruby tooling and a natural DSL. No need to learn complicated unified object models or stand up separate runner instances, just write Ruby code and let Ductwork handle the orchestration.
 
 There is also a paid [Ductwork Pro](https://www.getductwork.io/) version with more features and support. See the [Pricing](https://www.getductwork.io/#pricing) page to buy a license.
 
