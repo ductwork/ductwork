@@ -5,15 +5,17 @@ extends it via `prepend` and adds features that MUST NOT be reimplemented
 or referenced here.
 
 ## Lives in OSS (this repo)
-- Core pipeline DSL: `chain`, `expand`, `divide`, `divert`, `combine`, `converge`, and `collapse`
-- Two-phase commit (transition + advancement records)
+- Core workflow transitions: `chain`, `expand`, `divide`, `divert`, `combine`, `converge`, and `collapse`
+- Core pipeline DSL
+- Two-phase commit (transition + advancement records) for pipeline advancement
 - Supervisor / advancer / worker process hierarchy
 - Forking + threaded concurrency modes
 - Heartbeat-based orphan detection
 - SKIP LOCKED claiming with atomic UPDATE...WHERE fallback
 - Reaper with global-timeout sweeps
-- `pipeline.revive!` API
+- `Ductwork::Pipeline#revive!` API
 - UUID v7 primary keys across PG/MySQL/SQLite
+- Rails engine-mountable web dashboard
 
 ## Lives in Pro
 - Human-in-the-loop functionality with `dampen` transition
@@ -21,6 +23,7 @@ or referenced here.
 - Step delay feature defined in pipeline definition DSL
 - Automatic restart of stuck threads via heartbeats
 - Configurable pipeline advancer thread pool
+- Interruptible pipeline advancement
 - Metric reporting to StatsD
 
 ## Hard rules
