@@ -15,8 +15,6 @@ module Ductwork
              foreign_key: "process_id",
              dependent: :nullify
 
-    REAP_THRESHOLD = 1.minute.freeze
-
     validates :pid, uniqueness: { scope: :machine_identifier }
 
     enum :role,
@@ -48,7 +46,8 @@ module Ductwork
 
     def self.reap_all!(role)
       count = 0
-      sql = Ductwork::DatabaseClock.ago_sql("last_heartbeat_at", REAP_THRESHOLD)
+      timeout = Ductwork.configuration.supervisor_reaper_timeout
+      sql = Ductwork::DatabaseClock.ago_sql("last_heartbeat_at", timeout)
 
       Ductwork.logger.debug(
         msg: "Reaping orphaned process records",
@@ -83,7 +82,8 @@ module Ductwork
     end
 
     def reap!(role)
-      sql = Ductwork::DatabaseClock.ago_sql("last_heartbeat_at", REAP_THRESHOLD)
+      timeout = Ductwork.configuration.supervisor_reaper_timeout
+      sql = Ductwork::DatabaseClock.ago_sql("last_heartbeat_at", timeout)
 
       Ductwork.logger.debug(
         msg: "Reaping orphaned process record #{id}",
@@ -119,7 +119,8 @@ module Ductwork
     end
 
     def healthy?
-      sql = Ductwork::DatabaseClock.ago_sql("last_heartbeat_at", REAP_THRESHOLD)
+      timeout = Ductwork.configuration.supervisor_reaper_timeout
+      sql = Ductwork::DatabaseClock.ago_sql("last_heartbeat_at", timeout)
 
       self.class.where(id:).where(sql).none?
     end

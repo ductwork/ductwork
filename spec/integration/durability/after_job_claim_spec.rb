@@ -36,7 +36,7 @@ RSpec.describe "Crash after job claim before execution", :no_transaction do
     expect(availability.reload.completed_at).to be_almost_now
 
     # NOTE: simulate time passing because we use db time checks
-    Ductwork::Process.where(pid:).update_all(last_heartbeat_at: 2.minutes.ago)
+    Ductwork::Process.where(pid:).update_all(last_heartbeat_at: 6.minutes.ago)
 
     # NOTE: again, simulating the parent process creating the process record
     # on "boot" post-reaping

@@ -70,7 +70,7 @@ RSpec.describe Ductwork::Process do
     end
 
     context "when the existing process record is unhealthy" do
-      let(:process) { create(:process, :current, last_heartbeat_at: 2.minutes.ago) }
+      let(:process) { create(:process, :current, last_heartbeat_at: 6.minutes.ago) }
 
       before do
         process
@@ -105,7 +105,7 @@ RSpec.describe Ductwork::Process do
 
   describe ".reap_all!" do
     it "releases associated incomplete branch advancements" do
-      process = create(:process, last_heartbeat_at: 2.minutes.ago)
+      process = create(:process, last_heartbeat_at: 6.minutes.ago)
       branch = create(:branch, :claimed)
       transition = create(:transition, branch:)
       create(:advancement, process:, transition:)
@@ -116,7 +116,7 @@ RSpec.describe Ductwork::Process do
     end
 
     it "re-enqueues claimed jobs with incomplete executions" do
-      process = create(:process, last_heartbeat_at: 2.minutes.ago)
+      process = create(:process, last_heartbeat_at: 6.minutes.ago)
       execution = create(:execution, process:)
 
       described_class.reap_all!(:thread_supervisor)
@@ -131,7 +131,7 @@ RSpec.describe Ductwork::Process do
     end
 
     it "deletes old process records" do
-      old_record = create(:process, last_heartbeat_at: 2.minutes.ago)
+      old_record = create(:process, last_heartbeat_at: 6.minutes.ago)
       _new_record = create(:process)
 
       expect do
@@ -144,7 +144,7 @@ RSpec.describe Ductwork::Process do
     end
 
     it "logs" do
-      create(:process, last_heartbeat_at: 2.minutes.ago)
+      create(:process, last_heartbeat_at: 6.minutes.ago)
       allow(Ductwork.logger).to receive(:debug).and_call_original
 
       described_class.reap_all!(:process_supervisor)
@@ -216,7 +216,7 @@ RSpec.describe Ductwork::Process do
 
   describe "#reap!" do
     subject(:process) do
-      create(:process, :current, last_heartbeat_at: 2.minutes.ago)
+      create(:process, :current, last_heartbeat_at: 6.minutes.ago)
     end
 
     it "abandons associated incomplete branch advancements" do

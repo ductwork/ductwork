@@ -17,6 +17,7 @@ module Ductwork
     DEFAULT_ROLE = "all" # supervisor, pipeline advancer, and job workers
     DEFAULT_STEPS_MAX_DEPTH = -1 # unlimited count
     DEFAULT_SUPERVISOR_POLLING_TIMEOUT = 1 # second
+    DEFAULT_SUPERVISOR_REAPER_TIMEOUT = 300 # seconds
     DEFAULT_SUPERVISOR_SHUTDOWN_TIMEOUT = 30 # seconds
     DEFAULT_LOGGER = ::Logger.new($stdout)
     PIPELINES_WILDCARD = "*"
@@ -30,7 +31,8 @@ module Ductwork
                 :pipeline_advancer_max_retry,
                 :pipeline_polling_timeout, :pipeline_shutdown_timeout,
                 :steps_max_depth,
-                :supervisor_polling_timeout, :supervisor_shutdown_timeout
+                :supervisor_polling_timeout, :supervisor_reaper_timeout,
+                :supervisor_shutdown_timeout
 
     def initialize(path: DEFAULT_FILE_PATH, role: nil)
       full_path = Pathname.new(path)
@@ -175,6 +177,10 @@ module Ductwork
       @supervisor_polling_timeout ||= fetch_supervisor_polling_timeout
     end
 
+    def supervisor_reaper_timeout
+      @supervisor_reaper_timeout ||= fetch_supervisor_reaper_timeout
+    end
+
     def supervisor_shutdown_timeout
       @supervisor_shutdown_timeout ||= fetch_supervisor_shutdown_timeout
     end
@@ -209,6 +215,11 @@ module Ductwork
     def fetch_supervisor_polling_timeout
       config.dig(:supervisor, :polling_timeout) ||
         DEFAULT_SUPERVISOR_POLLING_TIMEOUT
+    end
+
+    def fetch_supervisor_reaper_timeout
+      config.dig(:supervisor, :reaper_timeout) ||
+        DEFAULT_SUPERVISOR_REAPER_TIMEOUT
     end
 
     def fetch_supervisor_shutdown_timeout

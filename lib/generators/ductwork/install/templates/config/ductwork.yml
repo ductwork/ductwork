@@ -16,6 +16,7 @@ default: &default
       max_depth: -1
   supervisor:
     polling_timeout: 1
+    reaper_timeout: 300
     shutdown_timeout: 30
 
 development:

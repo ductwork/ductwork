@@ -76,7 +76,7 @@ module Ductwork
         )
 
         workers.each do |worker|
-          if process_dead?(worker[:pid])
+          if heartbeat_stale?(worker[:pid])
             old_pid = worker[:pid]
             sig_kill_process(old_pid)
             reap_process_record!(old_pid)
@@ -157,9 +157,9 @@ module Ductwork
         @workers = workers.compact
       end
 
-      def process_dead?(pid)
+      def heartbeat_stale?(pid)
         machine_identifier = Ductwork::MachineIdentifier.fetch
-        threshold = Ductwork::Process::REAP_THRESHOLD - 10.seconds
+        threshold = Ductwork.configuration.supervisor_reaper_timeout - 10.seconds
         sql = Ductwork::DatabaseClock.ago_sql("last_heartbeat_at", threshold)
 
         Ductwork.wrap_with_app_executor do
