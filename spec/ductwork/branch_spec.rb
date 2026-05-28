@@ -522,11 +522,19 @@ RSpec.describe Ductwork::Branch do
     let(:latest_step) { create(:step, started_at:, branch:) }
 
     before do
-      latest_step
       create(:step, started_at: 10.minutes.ago, branch: branch)
     end
 
     it "returns the latest step" do
+      latest_step
+
+      expect(branch.latest_step).to eq(latest_step)
+    end
+
+    it "returns the 'older' of the ordered UUIDs" do
+      create(:step, started_at:, branch:)
+      latest_step
+
       expect(branch.latest_step).to eq(latest_step)
     end
   end

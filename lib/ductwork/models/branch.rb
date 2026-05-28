@@ -119,7 +119,7 @@ module Ductwork
     end
 
     def latest_step
-      steps.order(started_at: :desc).limit(1).first
+      steps.order(started_at: :desc, id: :desc).limit(1).first
     end
 
     def release!(expected_token = claim_token)
