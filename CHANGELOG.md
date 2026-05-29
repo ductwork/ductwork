@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- feat: automatically restart threads that are stuck in framework code
 - fix: add secondary order by UUID v7 to get latest step on branch
 - feat: make supervisor reaper timeout configurable
 - chore: add composite index for branch claim step subquery

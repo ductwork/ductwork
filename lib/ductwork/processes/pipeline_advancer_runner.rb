@@ -36,7 +36,7 @@ module Ductwork
         while running_context.running?
           # TODO: Increase or make configurable
           sleep(5)
-          check_thread_health
+          check_workers_health
           report_heartbeat!
         end
 
@@ -62,29 +62,10 @@ module Ductwork
         end
       end
 
-      def check_thread_health
-        Ductwork.logger.debug(
-          msg: "Checking threads health",
-          role: :pipeline_advancer_runner,
-          pipelines: klasses
-        )
-        advancers.each do |advancer|
-          if !advancer.alive?
-            advancer.restart
-
-            Ductwork.logger.warn(
-              msg: "Restarted pipeline advancer",
-              role: :pipeline_advancer_runner,
-              pipeline: advancer.pipeline.class.to_s,
-              thread: advancer.name
-            )
-          end
-        end
-        Ductwork.logger.debug(
-          msg: "Checked thread health",
-          role: :pipeline_advancer_runner,
-          pipelines: klasses
-        )
+      def check_workers_health
+        Ductwork::Processes::WorkerHealthCheck
+          .new(advancers, :pipeline_advancer_runner)
+          .check
       end
 
       def adopt_or_create_process!

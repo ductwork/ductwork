@@ -36,7 +36,7 @@ module Ductwork
         while running?
           # TODO: Increase or make configurable
           sleep(5)
-          check_thread_health
+          check_workers_health
           report_heartbeat!
         end
 
@@ -74,29 +74,10 @@ module Ductwork
         running_context.running?
       end
 
-      def check_thread_health
-        Ductwork.logger.debug(
-          msg: "Checking thread health",
-          role: :job_worker_runner,
-          pipelines: pipelines
-        )
-        job_workers.each do |job_worker|
-          if !job_worker.alive?
-            job_worker.restart
-
-            Ductwork.logger.warn(
-              msg: "Restarted job worker",
-              role: :job_worker_runner,
-              pipeline: job_worker.pipeline,
-              thread: job_worker.name
-            )
-          end
-        end
-        Ductwork.logger.debug(
-          msg: "Checked thread health",
-          role: :job_worker_runner,
-          pipelines: pipelines
-        )
+      def check_workers_health
+        Ductwork::Processes::WorkerHealthCheck
+          .new(job_workers, :job_worker_runner)
+          .check
       end
 
       def report_heartbeat!

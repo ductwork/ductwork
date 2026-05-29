@@ -49,7 +49,7 @@ module Ductwork
 
         while running_context.running?
           sleep(Ductwork.configuration.supervisor_polling_timeout)
-          check_worker_health
+          check_workers_health
           report_heartbeat!
           reap_process_records
         end
@@ -61,28 +61,10 @@ module Ductwork
 
       attr_reader :running_context
 
-      def check_worker_health
-        Ductwork.logger.debug(
-          msg: "Checking workers are alive",
-          role: :thread_supervisor
-        )
-
-        workers.each do |worker|
-          if !worker.alive?
-            worker.restart
-
-            Ductwork.logger.warn(
-              msg: "Restarted supervised thread",
-              role: :thread_supervisor,
-              thread: worker.name
-            )
-          end
-        end
-
-        Ductwork.logger.debug(
-          msg: "Checked workers are alive",
-          role: :thread_supervisor
-        )
+      def check_workers_health
+        Ductwork::Processes::WorkerHealthCheck
+          .new(workers, :thread_supervisor)
+          .check
       end
 
       def shutdown

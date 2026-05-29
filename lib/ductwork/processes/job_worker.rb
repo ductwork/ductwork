@@ -27,6 +27,10 @@ module Ductwork
         thread&.alive? || false
       end
 
+      def stuck?
+        execution.nil? && last_heartbeat_too_long_ago?
+      end
+
       def stop
         running_context.shutdown!
       end
@@ -146,6 +150,12 @@ module Ductwork
         end
       ensure
         @execution = nil
+      end
+
+      def last_heartbeat_too_long_ago?
+        threshold = Ductwork.configuration.supervisor_reaper_timeout
+
+        (Time.current - last_heartbeat_at) > threshold
       end
 
       def run_hooks_for(event)

@@ -86,6 +86,31 @@ RSpec.describe Ductwork::Processes::JobWorker do
     end
   end
 
+  describe "#stuck?" do
+    subject(:job_worker) { described_class.new(pipeline, id) }
+
+    it "returns false if an execution is claimed" do
+      execution = build(:execution)
+
+      job_worker.instance_variable_set(:@execution, execution)
+
+      expect(job_worker).not_to be_stuck
+    end
+
+    it "returns false if the last heartbeat was within the threshold" do
+      job_worker.instance_variable_set(:@last_heartbeat_at, 30.seconds.ago)
+
+      expect(job_worker).not_to be_stuck
+    end
+
+    it "returns true otherwise" do
+      job_worker.instance_variable_set(:@execution, nil)
+      job_worker.instance_variable_set(:@last_heartbeat_at, 7.minutes.ago)
+
+      expect(job_worker).to be_stuck
+    end
+  end
+
   describe "#stop" do
     it "informs execution to exit the main work loop" do
       job_worker = described_class.new(pipeline, id)

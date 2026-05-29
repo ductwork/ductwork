@@ -93,6 +93,31 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
     end
   end
 
+  describe "#stuck?" do
+    subject(:pipeline_advancer) { described_class.new(klass) }
+
+    it "returns false if a branch is claimed" do
+      branch = build(:branch)
+
+      pipeline_advancer.instance_variable_set(:@branch, branch)
+
+      expect(pipeline_advancer).not_to be_stuck
+    end
+
+    it "returns false if the last heartbeat was within the threshold" do
+      pipeline_advancer.instance_variable_set(:@last_heartbeat_at, 30.seconds.ago)
+
+      expect(pipeline_advancer).not_to be_stuck
+    end
+
+    it "returns true otherwise" do
+      pipeline_advancer.instance_variable_set(:@branch, nil)
+      pipeline_advancer.instance_variable_set(:@last_heartbeat_at, 7.minutes.ago)
+
+      expect(pipeline_advancer).to be_stuck
+    end
+  end
+
   describe "#stop" do
     it "informs execution to exit the main work loop" do
       pipeline_advancer = described_class.new(klass)
