@@ -13,6 +13,7 @@ or referenced here.
 - Heartbeat-based orphan detection
 - SKIP LOCKED claiming with atomic UPDATE...WHERE fallback
 - Reaper with global-timeout sweeps
+- Automatic restart of worker threads stuck in framework code (no execution claimed)
 - `Ductwork::Pipeline#revive!` API
 - UUID v7 primary keys across PG/MySQL/SQLite
 - Rails engine-mountable web dashboard
@@ -21,7 +22,7 @@ or referenced here.
 - Human-in-the-loop functionality with `dampen` transition
 - Step timeout feature defined in pipeline definition DSL
 - Step delay feature defined in pipeline definition DSL
-- Automatic restart of stuck threads via heartbeats
+- Automatic restart of worker threads stuck inside job execution (claimed execution that won't return; via step timeout)
 - Configurable pipeline advancer thread pool
 - Interruptible pipeline advancement
 - Metric reporting to StatsD
