@@ -392,6 +392,71 @@ RSpec.describe Ductwork::Branch do
           expect(run).to have_received(:resolve_terminal_state!)
         end
       end
+
+      context "when prior failed attempts were crashes or abandonment" do
+        # NOTE: crash/abandonment advancements are stamped `ProcessCrash` by the
+        # reaper (`process_crashed!`) and by re-claim
+        # (`fail_abandoned_advancement`), and `ThreadCrash` by thread death
+        # (`thread_crashed!`). A legitimately-resuming `expand`/`collapse`
+        # accrues one of these per crash cycle; they must NOT consume the
+        # advancer retry budget (mirrors `crash_count` vs `retry_count` on
+        # executions), otherwise a long fan-out/fan-in is falsely halted.
+        before do
+          Ductwork.configuration.pipeline_advancer_max_retry = 1
+
+          %w[
+            Ductwork::ProcessCrash
+            Ductwork::ProcessCrash
+            Ductwork::ThreadCrash
+          ].each do |error_klass|
+            crash_transition = create(
+              :transition,
+              in_step: step,
+              out_step: nil,
+              branch: branch
+            )
+            create(
+              :advancement,
+              transition: crash_transition,
+              error_klass: error_klass,
+              error_message: "crashed",
+              error_backtrace: "(main)",
+              completed_at: Time.current
+            )
+          end
+        end
+
+        # NOTE: do not reload `branch` before `advance!` — reloading clears the
+        # `run` association cache and `advance!` would then call an unstubbed
+        # `parsed_definition`. Run `advance!` first (stub intact), then reload.
+        it "does not halt the branch" do
+          branch.advance!(spy, spy)
+
+          expect(branch.reload).not_to be_halted
+          expect(branch.status).to eq("in_progress")
+          expect(branch.halt_reason).to be_nil
+        end
+
+        it "releases the branch so it can be re-claimed and resumed" do
+          branch.advance!(spy, spy)
+
+          expect(branch.reload.claimed_for_advancing_at).to be_nil
+          expect(branch.claim_token).to be_nil
+        end
+
+        it "still halts once enough genuine logic errors accrue" do
+          create(
+            :advancement,
+            :errored,
+            transition: create(:transition, in_step: step, out_step: nil, branch: branch)
+          )
+
+          expect do
+            branch.advance!(spy, spy)
+          end.to change(branch, :status).from("advancing").to("halted")
+            .and change(branch, :halt_reason).to("advancer_retries_exhausted")
+        end
+      end
     end
 
     context "when there is a transition error" do

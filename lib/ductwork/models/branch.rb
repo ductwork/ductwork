@@ -244,11 +244,21 @@ module Ductwork
 
     def too_many_failed_attempts?
       max = Ductwork.configuration.pipeline_advancer_max_retry
+      internal_errors = %w[Ductwork::ProcessCrash Ductwork::ThreadCrash]
 
+      # NOTE: crash/abandonment advancements (a process reaped mid-advancement,
+      # or a thread killed) are NOT advancer-logic failures and must not consume
+      # the retry budget — otherwise a long, legitimately-resuming `expand` /
+      # `collapse` fan-out/fan-in (re-claimed once per crash cycle) is falsely
+      # halted as `advancer_retries_exhausted`. This mirrors the execution tier,
+      # where `crashed!` bumps an uncapped `crash_count` while only `errored!`
+      # consumes `retry_count`. Only genuine `StandardError`s raised inside the
+      # transition logic (which carry their own `error_klass`) count here.
       transitions
         .joins(:advancements)
         .where(in_step_id: latest_step.id)
         .where.not(ductwork_advancements: { error_klass: nil })
+        .where.not(ductwork_advancements: { error_klass: internal_errors })
         .count >= max
     end
 
