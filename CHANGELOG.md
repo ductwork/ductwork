@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- feat: add `Ductwork::Workflow` alias of `Ductwork::Pipeline`
 - fix: skip "internal" errors when calculating advancement retry budget
 - chore: bump advancement retry count to 10
 - feat: automatically restart threads that are stuck in framework code
