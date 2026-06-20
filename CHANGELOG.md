@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: bump advancement retry count to 10
 - feat: automatically restart threads that are stuck in framework code
 - fix: add secondary order by UUID v7 to get latest step on branch
 - feat: make supervisor reaper timeout configurable

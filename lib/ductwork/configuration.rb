@@ -11,7 +11,7 @@ module Ductwork
     DEFAULT_JOB_WORKER_SHUTDOWN_TIMEOUT = 20 # seconds
     DEFAULT_LOGGER_LEVEL = ::Logger::INFO
     DEFAULT_LOGGER_SOURCE = "default" # `Logger` instance writing to STDOUT
-    DEFAULT_PIPELINE_ADVANCER_MAX_RETRY = 3 # attempts
+    DEFAULT_PIPELINE_ADVANCER_MAX_RETRY = 10 # attempts
     DEFAULT_PIPELINE_POLLING_TIMEOUT = 1 # second
     DEFAULT_PIPELINE_SHUTDOWN_TIMEOUT = 20 # seconds
     DEFAULT_ROLE = "all" # supervisor, pipeline advancer, and job workers
