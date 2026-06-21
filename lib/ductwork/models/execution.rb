@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Ductwork
-  class Execution < Ductwork::Record
+  class Execution < Ductwork::Record # rubocop:todo Metrics/ClassLength
     belongs_to :job, class_name: "Ductwork::Job"
     belongs_to :process, class_name: "Ductwork::Process", optional: true
     has_one :availability, class_name: "Ductwork::Availability", foreign_key: "execution_id", dependent: :destroy
@@ -71,8 +71,14 @@ module Ductwork
       end
     end
 
-    def crashed!
-      Ductwork::Record.transaction do
+    def crashed! # rubocop:todo Metrics
+      run = job.step.run
+      max_crash = Ductwork.configuration.job_worker_max_crash(
+        pipeline: run.pipeline_klass,
+        step: job.klass
+      )
+
+      Ductwork::Record.transaction do # rubocop:todo Metrics/BlockLength
         rows_updated = Ductwork::Execution
                        .where(id: id, process_id: process_id, completed_at: nil)
                        .update_all(completed_at: Time.current)
@@ -83,15 +89,30 @@ module Ductwork
         attempt&.update!(completed_at: Time.current)
         create_result!(result_type: "process_crashed")
 
-        new_execution = job.executions.create!(
-          retry_count: retry_count,
-          crash_count: crash_count + 1,
-          started_at: Time.current
-        )
-        new_execution.create_availability!(
-          started_at: Time.current,
-          pipeline_klass: job.step.run.pipeline_klass
-        )
+        if crash_count < max_crash
+          new_crash_count = crash_count + 1
+          started_at = crash_backoff_at(new_crash_count, max_crash)
+
+          new_execution = job.executions.create!(
+            retry_count: retry_count,
+            crash_count: new_crash_count,
+            started_at: started_at
+          )
+          new_execution.create_availability!(
+            started_at: started_at,
+            pipeline_klass: run.pipeline_klass
+          )
+        else
+          job.step.update!(status: :failed)
+
+          Ductwork.logger.error(
+            msg: "Job exceeded crash limit and failed",
+            job_id: job.id,
+            job_klass: job.klass,
+            run_id: run.id,
+            role: :job_worker
+          )
+        end
       end
     end
 
@@ -157,6 +178,20 @@ module Ductwork
     end
 
     private
+
+    # NOTE: the first third (floored) of the crash budget retries immediately
+    # so a one-off reaper clobber / deploy restart recovers fast; past that,
+    # delay linearly so sub-cap crash loops stop hammering the database and
+    # worker pool
+    def crash_backoff_at(crash_count, max_crash)
+      immediate_threshold = max_crash / 3
+
+      if crash_count <= immediate_threshold
+        Time.current
+      else
+        (crash_count * FAILED_EXECUTION_TIMEOUT).from_now
+      end
+    end
 
     def log_job_executed(pipeline, result_status)
       Ductwork.logger.info(

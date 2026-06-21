@@ -28,6 +28,7 @@ module Ductwork
 
     attr_writer :job_worker_count, :job_worker_polling_timeout,
                 :job_worker_shutdown_timeout, :job_worker_max_retry,
+                :job_worker_max_crash,
                 :logger_level,
                 :pipeline_advancer_max_retry,
                 :pipeline_polling_timeout, :pipeline_shutdown_timeout,
