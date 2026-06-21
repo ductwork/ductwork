@@ -10,6 +10,7 @@ or referenced here.
 - Two-phase commit (transition + advancement records) for pipeline advancement
 - Supervisor / advancer / worker process hierarchy
 - Forking + threaded concurrency modes
+- Configurable pipeline advancer thread pool
 - Heartbeat-based orphan detection
 - SKIP LOCKED claiming with atomic UPDATE...WHERE fallback
 - Reaper with global-timeout sweeps
@@ -23,7 +24,8 @@ or referenced here.
 - Step timeout feature defined in pipeline definition DSL
 - Step delay feature defined in pipeline definition DSL
 - Automatic restart of worker threads stuck inside job execution (claimed execution that won't return; via step timeout)
-- Configurable pipeline advancer thread pool
+- Large payload support
+- Resumable batched fan-out/fan-in
 - Interruptible pipeline advancement
 - Metric reporting to StatsD
 
