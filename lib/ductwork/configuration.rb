@@ -6,6 +6,7 @@ module Ductwork
     DEFAULT_FILE_PATH = "config/ductwork.yml"
     DEFAULT_FORKING = "default" # fork pipeline advancer and job workers
     DEFAULT_JOB_WORKER_COUNT = 5 # threads
+    DEFAULT_JOB_WORKER_MAX_CRASH = 10 # attempts
     DEFAULT_JOB_WORKER_MAX_RETRY = 3 # attempts
     DEFAULT_JOB_WORKER_POLLING_TIMEOUT = 1 # second
     DEFAULT_JOB_WORKER_SHUTDOWN_TIMEOUT = 20 # seconds
@@ -82,6 +83,24 @@ module Ductwork
         raw_count[pipeline.to_sym]
       else
         raw_count
+      end
+    end
+
+    def job_worker_max_crash(pipeline: nil, step: nil) # rubocop:disable Metrics
+      return @job_worker_max_crash if instance_variable_defined?(:@job_worker_max_crash)
+
+      pipeline ||= :default
+      step ||= :default
+      base_config = config.dig(:job_worker, :max_crash)
+
+      if base_config.is_a?(Hash) && base_config[pipeline.to_sym].is_a?(Hash)
+        pipeline_config = config.dig(:job_worker, :max_crash, pipeline.to_sym)
+
+        pipeline_config[step.to_sym] || pipeline_config[:default] || DEFAULT_JOB_WORKER_MAX_CRASH
+      elsif base_config.is_a?(Hash)
+        base_config[pipeline.to_sym] || base_config[:default] || DEFAULT_JOB_WORKER_MAX_CRASH
+      else
+        base_config || DEFAULT_JOB_WORKER_MAX_CRASH
       end
     end
 

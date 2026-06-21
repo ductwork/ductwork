@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- feat: create configuration for job worker max crash count
 - feat: add `Ductwork::Workflow` alias of `Ductwork::Pipeline`
 - fix: skip "internal" errors when calculating advancement retry budget
 - chore: bump advancement retry count to 10
