@@ -47,6 +47,19 @@ module Ductwork
       @run_id || (@attributes && super)
     end
 
+    # The result_type of the most recent execution to finish for this step's
+    # job, used to distinguish *why* a step failed (e.g. `errored!` writes
+    # "failure", `crashed!` writes "process_crashed"). Returns nil when no
+    # execution has produced a result yet.
+    def terminal_result_type
+      return if job.blank?
+
+      job.executions
+         .joins(:result)
+         .order(created_at: :desc)
+         .pick("ductwork_results.result_type")
+    end
+
     def context
       @_context ||= Ductwork::Context.new(run_id)
     end

@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: set `job_crashes_exhausted` as pipeline halt reason when exhausted crash budget
 - feat: cap and tail back-off execution crashes
 - feat: create configuration for job worker max crash count
 - feat: add `Ductwork::Workflow` alias of `Ductwork::Pipeline`

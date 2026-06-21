@@ -84,4 +84,29 @@ RSpec.describe Ductwork::Step do
       expect(ctx).to be_a(Ductwork::Context)
     end
   end
+
+  describe "#terminal_result_type" do
+    subject(:step) { create(:step) }
+
+    let(:job) { create(:job, step:) }
+
+    it "returns nil when the step has no job" do
+      expect(step.terminal_result_type).to be_nil
+    end
+
+    it "returns nil when no execution has a result" do
+      create(:execution, job:)
+
+      expect(step.terminal_result_type).to be_nil
+    end
+
+    it "returns the most recent execution's result type" do
+      old_execution = create(:execution, job: job, created_at: 1.hour.ago)
+      create(:result, execution: old_execution, result_type: "failure")
+      new_execution = create(:execution, job: job, created_at: 1.minute.ago)
+      create(:result, execution: new_execution, result_type: "process_crashed")
+
+      expect(step.terminal_result_type).to eq("process_crashed")
+    end
+  end
 end

@@ -38,6 +38,7 @@ module Ductwork
 
     enum :halt_reason,
          job_retries_exhausted: "job_retries_exhausted",
+         job_crashes_exhausted: "job_crashes_exhausted",
          advancer_retries_exhausted: "advancer_retries_exhausted",
          max_fanout_exceeded: "max_fanout_exceeded",
          condition_unmatched: "condition_unmatched",
@@ -78,8 +79,11 @@ module Ductwork
     end
 
     def advance!(transition, advancement)
-      if latest_step.failed?
-        halt_branch_and_resolve_run!(transition, advancement, "job_retries_exhausted")
+      step = latest_step
+      reason = failed_step_halt_reason(step)
+
+      if step.failed?
+        halt_branch_and_resolve_run!(transition, advancement, reason)
       else
         route_by_edge(transition, advancement)
       end
@@ -134,6 +138,19 @@ module Ductwork
     end
 
     private
+
+    # NOTE: a failed step exhausted either its error budget (`errored!`) or its
+    # crash budget (`crashed!`); both set the step to `failed`, so we read the
+    # terminal execution result to report the precise halt reason. yes, another
+    # column is prob the better solution here so we don't need to reach in to
+    # this data, but the derivation is straightforward, so here we are.
+    def failed_step_halt_reason(step)
+      if step.terminal_result_type == "process_crashed"
+        "job_crashes_exhausted"
+      else
+        "job_retries_exhausted"
+      end
+    end
 
     def halt_branch_and_resolve_run!(transition, advancement, halt_reason)
       with_claim_fence! do

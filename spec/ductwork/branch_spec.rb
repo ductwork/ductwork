@@ -309,6 +309,25 @@ RSpec.describe Ductwork::Branch do
       end
     end
 
+    context "when the step crash-exhausted" do
+      let(:transition) { create(:transition, branch:) }
+      let(:advancement) { create(:advancement, transition:) }
+
+      before do
+        job = create(:job, step:)
+        execution = create(:execution, job:)
+        create(:result, execution: execution, result_type: "process_crashed")
+        step.failed!
+      end
+
+      it "halts the branch with the crash reason" do
+        expect do
+          branch.advance!(transition, advancement)
+        end.to change(branch, :status).from("advancing").to("halted")
+          .and change(branch, :halt_reason).to("job_crashes_exhausted")
+      end
+    end
+
     context "when there is an error while advancing" do
       let(:transition) { create(:transition, branch:) }
       let(:advancement) { create(:advancement, transition:) }
