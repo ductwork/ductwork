@@ -22,6 +22,9 @@ class CreateDuctworkRuns < Ductwork::Migration
     end
 
     add_index :ductwork_runs, %i[pipeline_id status]
+    add_index :ductwork_runs, :started_at
+    add_index :ductwork_runs, %i[pipeline_klass started_at]
+    add_index :ductwork_runs, %i[status started_at]
 
     if mysql?
       reversible do |direction|

@@ -18,5 +18,6 @@ class CreateDuctworkResults < Ductwork::Migration
     end
 
     add_index :ductwork_results, :execution_id, unique: true
+    add_index :ductwork_results, %i[result_type created_at]
   end
 end

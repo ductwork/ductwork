@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: add missing database indexes (mostly) for dashboard pages
 - fix: only `sleep` pipeline advancer when no branch is claimed
 - feat: add configurable pipeline advancer thread pool via `pipeline_advancer.count`
 - fix: do not let one wedged worker freeze the whole supervisor work loop

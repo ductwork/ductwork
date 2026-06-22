@@ -91,6 +91,16 @@ module Ductwork
         migration_template "db/add_role_to_ductwork_processes.rb",
                            "db/migrate/add_role_to_ductwork_processes.rb"
       end
+
+      if !Ductwork::Record.connection.index_exists?(:ductwork_results, %i[result_type created_at])
+        migration_template "db/add_indexes_to_ductwork_results.rb",
+                           "db/migrate/add_indexes_to_ductwork_results.rb"
+      end
+
+      if !Ductwork::Record.connection.index_exists?(:ductwork_runs, :started_at)
+        migration_template "db/add_indexes_to_ductwork_runs.rb",
+                           "db/migrate/add_indexes_to_ductwork_runs.rb"
+      end
     end
   end
 end
