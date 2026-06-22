@@ -16,10 +16,10 @@ RSpec.describe Ductwork::Processes::ThreadSupervisorRunner do
       expect(Ductwork::Processes::ThreadSupervisor).to have_received(:new)
       expect(supervisor).to have_received(:add_worker)
         .with({ metadata: { pipeline: "PipelineA" } })
-        .exactly(6).times
+        .exactly(8).times
       expect(supervisor).to have_received(:add_worker)
         .with({ metadata: { pipeline: "PipelineB" } })
-        .exactly(6).times
+        .exactly(8).times
       expect(supervisor).to have_received(:run)
     end
   end

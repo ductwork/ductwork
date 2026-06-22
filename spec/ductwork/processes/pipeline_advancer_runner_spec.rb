@@ -16,7 +16,7 @@ RSpec.describe Ductwork::Processes::PipelineAdvancerRunner do
 
       expect(Ductwork::Processes::PipelineAdvancer).to have_received(:new).with("PipelineA", 0)
       expect(Ductwork::Processes::PipelineAdvancer).to have_received(:new).with("PipelineB", 0)
-      expect(advancer).to have_received(:start).twice
+      expect(advancer).to have_received(:start).exactly(6).times
     end
   end
 end
