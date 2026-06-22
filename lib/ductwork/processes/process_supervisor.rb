@@ -3,6 +3,11 @@
 module Ductwork
   module Processes
     class ProcessSupervisor # rubocop:todo Metrics/ClassLength
+      # Upper bound on how long sig_kill_process will block the supervisor
+      # loop waiting for a KILL'd child to be reaped (see sig_kill_process).
+      KILL_REAP_TIMEOUT = 5 # seconds
+      KILL_REAP_INTERVAL = 0.1
+
       attr_reader :workers
 
       def initialize
@@ -174,7 +179,28 @@ module Ductwork
 
       def sig_kill_process(pid)
         ::Process.kill(:KILL, pid)
-        ::Process.wait(pid)
+
+        deadline = now + KILL_REAP_TIMEOUT
+        loop do
+          return if ::Process.wait(pid, ::Process::WNOHANG)
+
+          if now >= deadline
+            # Likely wedged in uninterruptible sleep (D state): the SIGKILL is
+            # pending but undeliverable until its syscall returns. Don't block
+            # the supervisor loop on it - the kill still applies, but the OS
+            # process is left unreaped (a zombie) until the supervisor itself
+            # exits and init reaps it. The DB process record is reaped
+            # separately by the caller.
+            Ductwork.logger.warn(
+              msg: "Process (#{pid}) did not exit after KILL; deferring reap",
+              role: :process_supervisor,
+              pid: pid
+            )
+            return
+          end
+
+          sleep(KILL_REAP_INTERVAL)
+        end
       rescue Errno::ECHILD, Errno::ESRCH
         # Process is already dead or reaped
       end

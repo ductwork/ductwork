@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: do not let one wedged worker freeze the whole supervisor work loop
 - fix: ignore already-exited child processes during graceful shutdown
 - chore: set `job_crashes_exhausted` as pipeline halt reason when exhausted crash budget
 - feat: cap and tail back-off execution crashes
