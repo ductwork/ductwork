@@ -114,6 +114,8 @@ module Ductwork
             signal: :TERM
           )
           ::Process.kill(:TERM, worker[:pid])
+        rescue Errno::ESRCH
+          # Child already exited; nothing to terminate
         end
       end
 
