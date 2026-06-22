@@ -62,8 +62,10 @@ module Ductwork
         )
 
         while running_context.running?
+          claimed = false
+
           Ductwork.wrap_with_app_executor do
-            Branch.with_latest_claimed(klass) do |branch, transition, advancement|
+            claimed = Branch.with_latest_claimed(klass) do |branch, transition, advancement|
               @branch = branch
               @original_claim_token = branch.claim_token
 
@@ -78,7 +80,9 @@ module Ductwork
 
           @last_heartbeat_at = Time.current
 
-          sleep(polling_timeout)
+          if !claimed
+            sleep(polling_timeout)
+          end
         end
 
         Ductwork.logger.debug(

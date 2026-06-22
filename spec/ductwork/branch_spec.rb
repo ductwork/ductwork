@@ -106,6 +106,10 @@ RSpec.describe Ductwork::Branch do
       end.to yield_with_args(branch, transition, advancement)
     end
 
+    it "returns true when a branch was claimed" do
+      expect(described_class.with_latest_claimed(pipeline_klass) {}).to be(true)
+    end
+
     it "does not yield if there is no branch to claim" do
       claim = instance_double(Ductwork::BranchClaim, latest: nil, advancement: nil)
       allow(Ductwork::BranchClaim).to receive(:new).and_return(claim)
@@ -113,6 +117,13 @@ RSpec.describe Ductwork::Branch do
       expect do |block|
         described_class.with_latest_claimed(pipeline_klass, &block)
       end.not_to yield_control
+    end
+
+    it "returns false when there is no branch to claim" do
+      claim = instance_double(Ductwork::BranchClaim, latest: nil, advancement: nil)
+      allow(Ductwork::BranchClaim).to receive(:new).and_return(claim)
+
+      expect(described_class.with_latest_claimed(pipeline_klass) {}).to be(false)
     end
 
     it "cleans up the advancement if the thread crashes" do

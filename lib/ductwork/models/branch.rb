@@ -55,6 +55,10 @@ module Ductwork
         Ductwork::FaultInjection.checkpoint(:after_branch_claim)
 
         yield branch, branch_claim.transition, branch_claim.advancement
+
+        true
+      else
+        false
       end
     ensure
       advancement = branch_claim.advancement
