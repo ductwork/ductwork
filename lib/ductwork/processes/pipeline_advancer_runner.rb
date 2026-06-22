@@ -49,16 +49,18 @@ module Ductwork
 
       def start_pipeline_advancers
         klasses.each do |klass|
-          advancer = Ductwork::Processes::PipelineAdvancer.new(klass)
-          advancers.push(advancer)
-          advancer.start
+          Ductwork.configuration.pipeline_advancer_count(klass).times do |index|
+            advancer = Ductwork::Processes::PipelineAdvancer.new(klass, index)
+            advancers.push(advancer)
+            advancer.start
 
-          Ductwork.logger.debug(
-            msg: "Created new pipeline advancer",
-            role: :pipeline_advancer_runner,
-            pipeline: klass,
-            thread: advancer.name
-          )
+            Ductwork.logger.debug(
+              msg: "Created new pipeline advancer",
+              role: :pipeline_advancer_runner,
+              pipeline: klass,
+              thread: advancer.name
+            )
+          end
         end
       end
 

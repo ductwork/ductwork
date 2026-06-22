@@ -13,6 +13,7 @@ module Ductwork
     DEFAULT_LOGGER_LEVEL = ::Logger::INFO
     DEFAULT_LOGGER_SOURCE = "default" # `Logger` instance writing to STDOUT
     DEFAULT_PIPELINE_ADVANCER_MAX_RETRY = 10 # attempts
+    DEFAULT_PIPELINE_ADVANCER_THREAD_COUNT = 3 # threads
     DEFAULT_PIPELINE_POLLING_TIMEOUT = 1 # second
     DEFAULT_PIPELINE_SHUTDOWN_TIMEOUT = 20 # seconds
     DEFAULT_ROLE = "all" # supervisor, pipeline advancer, and job workers
@@ -30,7 +31,7 @@ module Ductwork
                 :job_worker_shutdown_timeout, :job_worker_max_retry,
                 :job_worker_max_crash,
                 :logger_level,
-                :pipeline_advancer_max_retry,
+                :pipeline_advancer_count, :pipeline_advancer_max_retry,
                 :pipeline_polling_timeout, :pipeline_shutdown_timeout,
                 :steps_max_depth,
                 :supervisor_polling_timeout, :supervisor_reaper_timeout,
@@ -147,6 +148,20 @@ module Ductwork
 
     def logger_source
       @logger_source ||= fetch_logger_source
+    end
+
+    def pipeline_advancer_count(pipeline = nil)
+      pipeline ||= :default
+      default = DEFAULT_PIPELINE_ADVANCER_THREAD_COUNT
+      base_config = config.dig(:pipeline_advancer, :count)
+
+      if instance_variable_defined?(:@pipeline_advancer_count)
+        @pipeline_advancer_count
+      elsif base_config.is_a?(Hash)
+        base_config[pipeline.to_sym] || base_config[:default] || default
+      else
+        base_config || default
+      end
     end
 
     def pipeline_advancer_max_retry

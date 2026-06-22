@@ -9,6 +9,7 @@ default: &default
     polling_timeout: 1
     shutdown_timeout: 20
   pipeline_advancer:
+    count: 3
     max_retry: 3
     polling_timeout: 1
     shutdown_timeout: 20

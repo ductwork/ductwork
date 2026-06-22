@@ -11,9 +11,11 @@ module Ductwork
       def run
         if Ductwork.configuration.role.in?(%w[all advancer])
           pipelines.each do |pipeline|
-            log_created_pipeline_advancer(pipeline)
-            supervisor.add_worker(metadata: { pipeline: }) do
-              pipeline_advancer.new(pipeline)
+            Ductwork.configuration.pipeline_advancer_count(pipeline).times do |index|
+              log_created_pipeline_advancer(pipeline, index)
+              supervisor.add_worker(metadata: { pipeline: }) do
+                pipeline_advancer.new(pipeline, index)
+              end
             end
           end
         end
@@ -36,11 +38,12 @@ module Ductwork
 
       attr_reader :pipelines, :supervisor
 
-      def log_created_pipeline_advancer(pipeline)
+      def log_created_pipeline_advancer(pipeline, index)
         Ductwork.logger.debug(
           msg: "Created new pipeline advancer",
           role: :thread_supervisor_runner,
-          pipeline: pipeline
+          pipeline: pipeline,
+          index: index
         )
       end
 
