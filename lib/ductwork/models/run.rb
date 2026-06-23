@@ -93,7 +93,7 @@ module Ductwork
       begin
         reasons = branches.halted.pluck(:halt_reason)
 
-        Object.const_get(klass).new(reaons).execute
+        Object.const_get(klass).new(reasons).execute
       rescue StandardError => e
         Ductwork.logger.error(
           msg: "on_halt handler errored",
