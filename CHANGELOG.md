@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: conditionally update step, run, and pipeline status when claiming
 - fix: fire `on_halt` once and outside of all database transactions
 - fix: add missing database indexes (mostly) for dashboard pages
 - fix: only `sleep` pipeline advancer when no branch is claimed
