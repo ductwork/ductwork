@@ -123,6 +123,7 @@ module Ductwork
       new_run.triggered_at = now
       new_run.started_at = now
       new_run.status = "in_progress"
+      new_run.on_halt_dispatched_at = nil
 
       Ductwork::Record.transaction do
         lock!

@@ -26,6 +26,7 @@ RSpec.describe Ductwork::Pipeline, "#revive!" do
     expect(run).to be_in_progress
     expect(run.triggered_at).to be_almost_now
     expect(run.started_at).to be_almost_now
+    expect(run.on_halt_dispatched_at).to be_nil
     expect(run.definition).to eq(previous_run.definition)
     expect(run.definition_sha1).to eq(previous_run.definition_sha1)
     expect(run.pipeline).to eq(pipeline)
