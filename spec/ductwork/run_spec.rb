@@ -175,18 +175,6 @@ RSpec.describe Ductwork::Run do
           run_id: run.id
         )
       end
-
-      it "calls the `on_halt` DSL method if it exists" do
-        halt_step = instance_double(MyHaltStep, execute: nil)
-        definition = { metadata: { on_halt: { klass: "MyHaltStep" } } }.to_json
-        allow(MyHaltStep).to receive(:new).and_return(halt_step)
-        run.update!(definition:)
-
-        run.resolve_terminal_state!
-
-        expect(MyHaltStep).to have_received(:new).with(["advancer_retries_exhausted"])
-        expect(halt_step).to have_received(:execute)
-      end
     end
 
     context "when all branches successfully completed" do
@@ -211,6 +199,72 @@ RSpec.describe Ductwork::Run do
           msg: "Pipeline completed",
           pipeline_id: pipeline.id,
           run_id: run.id
+        )
+      end
+    end
+  end
+
+  describe "#dispatch_on_halt!" do
+    subject(:run) { create(:run, :halted, definition:) }
+
+    let(:definition) { { metadata: { on_halt: { klass: "MyHaltStep" } } }.to_json }
+    let(:halt_step) { instance_double(MyHaltStep, execute: nil) }
+
+    before do
+      create(:branch, :halted, run:)
+      allow(MyHaltStep).to receive(:new).and_return(halt_step)
+    end
+
+    it "runs the handler with the branch halt reasons" do
+      run.dispatch_on_halt!
+
+      expect(MyHaltStep).to have_received(:new).with(["advancer_retries_exhausted"])
+      expect(halt_step).to have_received(:execute)
+    end
+
+    it "claims the dispatch" do
+      expect do
+        run.dispatch_on_halt!
+      end.to change { run.reload.on_halt_dispatched_at }.from(nil).to(be_almost_now)
+    end
+
+    it "runs the handler at most once across repeated calls" do
+      run.dispatch_on_halt!
+      run.dispatch_on_halt!
+
+      expect(MyHaltStep).to have_received(:new).once
+    end
+
+    it "does nothing when the run is not halted" do
+      run.update!(status: "in_progress")
+
+      run.dispatch_on_halt!
+
+      expect(MyHaltStep).not_to have_received(:new)
+      expect(run.reload.on_halt_dispatched_at).to be_nil
+    end
+
+    context "when no `on_halt` handler is configured" do
+      let(:definition) { JSON.dump({}) }
+
+      it "does nothing" do
+        run.dispatch_on_halt!
+
+        expect(run.reload.on_halt_dispatched_at).to be_nil
+      end
+    end
+
+    context "when the handler raises" do
+      before do
+        allow(halt_step).to receive(:execute).and_raise("boom")
+        allow(Ductwork.logger).to receive(:error)
+      end
+
+      it "isolates the error and logs" do
+        expect { run.dispatch_on_halt! }.not_to raise_error
+
+        expect(Ductwork.logger).to have_received(:error).with(
+          hash_including(msg: "on_halt handler errored", run_id: run.id)
         )
       end
     end

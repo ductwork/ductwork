@@ -18,6 +18,7 @@ class CreateDuctworkRuns < Ductwork::Migration
       table.datetime :started_at, null: false
       table.datetime :completed_at
       table.datetime :halted_at
+      table.datetime :on_halt_dispatched_at
       table.timestamps null: false
     end
 

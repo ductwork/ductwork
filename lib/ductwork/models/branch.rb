@@ -91,6 +91,9 @@ module Ductwork
       else
         route_by_edge(transition, advancement)
       end
+
+      # NOTE: this is a no-op unless this advancement just halted the whole run
+      run.dispatch_on_halt!
     end
 
     def complete!
