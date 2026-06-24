@@ -45,7 +45,6 @@ module Ductwork
          condition_unmatched: "condition_unmatched",
          transition_invalid: "transition_invalid"
 
-    class StaleClaimError < StandardError; end
     class TransitionError < StandardError; end
 
     def self.with_latest_claimed(pipeline_klass)
@@ -69,29 +68,23 @@ module Ductwork
       end
     end
 
-    def with_claim_fence!(&block)
-      Ductwork::Record.transaction do
-        current_token = self.class.where(id:).lock.pick(:claim_token)
-
-        if current_token != claim_token
-          raise StaleClaimError, "Branch claim diverged, claim tokens do not match"
-        end
-
-        block.call
-      end
-    end
-
-    # NOTE: i changed my mind on how "with claim fence" should work. i don't
-    # like the idea of raising because this is truly not an exceptional case.
-    # the bang variant is for the happy-path dispatch, where a single
-    # `rescue StaleClaimError` at the boundary unwinds the fenced
-    # sub-transitions
+    # NOTE: claim divergence (the reaper released the branch and another advancer
+    # reclaimed it) is the expected outcome of a race, not an error, so the fence
+    # treats it as such: it logs and returns `false` rather than raising. Every
+    # branch/run mutation must run inside the fence. The row is locked for the
+    # block's duration, so divergence can only be observed at entry, never
+    # mid-block, and nested fences on the same row always hold. Returns `true`
+    # when the block ran, `false` when the claim had diverged.
     def with_claim_fence(&block)
-      with_claim_fence!(&block)
-      true
-    rescue StaleClaimError => e
-      log_claim_diverged(e)
-      false
+      Ductwork::Record.transaction do
+        if self.class.where(id:).lock.pick(:claim_token) == claim_token
+          block.call
+          true
+        else
+          log_claim_diverged
+          false
+        end
+      end
     end
 
     def advance!(transition, advancement)
@@ -164,13 +157,11 @@ module Ductwork
 
     private
 
-    def log_claim_diverged(error)
+    def log_claim_diverged
       Ductwork.logger.info(
         msg: "Branch claim no longer held",
         branch_id: id,
-        pipeline_klass: pipeline_klass,
-        error_klass: error.class.to_s,
-        error_message: error.message
+        pipeline_klass: pipeline_klass
       )
     end
 
@@ -188,15 +179,13 @@ module Ductwork
     end
 
     def halt_branch_and_resolve_run!(transition, advancement, halt_reason)
-      with_claim_fence! do
+      with_claim_fence do
         now = Time.current
         advancement.update!(completed_at: now)
         transition.update!(completed_at: now)
         halt!(halt_reason)
         run.resolve_terminal_state!
       end
-    rescue StaleClaimError => e
-      log_claim_diverged(e)
     rescue StandardError => e
       # NOTE: re-enter the claim fence before mutating branch/advancement state.
       # A non-stale error can be raised above and, before this rescue runs, the
@@ -246,8 +235,6 @@ module Ductwork
         raise Ductwork::Branch::TransitionError,
               "Invalid transition type `#{edge[:type]}`"
       end
-    rescue StaleClaimError => e
-      log_claim_diverged(e)
     rescue StandardError => e
       # NOTE: re-enter the claim fence before mutating branch/run terminal state.
       # A non-stale error can be raised above and, before this rescue runs, the
@@ -320,7 +307,7 @@ module Ductwork
     end
 
     def complete_branch_and_pipeline(transition, advancement)
-      with_claim_fence! do
+      with_claim_fence do
         latest_step.update!(status: :completed, completed_at: Time.current)
         complete!
 
@@ -338,7 +325,7 @@ module Ductwork
       klass = run.parsed_definition.dig(:edges, node, :klass)
       started_at = Time.current
 
-      with_claim_fence! do
+      with_claim_fence do
         latest_step.update!(status: :completed, completed_at: Time.current)
         # NOTE: we stay on the same branch for sequential `chain`-ing
         next_step = steps.create!(
@@ -361,7 +348,7 @@ module Ductwork
     def collapse_branch(edge, transition, advancement) # rubocop:todo Metrics
       parent_branch_id = parent_junctions.pick(:parent_branch_id)
 
-      with_claim_fence! do # rubocop:todo Metrics/BlockLength
+      with_claim_fence do # rubocop:todo Metrics/BlockLength
         # NOTE: lock the parent branch rather than the whole pipeline run
         # because at-most we're only coordinating across child branches of the
         # parent branch
@@ -420,7 +407,7 @@ module Ductwork
     def combine_branch(edge, transition, advancement) # rubocop:todo Metrics
       parent_branch_id = parent_junctions.pick(:parent_branch_id)
 
-      with_claim_fence! do # rubocop:todo Metrics/BlockLength
+      with_claim_fence do # rubocop:todo Metrics/BlockLength
         # NOTE: lock the parent branch rather than the whole pipeline run
         # because at-most we're only coordinating across child branches of the
         # parent branch
@@ -481,7 +468,7 @@ module Ductwork
       klass = run.parsed_definition.dig(:edges, node, :klass)
       started_at = Time.current
 
-      with_claim_fence! do
+      with_claim_fence do
         latest_step.update!(status: :completed, completed_at: Time.current)
         # NOTE: we stay on the same branch for `converge`-ing
         next_step = steps.create!(
@@ -508,12 +495,12 @@ module Ductwork
       started_at = Time.current
 
       if node.nil?
-        with_claim_fence! do
+        with_claim_fence do
           latest_step.update!(status: :completed, completed_at: Time.current)
           halt_branch_and_resolve_run!(transition, advancement, "condition_unmatched")
         end
       else
-        with_claim_fence! do
+        with_claim_fence do
           latest_step.update!(status: :completed, completed_at: Time.current)
           next_step = steps.create!(
             run: run,
@@ -545,12 +532,12 @@ module Ductwork
       end
 
       if too_many
-        with_claim_fence! do
+        with_claim_fence do
           latest_step.update!(status: :completed, completed_at: Time.current)
           halt_branch_and_resolve_run!(transition, advancement, "max_fanout_exceeded")
         end
       else
-        with_claim_fence! do
+        with_claim_fence do
           latest_step.update!(status: :completed, completed_at: Time.current)
           complete!
           edge[:to].each do |to|
@@ -590,7 +577,7 @@ module Ductwork
       )
 
       if max_depth != -1 && return_value.count > max_depth
-        with_claim_fence! do
+        with_claim_fence do
           latest_step.update!(status: :completed, completed_at: Time.current)
           halt_branch_and_resolve_run!(transition, advancement, "max_fanout_exceeded")
         end
@@ -606,7 +593,7 @@ module Ductwork
       next_klass = run.parsed_definition.dig(:edges, node, :klass)
       now = Time.current
 
-      with_claim_fence! do # rubocop:todo Metrics/BlockLength
+      with_claim_fence do # rubocop:todo Metrics/BlockLength
         latest_step.update!(status: :completed, completed_at: Time.current)
         complete!
 

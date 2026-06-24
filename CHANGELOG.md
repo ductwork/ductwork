@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: do not raise `StaleClaimError` in `Branch#with_claim_fence`
 - fix: add missing claim fence around branch/advancement mutation queries
 - fix: add a branch claiming guard to skip when no live process record exists
 - fix: cleanup crashed thread and release branch atomically

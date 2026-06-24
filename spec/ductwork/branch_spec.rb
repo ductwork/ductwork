@@ -323,10 +323,10 @@ RSpec.describe Ductwork::Branch do
         end
 
         context "when the claim diverges while cleaning up" do
-          # The first fence raises the original error; before the rescue's
-          # fence re-check runs, the branch is reclaimed so the token this
-          # advancer holds no longer matches the live row. The rescue must bail
-          # quietly rather than surface a spurious crash.
+          # The original error is raised mid-block; before the rescue's fence
+          # re-check runs, the branch is reclaimed so the token this advancer
+          # holds no longer matches the live row. The rescue must bail quietly
+          # rather than surface a spurious crash.
           before do
             allow(transition).to receive(:update!) do
               branch.claim_token = SecureRandom.uuid
@@ -343,9 +343,7 @@ RSpec.describe Ductwork::Branch do
             expect(Ductwork.logger).to have_received(:info).with(
               msg: "Branch claim no longer held",
               branch_id: branch.id,
-              pipeline_klass: branch.pipeline_klass,
-              error_klass: "Ductwork::Branch::StaleClaimError",
-              error_message: be_present
+              pipeline_klass: branch.pipeline_klass
             )
             expect(Ductwork.logger).not_to have_received(:error)
           end
@@ -536,9 +534,7 @@ RSpec.describe Ductwork::Branch do
             expect(Ductwork.logger).to have_received(:info).with(
               msg: "Branch claim no longer held",
               branch_id: branch.id,
-              pipeline_klass: branch.pipeline_klass,
-              error_klass: "Ductwork::Branch::StaleClaimError",
-              error_message: be_present
+              pipeline_klass: branch.pipeline_klass
             )
             expect(Ductwork.logger).not_to have_received(:error)
           end

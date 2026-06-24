@@ -69,7 +69,7 @@ module Ductwork
     #
     # The handler is an observable side effect (it may page, refund, or emit an
     # external event), so it must run only after the halt is durably committed
-    # and outside the advancer's `with_claim_fence!` transaction; otherwise a
+    # and outside the advancer's `with_claim_fence` transaction; otherwise a
     # rolled-back commit (deadlock victim, dropped connection) would leave it
     # spuriously fired and double-firing on re-claim. `Branch#advance!` calls
     # this once the advancement has committed.
