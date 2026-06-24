@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: add missing claim fence around branch/advancement mutation queries
 - fix: add a branch claiming guard to skip when no live process record exists
 - fix: cleanup crashed thread and release branch atomically
 - feat: cap pipeline advancer crashes and halt with `advancer_crashes_exhausted`

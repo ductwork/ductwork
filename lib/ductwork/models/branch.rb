@@ -81,6 +81,19 @@ module Ductwork
       end
     end
 
+    # NOTE: i changed my mind on how "with claim fence" should work. i don't
+    # like the idea of raising because this is truly not an exceptional case.
+    # the bang variant is for the happy-path dispatch, where a single
+    # `rescue StaleClaimError` at the boundary unwinds the fenced
+    # sub-transitions
+    def with_claim_fence(&block)
+      with_claim_fence!(&block)
+      true
+    rescue StaleClaimError => e
+      log_claim_diverged(e)
+      false
+    end
+
     def advance!(transition, advancement)
       step = latest_step
       max_crash = Ductwork.configuration.pipeline_advancer_max_crash
@@ -151,6 +164,16 @@ module Ductwork
 
     private
 
+    def log_claim_diverged(error)
+      Ductwork.logger.info(
+        msg: "Branch claim no longer held",
+        branch_id: id,
+        pipeline_klass: pipeline_klass,
+        error_klass: error.class.to_s,
+        error_message: error.message
+      )
+    end
+
     # NOTE: a failed step exhausted either its error budget (`errored!`) or its
     # crash budget (`crashed!`); both set the step to `failed`, so we read the
     # terminal execution result to report the precise halt reason. yes, another
@@ -173,15 +196,15 @@ module Ductwork
         run.resolve_terminal_state!
       end
     rescue StaleClaimError => e
-      Ductwork.logger.info(
-        msg: "Branch claim no longer held",
-        branch_id: id,
-        pipeline_klass: pipeline_klass,
-        error_klass: e.class.to_s,
-        error_message: e.message
-      )
+      log_claim_diverged(e)
     rescue StandardError => e
-      Ductwork::Record.transaction do
+      # NOTE: re-enter the claim fence before mutating branch/advancement state.
+      # A non-stale error can be raised above and, before this rescue runs, the
+      # reaper could release the branch and another advancer reclaim it (new
+      # token). Without the fence this stale advancer would stomp the live claim.
+      # A divergence here is benign (another advancer owns the branch now), so we
+      # bail rather than let it surface as an advancer crash.
+      fenced = with_claim_fence do
         advancement&.update!(
           completed_at: Time.current,
           error_klass: e.class.to_s,
@@ -190,6 +213,7 @@ module Ductwork
         )
         release!
       end
+      return unless fenced
 
       Ductwork.logger.error(
         msg: "Branch halt errored",
@@ -223,15 +247,16 @@ module Ductwork
               "Invalid transition type `#{edge[:type]}`"
       end
     rescue StaleClaimError => e
-      Ductwork.logger.info(
-        msg: "Branch claim no longer held",
-        branch_id: id,
-        pipeline_klass: pipeline_klass,
-        error_klass: e.class.to_s,
-        error_message: e.message
-      )
+      log_claim_diverged(e)
     rescue StandardError => e
-      Ductwork::Record.transaction do # rubocop:todo Metrics/BlockLength
+      # NOTE: re-enter the claim fence before mutating branch/run terminal state.
+      # A non-stale error can be raised above and, before this rescue runs, the
+      # reaper could release the branch and another advancer reclaim it (new
+      # token). `halt!` is not token-guarded, so without the fence this stale
+      # advancer's halt would stomp the live claim and could halt a run another
+      # advancer is actively advancing. A divergence here is benign (another
+      # advancer owns the branch now), so we bail.
+      fenced = with_claim_fence do # rubocop:todo Metrics/BlockLength
         if e.is_a?(Ductwork::Branch::TransitionError) || too_many_failed_attempts?
           latest_step.update!(status: :completed, completed_at: Time.current)
 
@@ -262,6 +287,7 @@ module Ductwork
           release!
         end
       end
+      return unless fenced
 
       Ductwork.logger.error(
         msg: "Branch advancement errored",

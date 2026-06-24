@@ -321,6 +321,35 @@ RSpec.describe Ductwork::Branch do
             error_message: "bad times"
           )
         end
+
+        context "when the claim diverges while cleaning up" do
+          # The first fence raises the original error; before the rescue's
+          # fence re-check runs, the branch is reclaimed so the token this
+          # advancer holds no longer matches the live row. The rescue must bail
+          # quietly rather than surface a spurious crash.
+          before do
+            allow(transition).to receive(:update!) do
+              branch.claim_token = SecureRandom.uuid
+              raise "bad times"
+            end
+          end
+
+          it "logs that the claim is no longer held and skips the error log" do
+            allow(Ductwork.logger).to receive(:info)
+            allow(Ductwork.logger).to receive(:error)
+
+            branch.advance!(transition, advancement)
+
+            expect(Ductwork.logger).to have_received(:info).with(
+              msg: "Branch claim no longer held",
+              branch_id: branch.id,
+              pipeline_klass: branch.pipeline_klass,
+              error_klass: "Ductwork::Branch::StaleClaimError",
+              error_message: be_present
+            )
+            expect(Ductwork.logger).not_to have_received(:error)
+          end
+        end
       end
     end
 
@@ -469,6 +498,50 @@ RSpec.describe Ductwork::Branch do
           branch.advance!(spy, advancement)
 
           expect(run).to have_received(:resolve_terminal_state!)
+        end
+
+        context "when the claim diverges before the halt is applied" do
+          # The reaper released the branch and another advancer reclaimed it
+          # (new token) after the advancement error but before this stale
+          # advancer's rescue runs. `halt!` is not token-guarded, so the
+          # rescue must re-enter the claim fence and bail rather than stomp the
+          # live claim and halt a run another advancer is advancing.
+          before do
+            described_class
+              .where(id: branch.id)
+              .update_all(claim_token: SecureRandom.uuid)
+          end
+
+          it "does not halt the branch held by the live advancer" do
+            branch.advance!(spy, advancement)
+
+            expect(branch.reload.status).to eq("advancing")
+            expect(branch.halt_reason).to be_nil
+          end
+
+          it "does not resolve the run's terminal state" do
+            allow(run).to receive(:resolve_terminal_state!).and_call_original
+
+            branch.advance!(spy, advancement)
+
+            expect(run).not_to have_received(:resolve_terminal_state!)
+          end
+
+          it "logs that the claim is no longer held and skips the error log" do
+            allow(Ductwork.logger).to receive(:info)
+            allow(Ductwork.logger).to receive(:error)
+
+            branch.advance!(spy, advancement)
+
+            expect(Ductwork.logger).to have_received(:info).with(
+              msg: "Branch claim no longer held",
+              branch_id: branch.id,
+              pipeline_klass: branch.pipeline_klass,
+              error_klass: "Ductwork::Branch::StaleClaimError",
+              error_message: be_present
+            )
+            expect(Ductwork.logger).not_to have_received(:error)
+          end
         end
       end
 
