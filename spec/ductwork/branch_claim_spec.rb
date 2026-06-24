@@ -9,6 +9,7 @@ RSpec.describe Ductwork::BranchClaim do
 
     context "when there is a branch to claim" do
       before do
+        create(:process, :current)
         create(:step, :advancing, branch:)
         create(:branch, :in_progress, pipeline_klass: "OtherPipeline")
         create(:branch, :in_progress, claimed_for_advancing_at: Time.current)
@@ -27,6 +28,12 @@ RSpec.describe Ductwork::BranchClaim do
 
         expect(claim.transition).to eq(Ductwork::Transition.sole)
         expect(claim.advancement).to eq(Ductwork::Advancement.sole)
+      end
+
+      it "attaches the advancement to the current process record" do
+        claim.latest
+
+        expect(claim.advancement.process).to eq(Ductwork::Process.current)
       end
 
       it "generates and sets the claim token" do
@@ -161,10 +168,33 @@ RSpec.describe Ductwork::BranchClaim do
     end
 
     context "when there is no branch to claim" do
+      before { create(:process, :current) }
+
       it "returns nil" do
         record, = claim.latest
 
         expect(record).to be_nil
+      end
+    end
+
+    context "when there is no live process record" do
+      before do
+        create(:step, :advancing, branch:)
+      end
+
+      it "returns nil without claiming the branch" do
+        record = claim.latest
+
+        expect(record).to be_nil
+        expect(branch.reload).to be_in_progress
+        expect(branch.claimed_for_advancing_at).to be_nil
+      end
+
+      it "does not create an advancement or transition" do
+        expect do
+          claim.latest
+        end.to not_change(Ductwork::Advancement, :count)
+          .and not_change(Ductwork::Transition, :count)
       end
     end
   end

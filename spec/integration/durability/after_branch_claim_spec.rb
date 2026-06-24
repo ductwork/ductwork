@@ -36,6 +36,9 @@ RSpec.describe "Crash after branch claim before advancement", :no_transaction do
 
     Ductwork::Process.where(pid:).update_all(last_heartbeat_at: 6.minutes.ago)
 
+    # NOTE: the recovering advancer is a live process with its own record; an
+    # advancer will not claim without one (it would orphan the advancement).
+    create(:process, :current)
     advancer = Ductwork::Processes::PipelineAdvancer.new(pipeline_klass)
 
     Ductwork::Process.reap_all!(:process_supervisor)

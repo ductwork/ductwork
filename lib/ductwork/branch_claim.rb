@@ -10,11 +10,23 @@ module Ductwork
     end
 
     def latest
+      # NOTE: an advancement must attach to a live process record so the reaper
+      # can find and recover it if this process dies. `Process.current` is only
+      # nil when our record was reaped for a stale heartbeat (e.g. host suspend)
+      # and the runner has not re-adopted it yet — i.e. the system has already
+      # declared this process dead. Claiming as a presumed-dead zombie would
+      # create an advancement with a nil `process_id` that no reaper sweep can
+      # reach, orphaning the branch. Skip this cycle instead; the runner
+      # re-adopts within its heartbeat interval.
+      process = Ductwork::Process.current
+
+      return log_no_process if process.nil?
+
       id = find_candidate_branch_id
 
       return log_no_branches if id.blank?
 
-      rows_updated = claim_and_setup_records(id)
+      rows_updated = claim_and_setup_records(id, process)
 
       if rows_updated == 1
         Ductwork::Branch.find(id)
@@ -38,7 +50,7 @@ module Ductwork
         .first
     end
 
-    def claim_and_setup_records(id)
+    def claim_and_setup_records(id, process)
       now = Time.current
       @token = SecureRandom.uuid
 
@@ -55,7 +67,7 @@ module Ductwork
           branch = Branch.find(id)
           @transition = find_or_create_transition(branch, now)
           @advancement = transition.advancements.create!(
-            process: Ductwork::Process.current,
+            process: process,
             started_at: now,
             crash_count: next_crash_count(transition)
           )
@@ -114,6 +126,16 @@ module Ductwork
           error_klass: "Ductwork::ProcessCrash",
           error_message: "Advancement was abandoned from a process crash"
         )
+    end
+
+    def log_no_process
+      Ductwork.logger.debug(
+        msg: "No live process record, skipping branch claim",
+        pipeline: pipeline_klass,
+        role: :pipeline_advancer
+      )
+
+      nil
     end
 
     def log_no_branches

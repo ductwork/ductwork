@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: add a branch claiming guard to skip when no live process record exists
 - fix: cleanup crashed thread and release branch atomically
 - feat: cap pipeline advancer crashes and halt with `advancer_crashes_exhausted`
 - feat: create configuration for pipeline advancer max crash count

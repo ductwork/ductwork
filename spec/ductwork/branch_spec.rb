@@ -129,7 +129,7 @@ RSpec.describe Ductwork::Branch do
     it "cleans up the advancement if the thread crashes" do
       expect do
         described_class.with_latest_claimed(pipeline_klass) {}
-      end.to change(advancement, :completed_at).from(nil).to(be_almost_now)
+      end.to change { advancement.reload.completed_at }.from(nil).to(be_almost_now)
         .and change(advancement, :error_klass).to("Ductwork::ThreadCrash")
         .and change(advancement, :error_message).to(
           "Advancement abandoned from a thread crash"
