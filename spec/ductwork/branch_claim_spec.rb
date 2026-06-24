@@ -75,6 +75,89 @@ RSpec.describe Ductwork::BranchClaim do
           expect(advancement.error_message).to eq("Advancement was abandoned from a process crash")
         end
       end
+
+      context "when there is no prior advancement" do
+        it "starts the crash count at zero" do
+          claim.latest
+
+          expect(claim.advancement.crash_count).to eq(0)
+        end
+      end
+
+      # NOTE: pin the reused transition to this branch (in_step on it, no
+      # out_step) so the transition factory does not spin up extra branches that
+      # could compete for the claim and make the assertions flaky.
+      context "when the prior advancement on the transition was a crash" do
+        let(:transition) do
+          in_step = create(:step, :advancing, branch:)
+
+          create(
+            :transition,
+            branch: branch,
+            in_step: in_step,
+            out_step: nil,
+            completed_at: nil
+          )
+        end
+
+        before do
+          create(:advancement, :crashed, transition: transition, crash_count: 2)
+        end
+
+        it "carries the crash count forward and increments it" do
+          claim.latest
+
+          expect(claim.advancement.crash_count).to eq(3)
+        end
+      end
+
+      context "when the prior advancement was an abandoned in-flight crash" do
+        let(:transition) do
+          in_step = create(:step, :advancing, branch:)
+
+          create(
+            :transition,
+            branch: branch,
+            in_step: in_step,
+            out_step: nil,
+            completed_at: nil
+          )
+        end
+
+        before do
+          create(:advancement, transition: transition, crash_count: 1)
+        end
+
+        it "increments the crash count after the abandonment is stamped" do
+          claim.latest
+
+          expect(claim.advancement.crash_count).to eq(2)
+        end
+      end
+
+      context "when the prior advancement was a non-crash logic error" do
+        let(:transition) do
+          in_step = create(:step, :advancing, branch:)
+
+          create(
+            :transition,
+            branch: branch,
+            in_step: in_step,
+            out_step: nil,
+            completed_at: nil
+          )
+        end
+
+        before do
+          create(:advancement, :errored, transition: transition, completed_at: Time.current, crash_count: 2)
+        end
+
+        it "carries the crash count forward unchanged" do
+          claim.latest
+
+          expect(claim.advancement.crash_count).to eq(2)
+        end
+      end
     end
 
     context "when there is no branch to claim" do

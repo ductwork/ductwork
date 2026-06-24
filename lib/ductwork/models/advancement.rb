@@ -7,6 +7,12 @@ module Ductwork
 
     validates :started_at, presence: true
 
+    CRASH_ERROR_KLASSES = %w[Ductwork::ProcessCrash Ductwork::ThreadCrash].freeze
+
+    def crash?
+      CRASH_ERROR_KLASSES.include?(error_klass)
+    end
+
     def process_crashed!
       Ductwork::Record.transaction do
         rows_updated = self.class

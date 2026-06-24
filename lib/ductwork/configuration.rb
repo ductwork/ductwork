@@ -12,6 +12,7 @@ module Ductwork
     DEFAULT_JOB_WORKER_SHUTDOWN_TIMEOUT = 20 # seconds
     DEFAULT_LOGGER_LEVEL = ::Logger::INFO
     DEFAULT_LOGGER_SOURCE = "default" # `Logger` instance writing to STDOUT
+    DEFAULT_PIPELINE_ADVANCER_MAX_CRASH = 10 # attempts
     DEFAULT_PIPELINE_ADVANCER_MAX_RETRY = 10 # attempts
     DEFAULT_PIPELINE_ADVANCER_THREAD_COUNT = 3 # threads
     DEFAULT_PIPELINE_POLLING_TIMEOUT = 1 # second
@@ -31,7 +32,8 @@ module Ductwork
                 :job_worker_shutdown_timeout, :job_worker_max_retry,
                 :job_worker_max_crash,
                 :logger_level,
-                :pipeline_advancer_count, :pipeline_advancer_max_retry,
+                :pipeline_advancer_count, :pipeline_advancer_max_crash,
+                :pipeline_advancer_max_retry,
                 :pipeline_polling_timeout, :pipeline_shutdown_timeout,
                 :steps_max_depth,
                 :supervisor_polling_timeout, :supervisor_reaper_timeout,
@@ -164,6 +166,10 @@ module Ductwork
       end
     end
 
+    def pipeline_advancer_max_crash
+      @pipeline_advancer_max_crash ||= fetch_pipeline_advancer_max_crash
+    end
+
     def pipeline_advancer_max_retry
       @pipeline_advancer_max_retry ||= fetch_pipeline_advancer_max_retry
     end
@@ -235,6 +241,11 @@ module Ductwork
 
     def fetch_logger_source
       config.dig(:logger, :source) || DEFAULT_LOGGER_SOURCE
+    end
+
+    def fetch_pipeline_advancer_max_crash
+      config.dig(:pipeline_advancer, :max_crash) ||
+        DEFAULT_PIPELINE_ADVANCER_MAX_CRASH
     end
 
     def fetch_pipeline_advancer_max_retry

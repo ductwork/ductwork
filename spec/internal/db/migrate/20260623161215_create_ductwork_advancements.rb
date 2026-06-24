@@ -19,6 +19,7 @@ class CreateDuctworkAdvancements < Ductwork::Migration
       )
       table.datetime :started_at, null: false
       table.datetime :completed_at
+      table.integer :crash_count
       table.string :error_klass
       table.string :error_message
       table.text :error_backtrace

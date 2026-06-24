@@ -2,6 +2,8 @@
 
 ## [1.0.0] (Unreleased)
 
+- feat: cap pipeline advancer crashes and halt with `advancer_crashes_exhausted`
+- feat: create configuration for pipeline advancer max crash count
 - chore: conditionally update step, run, and pipeline status when claiming
 - fix: fire `on_halt` once and outside of all database transactions
 - fix: add missing database indexes (mostly) for dashboard pages

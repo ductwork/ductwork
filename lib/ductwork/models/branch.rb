@@ -39,6 +39,7 @@ module Ductwork
     enum :halt_reason,
          job_retries_exhausted: "job_retries_exhausted",
          job_crashes_exhausted: "job_crashes_exhausted",
+         advancer_crashes_exhausted: "advancer_crashes_exhausted",
          advancer_retries_exhausted: "advancer_retries_exhausted",
          max_fanout_exceeded: "max_fanout_exceeded",
          condition_unmatched: "condition_unmatched",
@@ -84,10 +85,16 @@ module Ductwork
 
     def advance!(transition, advancement)
       step = latest_step
-      reason = failed_step_halt_reason(step)
+      max_crash = Ductwork.configuration.pipeline_advancer_max_crash
 
-      if step.failed?
-        halt_branch_and_resolve_run!(transition, advancement, reason)
+      # NOTE: the crash cap is checked first as the true backstop against a
+      # poison branch that repeatedly crashes the advancer process/thread. In a
+      # normal failed-step halt no advancer crashes have accrued, so this only
+      # fires on a genuine crash loop.
+      if advancement.crash_count >= max_crash
+        halt_branch_and_resolve_run!(transition, advancement, "advancer_crashes_exhausted")
+      elsif step.failed?
+        halt_branch_and_resolve_run!(transition, advancement, failed_step_halt_reason(step))
       else
         route_by_edge(transition, advancement)
       end
@@ -268,16 +275,18 @@ module Ductwork
 
     def too_many_failed_attempts?
       max = Ductwork.configuration.pipeline_advancer_max_retry
-      internal_errors = %w[Ductwork::ProcessCrash Ductwork::ThreadCrash]
+      internal_errors = Ductwork::Advancement::CRASH_ERROR_KLASSES
 
       # NOTE: crash/abandonment advancements (a process reaped mid-advancement,
       # or a thread killed) are NOT advancer-logic failures and must not consume
       # the retry budget — otherwise a long, legitimately-resuming `expand` /
       # `collapse` fan-out/fan-in (re-claimed once per crash cycle) is falsely
       # halted as `advancer_retries_exhausted`. This mirrors the execution tier,
-      # where `crashed!` bumps an uncapped `crash_count` while only `errored!`
-      # consumes `retry_count`. Only genuine `StandardError`s raised inside the
-      # transition logic (which carry their own `error_klass`) count here.
+      # where `crashed!` consumes a separate `crash_count` budget while only
+      # `errored!` consumes `retry_count`; crashes are instead capped by
+      # `pipeline_advancer_max_crash` (see `advance!`). Only genuine
+      # `StandardError`s raised inside the transition logic (which carry their
+      # own `error_klass`) count here.
       transitions
         .joins(:advancements)
         .where(in_step_id: latest_step.id)

@@ -165,6 +165,10 @@ RSpec.describe Ductwork::Branch do
 
     let(:run) { create(:run, :in_progress, definition:) }
     let(:step) { create(:step, :advancing, branch:, run:) }
+    # NOTE: `advance!` reads `advancement.crash_count`, so a real advancement
+    # (crash_count 0) is needed where the test otherwise doesn't care about it.
+    # Contexts that assert on the advancement shadow this with their own.
+    let(:advancement) { create(:advancement) }
     let(:definition) do
       {
         nodes: %w[MyStepA.0],
@@ -181,7 +185,7 @@ RSpec.describe Ductwork::Branch do
 
     it "completes the step" do
       expect do
-        branch.advance!(spy, spy)
+        branch.advance!(spy, advancement)
       end.to change { step.reload.status }.from("advancing").to("completed")
         .and change(step, :completed_at).from(nil).to(be_almost_now)
     end
@@ -189,13 +193,13 @@ RSpec.describe Ductwork::Branch do
     context "when the step is the last node" do
       it "completes the branch" do
         expect do
-          branch.advance!(spy, spy)
+          branch.advance!(spy, advancement)
         end.to change { branch.reload.completed_at }.to(be_almost_now)
       end
 
       it "completes the pipeline and run" do
         expect do
-          branch.advance!(spy, spy)
+          branch.advance!(spy, advancement)
         end.to change { run.reload.status }.to("completed")
           .and change(run, :completed_at).to(be_almost_now)
       end
@@ -217,7 +221,7 @@ RSpec.describe Ductwork::Branch do
 
       it "does not complete the pipeline" do
         expect do
-          branch.advance!(spy, spy)
+          branch.advance!(spy, advancement)
         end.not_to change(run, :status)
       end
     end
@@ -308,7 +312,7 @@ RSpec.describe Ductwork::Branch do
         it "logs" do
           allow(Ductwork.logger).to receive(:error)
 
-          branch.advance!(transition, spy)
+          branch.advance!(transition, advancement)
 
           expect(Ductwork.logger).to have_received(:error).with(
             msg: "Branch halt errored",
@@ -336,6 +340,51 @@ RSpec.describe Ductwork::Branch do
           branch.advance!(transition, advancement)
         end.to change(branch, :status).from("advancing").to("halted")
           .and change(branch, :halt_reason).to("job_crashes_exhausted")
+      end
+    end
+
+    context "when advancement crashes are exhausted" do
+      let(:transition) do
+        create(:transition, in_step: step, out_step: nil, branch: branch)
+      end
+      let(:advancement) { create(:advancement, transition: transition, crash_count: 1) }
+
+      before do
+        Ductwork.configuration.pipeline_advancer_max_crash = 1
+      end
+
+      it "halts the branch with the crash reason" do
+        expect do
+          branch.advance!(transition, advancement)
+        end.to change(branch, :status).from("advancing").to("halted")
+          .and change(branch, :halt_reason).to("advancer_crashes_exhausted")
+      end
+
+      it "completes the transition and advancement" do
+        expect do
+          branch.advance!(transition, advancement)
+        end.to change { advancement.reload.completed_at }.to(be_almost_now)
+          .and change { transition.reload.completed_at }.to(be_almost_now)
+      end
+
+      it "resolves the terminal state on the run" do
+        allow(run).to receive(:resolve_terminal_state!).and_call_original
+
+        branch.advance!(transition, advancement)
+
+        expect(run).to have_received(:resolve_terminal_state!)
+      end
+
+      context "when still under the crash cap" do
+        let(:advancement) { create(:advancement, transition: transition, crash_count: 0) }
+
+        # NOTE: the run definition's last node completes the branch, so a
+        # not-yet-exhausted advancement must route normally rather than halt.
+        it "does not halt with the crash reason" do
+          branch.advance!(transition, advancement)
+
+          expect(branch.reload.halt_reason).to be_nil
+        end
       end
     end
 
@@ -372,7 +421,7 @@ RSpec.describe Ductwork::Branch do
       it "logs" do
         allow(Ductwork.logger).to receive(:error)
 
-        branch.advance!(spy, spy)
+        branch.advance!(spy, advancement)
 
         expect(Ductwork.logger).to have_received(:error).with(
           msg: "Branch advancement errored",
@@ -396,28 +445,28 @@ RSpec.describe Ductwork::Branch do
 
         it "sets the step to completed" do
           expect do
-            branch.advance!(spy, spy)
+            branch.advance!(spy, advancement)
           end.to change { step.reload.status }.from("advancing").to("completed")
             .and change(step, :completed_at).to(be_almost_now)
         end
 
         it "halts the branch" do
           expect do
-            branch.advance!(spy, spy)
+            branch.advance!(spy, advancement)
           end.to change(branch, :status).from("advancing").to("halted")
             .and change(branch, :halt_reason).to("advancer_retries_exhausted")
         end
 
         it "completes the transition" do
           expect do
-            branch.advance!(transition, spy)
+            branch.advance!(transition, advancement)
           end.to change(transition, :completed_at).to(be_almost_now)
         end
 
         it "resolves the terminal state on the run" do
           allow(run).to receive(:resolve_terminal_state!).and_call_original
 
-          branch.advance!(spy, spy)
+          branch.advance!(spy, advancement)
 
           expect(run).to have_received(:resolve_terminal_state!)
         end
@@ -460,7 +509,7 @@ RSpec.describe Ductwork::Branch do
         # `run` association cache and `advance!` would then call an unstubbed
         # `parsed_definition`. Run `advance!` first (stub intact), then reload.
         it "does not halt the branch" do
-          branch.advance!(spy, spy)
+          branch.advance!(spy, advancement)
 
           expect(branch.reload).not_to be_halted
           expect(branch.status).to eq("in_progress")
@@ -468,7 +517,7 @@ RSpec.describe Ductwork::Branch do
         end
 
         it "releases the branch so it can be re-claimed and resumed" do
-          branch.advance!(spy, spy)
+          branch.advance!(spy, advancement)
 
           expect(branch.reload.claimed_for_advancing_at).to be_nil
           expect(branch.claim_token).to be_nil
@@ -482,7 +531,7 @@ RSpec.describe Ductwork::Branch do
           )
 
           expect do
-            branch.advance!(spy, spy)
+            branch.advance!(spy, advancement)
           end.to change(branch, :status).from("advancing").to("halted")
             .and change(branch, :halt_reason).to("advancer_retries_exhausted")
         end
@@ -514,14 +563,14 @@ RSpec.describe Ductwork::Branch do
 
       it "sets the step to completed" do
         expect do
-          branch.advance!(spy, spy)
+          branch.advance!(spy, advancement)
         end.to change { step.reload.status }.from("advancing").to("completed")
           .and change(step, :completed_at).to(be_almost_now)
       end
 
       it "halts the branch" do
         expect do
-          branch.advance!(spy, spy)
+          branch.advance!(spy, advancement)
         end.to change(branch, :status).from("advancing").to("halted")
           .and change(branch, :halt_reason).to("transition_invalid")
       end
@@ -529,7 +578,7 @@ RSpec.describe Ductwork::Branch do
       it "resolves the terminal state on the run" do
         allow(run).to receive(:resolve_terminal_state!).and_call_original
 
-        branch.advance!(spy, spy)
+        branch.advance!(spy, advancement)
 
         expect(run).to have_received(:resolve_terminal_state!)
       end
@@ -537,7 +586,7 @@ RSpec.describe Ductwork::Branch do
       it "logs" do
         allow(Ductwork.logger).to receive(:error)
 
-        branch.advance!(spy, spy)
+        branch.advance!(spy, advancement)
 
         expect(Ductwork.logger).to have_received(:error).with(
           msg: "Branch advancement errored",

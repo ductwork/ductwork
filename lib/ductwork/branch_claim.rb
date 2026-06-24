@@ -56,7 +56,8 @@ module Ductwork
           @transition = find_or_create_transition(branch, now)
           @advancement = transition.advancements.create!(
             process: Ductwork::Process.current,
-            started_at: now
+            started_at: now,
+            crash_count: next_crash_count(transition)
           )
         end
 
@@ -80,6 +81,24 @@ module Ductwork
           in_step: branch.latest_step,
           started_at: now
         )
+      end
+    end
+
+    # NOTE: each crash spawns a fresh advancement at re-claim, so the running
+    # crash total lives on the advancement and carries forward (mirroring
+    # `Ductwork::Execution#crash_count`). The prior advancement is read after
+    # `find_or_create_transition` has already marked any abandoned in-flight
+    # advancement as a crash, so both the reaper/thread-cleanup path and the
+    # `fail_abandoned_advancement` path are reflected here. A fresh transition
+    # starts at 0; a non-crash errored prior carries the total unchanged.
+    def next_crash_count(transition)
+      prior = transition.advancements.order(started_at: :desc).first
+      base = prior&.crash_count || 0
+
+      if prior&.crash?
+        base + 1
+      else
+        base
       end
     end
 

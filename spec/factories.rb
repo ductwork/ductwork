@@ -3,6 +3,7 @@
 FactoryBot.define do
   factory :advancement, class: "Ductwork::Advancement" do
     started_at { Time.current }
+    crash_count { 0 }
     process
     transition
 
@@ -10,6 +11,13 @@ FactoryBot.define do
       error_klass { "StandardError" }
       error_message { "bad times" }
       error_backtrace { "(main)" }
+    end
+
+    trait :crashed do
+      error_klass { "Ductwork::ProcessCrash" }
+      error_message { "crashed" }
+      error_backtrace { "(main)" }
+      completed_at { Time.current }
     end
   end
 

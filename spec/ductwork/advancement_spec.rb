@@ -16,6 +16,32 @@ RSpec.describe Ductwork::Advancement do
     end
   end
 
+  describe "#crash?" do
+    it "is true for a process crash" do
+      advancement = build(:advancement, error_klass: "Ductwork::ProcessCrash")
+
+      expect(advancement).to be_crash
+    end
+
+    it "is true for a thread crash" do
+      advancement = build(:advancement, error_klass: "Ductwork::ThreadCrash")
+
+      expect(advancement).to be_crash
+    end
+
+    it "is false for a non-crash logic error" do
+      advancement = build(:advancement, :errored)
+
+      expect(advancement).not_to be_crash
+    end
+
+    it "is false when there is no error" do
+      advancement = build(:advancement)
+
+      expect(advancement).not_to be_crash
+    end
+  end
+
   describe "#process_crashed!" do
     subject(:advancement) { described_class.create!(transition:, started_at:) }
 
