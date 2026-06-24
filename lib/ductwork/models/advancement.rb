@@ -29,12 +29,20 @@ module Ductwork
       end
     end
 
-    def thread_crashed!
-      update_columns(
-        completed_at: Time.current,
-        error_klass: "Ductwork::ThreadCrash",
-        error_message: "Advancement abandoned from a thread crash"
-      )
+    def thread_crashed!(expected_token)
+      Ductwork::Record.transaction do
+        rows_updated = self.class
+                           .where(id: id, completed_at: nil)
+                           .update_all(
+                             completed_at: Time.current,
+                             error_klass: "Ductwork::ThreadCrash",
+                             error_message: "Advancement abandoned from a thread crash"
+                           )
+
+        return if rows_updated.zero?
+
+        transition.branch.release!(expected_token)
+      end
     end
   end
 end

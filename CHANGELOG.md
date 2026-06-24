@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: cleanup crashed thread and release branch atomically
 - feat: cap pipeline advancer crashes and halt with `advancer_crashes_exhausted`
 - feat: create configuration for pipeline advancer max crash count
 - chore: conditionally update step, run, and pipeline status when claiming

@@ -65,10 +65,8 @@ module Ductwork
       advancement = branch_claim.advancement
 
       if advancement&.persisted? && advancement.completed_at.nil?
-        advancement.thread_crashed!
+        advancement.thread_crashed!(branch_claim.token)
       end
-
-      branch&.release!(branch_claim.token)
     end
 
     def with_claim_fence!(&block)

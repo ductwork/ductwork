@@ -88,16 +88,51 @@ RSpec.describe Ductwork::Advancement do
     subject(:advancement) { described_class.create!(transition:, started_at:) }
 
     let(:started_at) { Time.current }
-    let(:transition) { create(:transition) }
+    let(:branch) { create(:branch, :claimed) }
+    let(:transition) { create(:transition, branch:) }
+    let(:token) { branch.claim_token }
+
+    # NOTE: this protects against a worker racing against the reaper where an
+    # advancement can be incomplete at read-time but completed by write-time
+    it "no-ops if the advancement is completed" do
+      advancement.update!(completed_at: Time.current)
+
+      expect do
+        advancement.thread_crashed!(token)
+      end.to not_change(advancement, :completed_at)
+    end
+
+    it "is idempotent" do
+      advancement.thread_crashed!(token)
+
+      expect do
+        advancement.thread_crashed!(token)
+      end.to not_change(advancement, :completed_at)
+    end
 
     it "completes and sets thread crash error metadata" do
       expect do
-        advancement.thread_crashed!
-      end.to change(advancement, :completed_at).from(nil).to(be_almost_now)
+        advancement.thread_crashed!(token)
+      end.to change { advancement.reload.completed_at }.from(nil).to(be_almost_now)
         .and change(advancement, :error_klass).to("Ductwork::ThreadCrash")
         .and change(advancement, :error_message).to(
           "Advancement abandoned from a thread crash"
         )
+    end
+
+    it "releases the branch" do
+      expect do
+        advancement.thread_crashed!(token)
+      end.to change { branch.reload.claimed_for_advancing_at }.to(nil)
+        .and change(branch, :last_advanced_at).to(be_almost_now)
+        .and change(branch, :status).to("in_progress")
+    end
+
+    it "does not release the branch when the claim token diverges" do
+      expect do
+        advancement.thread_crashed!(SecureRandom.uuid)
+      end.to not_change { branch.reload.claimed_for_advancing_at }
+        .and not_change(branch, :status)
     end
   end
 end

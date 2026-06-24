@@ -104,8 +104,7 @@ module Ductwork
                         &.advancements
                         &.find_by(completed_at: nil)
 
-          advancement&.thread_crashed!
-          branch.release!(original_claim_token)
+          advancement&.thread_crashed!(original_claim_token)
         end
       ensure
         @branch = nil
