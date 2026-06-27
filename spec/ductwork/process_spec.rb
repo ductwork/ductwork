@@ -267,6 +267,60 @@ RSpec.describe Ductwork::Process do
         role: :process_supervisor
       )
     end
+
+    context "when the record is not stale" do
+      subject(:process) do
+        create(:process, :current, last_heartbeat_at: Time.current)
+      end
+
+      it "is a no-op without force" do
+        expect do
+          process.reap!(:process_supervisor)
+        end.not_to change(process, :persisted?).from(true)
+      end
+
+      context "with force: true" do
+        it "destroys itself despite the fresh heartbeat" do
+          expect do
+            process.reap!(:process_supervisor, force: true)
+          end.to change(process, :persisted?).from(true).to(false)
+        end
+
+        it "abandons associated incomplete branch advancements" do
+          branch = create(:branch, :claimed)
+          transition = create(:transition, branch:)
+          advancement = create(:advancement, process:, transition:)
+
+          expect do
+            process.reap!(:process_supervisor, force: true)
+          end.to change { branch.reload.claimed_for_advancing_at }.to(nil)
+            .and change { advancement.reload.completed_at }.to(be_almost_now)
+            .and change { advancement.error_klass }.to("Ductwork::ProcessCrash")
+        end
+
+        it "re-enqueues claimed jobs with incomplete executions" do
+          execution = create(:execution, process:)
+
+          process.reap!(:job_worker_runner, force: true)
+
+          expect(execution.reload.completed_at).to be_present
+          expect(execution.result.result_type).to eq("process_crashed")
+
+          new_execution = execution.job.executions.where.not(id: execution.id).sole
+          expect(new_execution.retry_count).to eq(execution.retry_count)
+          expect(new_execution.availability).to be_present
+          expect(new_execution.availability.completed_at).to be_nil
+        end
+
+        it "no-ops when the record was already reaped" do
+          process.destroy!
+
+          expect do
+            process.reap!(:process_supervisor, force: true)
+          end.not_to raise_error
+        end
+      end
+    end
   end
 
   describe "#healthy?" do

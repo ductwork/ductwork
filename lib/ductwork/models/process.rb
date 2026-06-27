@@ -81,7 +81,7 @@ module Ductwork
       end
     end
 
-    def reap!(role)
+    def reap!(role, force: false)
       timeout = Ductwork.configuration.supervisor_reaper_timeout
       sql = Ductwork::DatabaseClock.ago_sql("last_heartbeat_at", timeout)
 
@@ -92,13 +92,14 @@ module Ductwork
       )
 
       Ductwork::Record.transaction do
-        stale = Ductwork::Process
-                .where(id:)
-                .where(sql)
-                .lock
-                .exists?
+        # NOTE: Callers that have already killed/stopped the process hold proof
+        # of death and pass force: true to skip the staleness guard. The row
+        # lock and existence check are kept either way to stay atomic and to
+        # avoid double-reaping a record another parent already cleaned up
+        scope = Ductwork::Process.where(id:).lock
+        scope = scope.where(sql) unless force
 
-        return unless stale
+        return unless scope.exists?
 
         advancements.where(completed_at: nil).find_each(&:process_crashed!)
         executions.where(completed_at: nil).find_each(&:crashed!)

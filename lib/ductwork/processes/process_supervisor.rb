@@ -211,7 +211,7 @@ module Ductwork
         Ductwork.wrap_with_app_executor do
           Ductwork::Process
             .find_by(pid:, machine_identifier:)
-            &.reap!(:process_supervisor)
+            &.reap!(:process_supervisor, force: true)
         end
       end
 

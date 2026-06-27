@@ -138,7 +138,7 @@ module Ductwork
 
       def reap_process_record!
         Ductwork.wrap_with_app_executor do
-          Ductwork::Process.current&.reap!(:job_worker_runner)
+          Ductwork::Process.current&.reap!(:job_worker_runner, force: true)
         end
       end
     end

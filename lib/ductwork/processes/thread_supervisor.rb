@@ -145,7 +145,7 @@ module Ductwork
 
       def reap_process_record!
         Ductwork.wrap_with_app_executor do
-          Ductwork::Process.current&.reap!(:thread_supervisor)
+          Ductwork::Process.current&.reap!(:thread_supervisor, force: true)
         end
       end
 
