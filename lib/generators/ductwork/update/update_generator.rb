@@ -10,6 +10,8 @@ module Ductwork
     source_root File.expand_path("templates", __dir__)
 
     def create_files
+      connection = Ductwork::Record.connection
+
       if Ductwork::Availability.column_names.exclude?("pipeline_klass")
         migration_template "db/denormalize_pipeline_klass_on_availabilities.rb",
                            "db/migrate/denormalize_pipeline_klass_on_availabilities.rb"
@@ -20,12 +22,12 @@ module Ductwork
                            "db/migrate/migrate_tables_to_uuid_primary_key.rb"
       end
 
-      if !Ductwork::Record.connection.table_exists?(:ductwork_branches)
+      if !connection.table_exists?(:ductwork_branches)
         migration_template "db/create_ductwork_branches.rb",
                            "db/migrate/create_ductwork_branches.rb"
       end
 
-      if !Ductwork::Record.connection.table_exists?(:ductwork_branch_links)
+      if !connection.table_exists?(:ductwork_branch_links)
         migration_template "db/create_ductwork_branch_links.rb",
                            "db/migrate/create_ductwork_branch_links.rb"
       end
@@ -37,12 +39,12 @@ module Ductwork
                            "db/migrate/backfill_branch_ids_on_steps.rb"
       end
 
-      if !Ductwork::Record.connection.table_exists?(:ductwork_transitions)
+      if !connection.table_exists?(:ductwork_transitions)
         migration_template "db/create_ductwork_transitions.rb",
                            "db/migrate/create_ductwork_transitions.rb"
       end
 
-      if !Ductwork::Record.connection.table_exists?(:ductwork_advancements)
+      if !connection.table_exists?(:ductwork_advancements)
         migration_template "db/create_ductwork_advancements.rb",
                            "db/migrate/create_ductwork_advancements.rb"
       end
@@ -52,12 +54,12 @@ module Ductwork
                            "db/migrate/update_process_associations.rb"
       end
 
-      if Ductwork::Record.connection.table_exists?(:ductwork_runs)
+      if connection.table_exists?(:ductwork_runs)
         migration_template "db/rename_runs_to_attempts.rb",
                            "db/migrate/rename_runs_to_attempts.rb"
       end
 
-      if !Ductwork::Record.connection.table_exists?(:ductwork_runs)
+      if !connection.table_exists?(:ductwork_runs)
         migration_template "db/create_ductwork_runs.rb",
                            "db/migrate/create_ductwork_runs.rb"
       end
@@ -97,14 +99,24 @@ module Ductwork
                            "db/migrate/add_role_to_ductwork_processes.rb"
       end
 
-      if !Ductwork::Record.connection.index_exists?(:ductwork_results, %i[result_type created_at])
+      if !connection.index_exists?(:ductwork_results, %i[result_type created_at])
         migration_template "db/add_indexes_to_ductwork_results.rb",
                            "db/migrate/add_indexes_to_ductwork_results.rb"
       end
 
-      if !Ductwork::Record.connection.index_exists?(:ductwork_runs, :started_at)
+      if !connection.index_exists?(:ductwork_runs, :started_at)
         migration_template "db/add_indexes_to_ductwork_runs.rb",
                            "db/migrate/add_indexes_to_ductwork_runs.rb"
+      end
+
+      if !connection.index_exists?(:ductwork_runs, %i[pipeline_id started_at])
+        migration_template "db/add_pipeline_started_index_to_ductwork_runs.rb",
+                           "db/migrate/add_pipeline_started_index_to_ductwork_runs.rb"
+      end
+
+      if !connection.index_exists?(:ductwork_transitions, name: "index_ductwork_transitions_on_latest_open")
+        migration_template "db/add_indexes_to_ductwork_transitions.rb",
+                           "db/migrate/add_indexes_to_ductwork_transitions.rb"
       end
     end
   end
