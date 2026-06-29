@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: use correct index for claiming for mysql databases
 - chore: add optional force argument on process reap
 - chore: do not raise `StaleClaimError` in `Branch#with_claim_fence`
 - fix: add missing claim fence around branch/advancement mutation queries

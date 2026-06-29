@@ -12,9 +12,16 @@ class DenormalizePipelineKlassOnAvailabilities < Ductwork::Migration
 
     change_column_null :ductwork_availabilities, :pipeline_klass, false
     remove_index :ductwork_availabilities, name: "index_ductwork_availabilities_on_claim_latest"
-    add_index :ductwork_availabilities,
-              %i[pipeline_klass started_at],
-              name: "index_ductwork_availabilities_on_claim_latest",
-              where: "completed_at IS NULL"
+
+    if mysql?
+      add_index :ductwork_availabilities,
+                %i[pipeline_klass completed_at started_at],
+                name: "index_ductwork_availabilities_on_claim_latest"
+    else
+      add_index :ductwork_availabilities,
+                %i[pipeline_klass started_at],
+                name: "index_ductwork_availabilities_on_claim_latest",
+                where: "completed_at IS NULL"
+    end
   end
 end

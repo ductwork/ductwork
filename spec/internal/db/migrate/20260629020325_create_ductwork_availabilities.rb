@@ -28,8 +28,8 @@ class CreateDuctworkAvailabilities < Ductwork::Migration
 
     if mysql?
       add_index :ductwork_availabilities,
-                %i[pipeline_klass started_at],
-                name: :index_ductwork_availabilities_on_claim_latest
+                %i[pipeline_klass completed_at started_at],
+                name: "index_ductwork_availabilities_on_claim_latest"
     else
       add_index :ductwork_availabilities,
                 %i[pipeline_klass started_at],
