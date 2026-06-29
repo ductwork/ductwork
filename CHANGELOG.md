@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- feat: add `Ductwork::DatabaseClock.now` to read current time from the database
 - fix: add missing indexes for runs and transitions
 - fix: use correct index for claiming for mysql databases
 - chore: add optional force argument on process reap

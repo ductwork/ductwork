@@ -128,4 +128,28 @@ RSpec.describe Ductwork::DatabaseClock do
       end
     end
   end
+
+  describe ".now" do
+    it "returns the database server's current time as a Time" do
+      now = described_class.now
+
+      expect(now).to be_a(ActiveSupport::TimeWithZone).or be_a(Time)
+      expect(now).to be_within(5.seconds).of(Time.current)
+    end
+
+    context "with an unsupported adapter" do
+      before do
+        allow(Ductwork::Record.connection).to receive(:adapter_name).and_return("MongoDB")
+      end
+
+      it "raises an error" do
+        expect do
+          described_class.now
+        end.to raise_error(
+          NotImplementedError,
+          "Database clock does not support adapter mongodb"
+        )
+      end
+    end
+  end
 end
