@@ -142,13 +142,15 @@ module Ductwork
         )
 
         if retry_count < max_retry
+          retry_at = Ductwork::DatabaseClock.now + FAILED_EXECUTION_TIMEOUT
           new_execution = job.executions.create!(
             retry_count: retry_count + 1,
             crash_count: crash_count,
-            started_at: FAILED_EXECUTION_TIMEOUT.from_now
+            started_at: retry_at
           )
+
           new_execution.create_availability!(
-            started_at: FAILED_EXECUTION_TIMEOUT.from_now,
+            started_at: retry_at,
             pipeline_klass: run.pipeline_klass
           )
 
@@ -185,11 +187,12 @@ module Ductwork
     # worker pool
     def crash_backoff_at(crash_count, max_crash)
       immediate_threshold = max_crash / 3
+      now = Ductwork::DatabaseClock.now
 
       if crash_count <= immediate_threshold
-        Time.current
+        now
       else
-        (crash_count * FAILED_EXECUTION_TIMEOUT).from_now
+        now + (crash_count * FAILED_EXECUTION_TIMEOUT)
       end
     end
 

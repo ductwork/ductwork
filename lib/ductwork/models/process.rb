@@ -25,7 +25,7 @@ module Ductwork
     def self.adopt_or_create_current!(role)
       pid = ::Process.pid
       machine_identifier = Ductwork::MachineIdentifier.fetch
-      last_heartbeat_at = Time.current
+      last_heartbeat_at = Ductwork::DatabaseClock.now
       existing = Ductwork::Process.find_by(pid:, machine_identifier:)
 
       if existing.present? && !existing.healthy?
@@ -70,7 +70,7 @@ module Ductwork
       process = current
 
       if process.present?
-        process.update!(last_heartbeat_at: Time.current)
+        process.update!(last_heartbeat_at: Ductwork::DatabaseClock.now)
         process
       else
         Ductwork.logger.warn(

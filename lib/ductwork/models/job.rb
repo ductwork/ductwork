@@ -10,18 +10,20 @@ module Ductwork
     validates :input_args, presence: true
 
     def self.enqueue(step, *args)
+      now = Ductwork::DatabaseClock.now
       job = step.create_job!(
         klass: step.klass,
-        started_at: Time.current,
+        started_at: now,
         input_args: JSON.dump({ args: })
       )
       execution = job.executions.create!(
-        started_at: Time.current,
+        started_at: now,
         retry_count: 0,
         crash_count: 0
       )
+
       execution.create_availability!(
-        started_at: Time.current,
+        started_at: now,
         pipeline_klass: step.run.pipeline_klass
       )
 
