@@ -15,10 +15,32 @@ module Ductwork
     end
 
     def self.now
-      new.now
+      adapter = Ductwork::Record.connection.adapter_name.downcase
+      sql =
+        case adapter
+        when /postgresql|cockroach/i
+          "SELECT clock_timestamp()"
+        when /mysql|trilogy/i
+          "SELECT CURRENT_TIMESTAMP(6)"
+        when /sqlite/i
+          "SELECT strftime('%Y-%m-%d %H:%M:%f', 'now')"
+        when /oracle/i
+          "SELECT CURRENT_TIMESTAMP FROM dual"
+        else
+          raise NotImplementedError, "Database clock does not support adapter #{adapter}"
+        end
+      raw = Ductwork::Record.connection.select_value(sql)
+
+      case raw
+      when ::Time, ::DateTime
+        raw.in_time_zone
+      else
+        # NOTE: SQLite returns an ISO-8601 string already expressed in UTC
+        ::Time.find_zone!("UTC").parse(raw.to_s)
+      end
     end
 
-    def initialize(column = nil)
+    def initialize(column)
       @adapter = Ductwork::Record.connection.adapter_name.downcase
       @column = column
     end
@@ -55,35 +77,8 @@ module Ductwork
       end
     end
 
-    def now
-      raw = Ductwork::Record.connection.select_value(now_select_sql)
-
-      case raw
-      when ::Time, ::DateTime
-        raw.in_time_zone
-      else
-        # NOTE: SQLite returns an ISO-8601 string already expressed in UTC
-        ::Time.find_zone!("UTC").parse(raw.to_s)
-      end
-    end
-
     private
 
     attr_reader :adapter, :column
-
-    def now_select_sql
-      case adapter
-      when /postgresql|cockroach/i
-        "SELECT clock_timestamp()"
-      when /mysql|trilogy/i
-        "SELECT CURRENT_TIMESTAMP(6)"
-      when /sqlite/i
-        "SELECT strftime('%Y-%m-%d %H:%M:%f', 'now')"
-      when /oracle/i
-        "SELECT CURRENT_TIMESTAMP FROM dual"
-      else
-        raise NotImplementedError, "Database clock does not support adapter #{adapter}"
-      end
-    end
   end
 end
