@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- feat: record the matching `expand` node as `barrier_node` on `collapse` edges in the pipeline definition
 - fix: use database clock instead of app-server time for execution, job, and process timestamps
 - feat: add `Ductwork::DatabaseClock.now` to read current time from the database
 - fix: add missing indexes for runs and transitions

@@ -11,6 +11,7 @@ module Ductwork
         @last_node = last_node
         @definition = definition
         @expansions = 0
+        @expand_sources = []
       end
 
       def chain(next_klass)
@@ -100,6 +101,9 @@ module Ductwork
 
       def expand(to:)
         next_klass_name = node_name(to)
+        # NOTE: record the expanding node so the matching `collapse` can stamp it
+        # as `barrier_node` (see `Ductwork::DSL::DefinitionBuilder#expand`).
+        expand_sources.push(last_node)
         definition[:edges][last_node][:to] = [next_klass_name]
         definition[:edges][last_node][:type] = :expand
         definition[:nodes].push(next_klass_name)
@@ -119,6 +123,7 @@ module Ductwork
         next_klass_name = node_name(into)
         definition[:edges][last_node][:to] = [next_klass_name]
         definition[:edges][last_node][:type] = :collapse
+        definition[:edges][last_node][:barrier_node] = expand_sources.pop
 
         definition[:nodes].push(next_klass_name)
         definition[:edges][next_klass_name] ||= { klass: into.name }
@@ -130,7 +135,7 @@ module Ductwork
 
       private
 
-      attr_reader :definition, :expansions
+      attr_reader :definition, :expansions, :expand_sources
 
       def node_name(klass)
         "#{klass.name}.#{SecureRandom.hex(4)}"

@@ -103,7 +103,12 @@ RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
       { to: %w[MyFifthStep.4], type: :expand, klass: "MyFourthStep" }
     )
     expect(definition[:edges]["MyFifthStep.4"]).to eq(
-      { to: %w[MySixthStep.5], type: :collapse, klass: "MyFifthStep" }
+      {
+        to: %w[MySixthStep.5],
+        type: :collapse,
+        klass: "MyFifthStep",
+        barrier_node: "MyFourthStep.3",
+      }
     )
     expect(definition[:edges]["MySixthStep.5"]).to eq({ klass: "MySixthStep" })
   end
@@ -132,7 +137,12 @@ RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
       { to: ["MyFirstStep.2"], type: :expand, klass: "MyFirstStep" }
     )
     expect(definition[:edges]["MyFirstStep.2"]).to eq(
-      { to: ["MyFirstStep.3"], type: :collapse, klass: "MyFirstStep" }
+      {
+        to: ["MyFirstStep.3"],
+        type: :collapse,
+        klass: "MyFirstStep",
+        barrier_node: "MyFirstStep.1",
+      }
     )
     expect(definition[:edges]["MyFirstStep.3"]).to eq({ klass: "MyFirstStep" })
   end
@@ -164,7 +174,12 @@ RSpec.describe "Pipeline definitions" do # rubocop:disable RSpec/DescribeClass
       { to: ["MyFourthStep.3"], type: :chain, klass: "MyThirdStep" }
     )
     expect(definition[:edges]["MyFourthStep.3"]).to eq(
-      { to: ["MyFifthStep.4"], type: :collapse, klass: "MyFourthStep" }
+      {
+        to: ["MyFifthStep.4"],
+        type: :collapse,
+        klass: "MyFourthStep",
+        barrier_node: "MyFirstStep.0",
+      }
     )
   end
 

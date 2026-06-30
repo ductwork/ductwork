@@ -17,6 +17,7 @@ module Ductwork
         }
         @divergences = []
         @last_nodes = []
+        @expand_sources = []
       end
 
       def start(klass)
@@ -98,6 +99,13 @@ module Ductwork
       def expand(to:)
         validate_classes!(to)
         validate_definition_started!(action: "expanding chain")
+
+        # NOTE: record the node(s) carrying this `expand` edge before
+        # `add_edge_to_last_nodes` reassigns `@last_nodes`. The matching
+        # `collapse` stamps this on its edge as `barrier_node` so the runtime
+        # fan-in can find the expanding branch (which carries the barrier) no
+        # matter how many transitions sit between the `expand` and `collapse`.
+        expand_sources.push(last_nodes.dup)
         add_edge_to_last_nodes(to, type: :expand)
         divergences.push(:expand)
 
@@ -108,8 +116,13 @@ module Ductwork
         validate_classes!(into)
         validate_definition_started!(action: "collapsing steps")
         validate_can_collapse!
+        collapse_sources = last_nodes.dup
         add_edge_to_last_nodes(into, type: :collapse)
         divergences.pop
+        barrier_node = pop_barrier_node
+        collapse_sources.each do |source|
+          definition[:edges][source][:barrier_node] = barrier_node
+        end
 
         self
       end
@@ -190,7 +203,17 @@ module Ductwork
 
       private
 
-      attr_reader :definition, :last_nodes, :divergences
+      attr_reader :definition, :last_nodes, :divergences, :expand_sources
+
+      def pop_barrier_node
+        sources = expand_sources.pop || []
+
+        if sources.length == 1
+          sources.first
+        else
+          sources
+        end
+      end
 
       def validate_classes!(klasses)
         valid = Array(klasses).all? do |klass|

@@ -216,7 +216,12 @@ RSpec.describe Ductwork::DSL::BranchBuilder do
         { to: %w[MySecondStep.1], type: :expand, klass: "MyFirstStep" }
       )
       expect(definition[:edges]["MySecondStep.1"]).to eq(
-        { to: %w[MyThirdStep.2], type: :collapse, klass: "MySecondStep" }
+        {
+          to: %w[MyThirdStep.2],
+          type: :collapse,
+          klass: "MySecondStep",
+          barrier_node: last_node,
+        }
       )
       expect(definition[:edges]["MyThirdStep.2"]).to eq({ klass: "MyThirdStep" })
     end
