@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: fan-in `collapse` correctly when siblings are not direct children of the expanding branch (intermediate `divide`/`combine`/`chain` or nested expands no longer create duplicate collapse targets)
 - feat: record the matching `expand` node as `barrier_node` on `collapse` edges in the pipeline definition
 - fix: use database clock instead of app-server time for execution, job, and process timestamps
 - feat: add `Ductwork::DatabaseClock.now` to read current time from the database

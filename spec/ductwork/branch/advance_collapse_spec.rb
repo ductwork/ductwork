@@ -11,7 +11,7 @@ RSpec.describe Ductwork::Branch, "#advance" do
       nodes: %w[MyStepA.0 MyStepB.1 MyStepC.2],
       edges: {
         "MyStepA.0" => { to: %w[MyStepB.1], type: "expand", klass: "MyStepA" },
-        "MyStepB.1" => { to: %w[MyStepC.2], type: "collapse", klass: "MyStepB" },
+        "MyStepB.1" => { to: %w[MyStepC.2], type: "collapse", klass: "MyStepB", barrier_node: "MyStepA.0" },
         "MyStepC.2" => { klass: "MyStepC" },
       },
     }.to_json
@@ -37,6 +37,16 @@ RSpec.describe Ductwork::Branch, "#advance" do
     transition
     advancement
     create(:process, :current)
+    # NOTE: the barrier (expanding) branch ran the `expand` source node, which
+    # the resolver walks up to find via the collapse edge's `barrier_node`.
+    create(
+      :step,
+      :completed,
+      node: "MyStepA.0",
+      klass: "MyStepA",
+      run: run,
+      branch: parent_branch
+    )
     other_step1 = create(
       :step,
       :completed,

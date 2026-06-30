@@ -346,26 +346,27 @@ module Ductwork
     end
 
     def collapse_branch(edge, transition, advancement) # rubocop:todo Metrics
-      parent_branch_id = parent_junctions.pick(:parent_branch_id)
+      parent_branch_id = resolve_fan_in_barrier_branch_id(edge)
 
       with_claim_fence do # rubocop:todo Metrics/BlockLength
         # NOTE: lock the parent branch rather than the whole pipeline run
         # because at-most we're only coordinating across child branches of the
-        # parent branch
+        # parent (expanding) branch
         Ductwork::Branch.find(parent_branch_id).lock!
         node = latest_step.node
         latest_step.update!(status: :completed, completed_at: Time.current)
         complete!
 
-        sibling_ids = Ductwork::BranchLink
-                      .where(parent_branch_id:)
-                      .pluck(:child_branch_id)
-        all_siblings_completed = Ductwork::Branch
-                                 .where(id: sibling_ids)
-                                 .where.not(status: :completed)
-                                 .none?
+        # NOTE: make this collapsing branch a direct child of the barrier
+        # (expanding) branch. In a bare `expand`->`collapse` it already is one,
+        # so this no-ops; with intervening transitions (`divide`/`combine`) or
+        # nested expands the sibling lives deeper, and without this link the
+        # fan-in could neither count nor wire it.
+        ensure_fan_in_cohort_link!(parent_branch_id)
 
-        if all_siblings_completed
+        sibling_ids = collapse_sibling_ids(parent_branch_id, edge, node)
+
+        if fan_in_complete?(parent_branch_id, edge, sibling_ids)
           input_arg = Ductwork::Job
                       .joins(:step)
                       .where(ductwork_steps: { branch_id: sibling_ids, node: node })
@@ -402,6 +403,89 @@ module Ductwork
         transition.update!(completed_at: now)
         run.resolve_terminal_state!
       end
+    end
+
+    # NOTE: the matching `expand`'s node is recorded on the collapse edge as
+    # `barrier_node`. The branch that ran it (the expanding branch, whose direct
+    # children coordinate the fan-in) is this collapsing branch's nearest
+    # ancestor carrying that node, so we walk parent links up to it. The walk is
+    # bounded by definition depth and converges across multi-parent `combine`
+    # junctions. Legacy definitions without `barrier_node` fall back to the
+    # immediate parent, correct only for a bare `expand`->`collapse`.
+    def resolve_fan_in_barrier_branch_id(edge)
+      barrier_node = edge[:barrier_node]
+      return parent_junctions.pick(:parent_branch_id) if barrier_node.blank?
+
+      ids = [id]
+
+      loop do
+        match = Ductwork::Step
+                .where(run_id: run.id, branch_id: ids, node: Array(barrier_node))
+                .pick(:branch_id)
+        return match if match
+
+        ids = Ductwork::BranchLink
+              .where(child_branch_id: ids)
+              .pluck(:parent_branch_id)
+              .uniq
+
+        if ids.empty?
+          raise Ductwork::Branch::TransitionError,
+                "could not resolve fan-in barrier branch for collapse " \
+                "(barrier_node=#{barrier_node})"
+        end
+      end
+    end
+
+    def ensure_fan_in_cohort_link!(parent_branch_id)
+      return if Ductwork::BranchLink.exists?(
+        parent_branch_id: parent_branch_id,
+        child_branch_id: id
+      )
+
+      Ductwork::BranchLink
+        .create!(parent_branch_id: parent_branch_id, child_branch_id: id)
+    end
+
+    # NOTE: the barrier branch can carry children that are not collapse siblings
+    # (its `expand` children, the collapse target), so scope to children that ran
+    # the collapse-source `node`. Legacy definitions (no `barrier_node`) keep the
+    # original behavior of treating every child as a sibling.
+    def collapse_sibling_ids(parent_branch_id, edge, node)
+      links = Ductwork::BranchLink.where(parent_branch_id:)
+      return links.pluck(:child_branch_id) if edge[:barrier_node].blank?
+
+      sibling_branch_ids = Ductwork::Step
+                           .where(run_id: run.id, node: node)
+                           .select(:branch_id)
+      links
+        .where(child_branch_id: sibling_branch_ids)
+        .pluck(:child_branch_id)
+    end
+
+    # NOTE: the fan-in fires when every sibling has both ARRIVED and completed.
+    # The expected count is the barrier branch's `expand` fan-out width — the
+    # children that ran the `expand` target node — which is known up front even
+    # though the siblings themselves materialize lazily through the intervening
+    # transitions. Without the arrival gate a sibling could fire early, before
+    # its peers' chains have reached the collapse, minting duplicate targets.
+    def fan_in_complete?(parent_branch_id, edge, sibling_ids)
+      all_completed = Ductwork::Branch
+                      .where(id: sibling_ids)
+                      .where.not(status: :completed)
+                      .none?
+      return all_completed if edge[:barrier_node].blank?
+
+      expand_target_node = run.parsed_definition.dig(:edges, edge[:barrier_node], :to).sole
+      expand_child_ids = Ductwork::Step
+                         .where(run_id: run.id, node: expand_target_node)
+                         .select(:branch_id)
+      expected = Ductwork::BranchLink
+                 .where(parent_branch_id:)
+                 .where(child_branch_id: expand_child_ids)
+                 .count
+
+      sibling_ids.length == expected && all_completed
     end
 
     def combine_branch(edge, transition, advancement) # rubocop:todo Metrics
