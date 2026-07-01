@@ -2,6 +2,8 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: recover an advancement whose transition completed the branch and then rolled back (e.g. a run-row deadlock victim) instead of stranding the branch in `advancing` — the claim fence and `release!` now use the token captured when advancement starts rather than the in-memory attribute that `complete!`/`halt!` null mid-transition
+- fix: lock the run `FOR NO KEY UPDATE` on Postgres when resolving terminal state so it does not deadlock upgrading past the `FOR KEY SHARE` locks concurrent transitions hold from inserting run-referencing rows
 - fix: fan-in `collapse` correctly when siblings are not direct children of the expanding branch (intermediate `divide`/`combine`/`chain` or nested expands no longer create duplicate collapse targets)
 - feat: record the matching `expand` node as `barrier_node` on `collapse` edges in the pipeline definition
 - fix: use database clock instead of app-server time for execution, job, and process timestamps

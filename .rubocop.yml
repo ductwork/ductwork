@@ -69,7 +69,7 @@ Naming/PredicateMethod:
 
 RSpec/DescribeClass:
   Exclude:
-    - spec/integration/durability/**/*_spec.rb
+    - spec/integration/**/*_spec.rb
 
 RSpec/ExampleLength:
   Max: 50

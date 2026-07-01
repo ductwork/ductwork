@@ -322,30 +322,41 @@ RSpec.describe Ductwork::Branch do
           )
         end
 
-        context "when the claim diverges while cleaning up" do
-          # The original error is raised mid-block; before the rescue's fence
-          # re-check runs, the branch is reclaimed so the token this advancer
-          # holds no longer matches the live row. The rescue must bail quietly
-          # rather than surface a spurious crash.
+        context "when the in-memory token was nulled before the error" do
+          # NOTE: regression. `complete!`/`halt!` null the in-memory claim_token
+          # mid-transition; a rollback then restores the DB token but not the
+          # attribute. The rescue must NOT mistake the stale nil for a diverged
+          # claim — it should recognize the claim (via the token captured in
+          # `advance!`) and release the branch for retry. Previously it compared
+          # the restored DB token against the nil attribute, saw a false
+          # divergence, skipped recovery, and stranded the branch.
           before do
             allow(transition).to receive(:update!) do
-              branch.claim_token = SecureRandom.uuid
+              branch.claim_token = nil
               raise "bad times"
             end
           end
 
-          it "logs that the claim is no longer held and skips the error log" do
-            allow(Ductwork.logger).to receive(:info)
+          it "releases the branch instead of stranding it" do
+            branch.advance!(transition, advancement)
+            branch.reload
+
+            expect(branch.status).to eq("in_progress")
+            expect(branch.claim_token).to be_nil
+            expect(branch.claimed_for_advancing_at).to be_nil
+          end
+
+          it "logs the error rather than treating it as a divergence" do
             allow(Ductwork.logger).to receive(:error)
 
             branch.advance!(transition, advancement)
 
-            expect(Ductwork.logger).to have_received(:info).with(
-              msg: "Branch claim no longer held",
+            expect(Ductwork.logger).to have_received(:error).with(
+              msg: "Branch halt errored",
               branch_id: branch.id,
-              pipeline_klass: branch.pipeline_klass
+              error_klass: "RuntimeError",
+              error_message: "bad times"
             )
-            expect(Ductwork.logger).not_to have_received(:error)
           end
         end
       end
@@ -412,6 +423,48 @@ RSpec.describe Ductwork::Branch do
 
           expect(branch.reload.halt_reason).to be_nil
         end
+      end
+    end
+
+    context "when the run deadlocks after the branch is already completed" do
+      # NOTE: regression. A transition completes the branch (which nulls the
+      # in-memory `claim_token`) and then hits a run-row deadlock in
+      # `resolve_terminal_state!`. The rollback restores the DB token but not the
+      # in-memory attribute; the error-recovery path must still recognize the
+      # claim and release the branch for retry rather than strand it in
+      # `advancing`. Previously the fence and `release!` compared the restored DB
+      # token against the now-nil attribute, saw a false divergence, and skipped
+      # recovery, leaving the branch permanently stuck until a process reap.
+      let(:transition) { create(:transition, branch:) }
+      let(:advancement) { create(:advancement, transition:) }
+
+      before do
+        allow(run)
+          .to receive(:resolve_terminal_state!)
+          .and_raise(ActiveRecord::Deadlocked.new("simulated run-row deadlock"))
+      end
+
+      it "releases the branch for retry instead of stranding it" do
+        branch.advance!(transition, advancement)
+        branch.reload
+
+        expect(branch.status).to eq("in_progress")
+        expect(branch.claim_token).to be_nil
+        expect(branch.claimed_for_advancing_at).to be_nil
+      end
+
+      it "rolls back the branch completion" do
+        branch.advance!(transition, advancement)
+
+        expect(step.reload.status).to eq("advancing")
+        expect(branch.reload.completed_at).to be_nil
+      end
+
+      it "records the deadlock on the advancement" do
+        branch.advance!(transition, advancement)
+
+        expect(advancement.reload.error_klass).to eq("ActiveRecord::Deadlocked")
+        expect(advancement.completed_at).to be_almost_now
       end
     end
 

@@ -38,7 +38,7 @@ module Ductwork
 
     def resolve_terminal_state!
       Ductwork::Record.transaction do
-        lock!
+        lock_for_terminal_resolution!
 
         next if halted? || completed?
         next if branches.where.not(status: %w[completed halted]).exists?
@@ -101,6 +101,26 @@ module Ductwork
           error_klass: e.class.to_s,
           error_message: e.message
         )
+      end
+    end
+
+    private
+
+    # NOTE: a branch transition creates run-referencing rows (branch/step/job)
+    # whose FK takes a `FOR KEY SHARE` lock on this run row, then resolves the
+    # terminal state in the same transaction. The default `FOR UPDATE` conflicts
+    # with `FOR KEY SHARE`, so two transitions each holding the share-lock and
+    # upgrading here deadlock on the run row. On Postgres/Cockroach we take
+    # `FOR NO KEY UPDATE`, which is compatible with `FOR KEY SHARE` (no upgrade
+    # cycle) yet still conflicts with itself (concurrent resolutions stay
+    # serialized). MySQL has no equivalent mode, so it keeps `FOR UPDATE` and
+    # relies on the advancer retrying a deadlock victim; SQLite has no row-level
+    # locks, so `lock!` is a no-op there and the deadlock cannot occur.
+    def lock_for_terminal_resolution!
+      if Ductwork::Record.connection.adapter_name.downcase.match?(/postgresql|cockroach/)
+        lock!("FOR NO KEY UPDATE")
+      else
+        lock!
       end
     end
   end

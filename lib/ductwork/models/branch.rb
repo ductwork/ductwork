@@ -75,9 +75,22 @@ module Ductwork
     # block's duration, so divergence can only be observed at entry, never
     # mid-block, and nested fences on the same row always hold. Returns `true`
     # when the block ran, `false` when the claim had diverged.
+    #
+    # NOTE: the fence compares against `@claim_fence_token` (captured in
+    # `advance!` before any mutation), NOT the live `claim_token` attribute.
+    # `complete!`/`halt!` null the in-memory `claim_token` mid-block; if the
+    # surrounding transaction then rolls back (e.g. a deadlock on the run row),
+    # the DB restores the real token but the in-memory attribute stays nil.
+    # A later fence in the same advancement (the error-recovery path) would then
+    # compare the real DB token against `nil`, wrongly conclude the claim
+    # diverged, skip recovery, and strand the branch in `advancing`. Anchoring to
+    # the captured token still detects a genuine divergence (another advancer
+    # reclaimed it => the DB token changed to a value we never held).
     def with_claim_fence(&block)
+      fence_token = @claim_fence_token || claim_token
+
       Ductwork::Record.transaction do
-        if self.class.where(id:).lock.pick(:claim_token) == claim_token
+        if self.class.where(id:).lock.pick(:claim_token) == fence_token
           block.call
           true
         else
@@ -88,6 +101,9 @@ module Ductwork
     end
 
     def advance!(transition, advancement)
+      # NOTE: capture the claim token now, while it is guaranteed live, so the
+      # fence can survive an in-block mutation + rollback (see `with_claim_fence`)
+      @claim_fence_token = claim_token
       step = latest_step
       max_crash = Ductwork.configuration.pipeline_advancer_max_crash
 
@@ -144,7 +160,14 @@ module Ductwork
       steps.order(started_at: :desc, id: :desc).limit(1).first
     end
 
-    def release!(expected_token = claim_token)
+    # NOTE: the default `expected_token` is the token captured in `advance!`, not
+    # the live `claim_token` attribute, for the same reason as `with_claim_fence`:
+    # `complete!`/`halt!` null the in-memory attribute mid-transition, and after a
+    # rollback (e.g. a run-row deadlock) the DB token is restored while the
+    # attribute stays nil. Releasing with the stale nil would match zero rows and
+    # silently leave the branch stranded in `advancing`. Callers outside an
+    # advancement (fresh branch objects, explicit tokens) are unaffected.
+    def release!(expected_token = @claim_fence_token || claim_token)
       Ductwork::Branch
         .where(id: id, claim_token: expected_token, status: :advancing)
         .update_all(
