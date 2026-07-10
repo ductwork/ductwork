@@ -76,10 +76,47 @@ RSpec.describe Ductwork::Process do
         process
       end
 
-      it "reaps the existing record" do
+      it "keeps and reuses the existing record" do
+        record = described_class.adopt_or_create_current!(:supervisor)
+
+        expect(record.id).to eq(process.id)
+        expect(described_class.exists?(process.id)).to be(true)
+      end
+
+      it "recovers incomplete claims on the existing record" do
+        branch = create(:branch, :claimed)
+        transition = create(:transition, branch:)
+        advancement = create(:advancement, process:, transition:)
+        execution = create(:execution, process:)
+
         described_class.adopt_or_create_current!(:supervisor)
 
-        expect(described_class.exists?(process.id)).to be(false)
+        expect(advancement.reload.completed_at).to be_present
+        expect(advancement.error_klass).to eq("Ductwork::ProcessCrash")
+        expect(execution.reload.completed_at).to be_present
+        expect(execution.result.result_type).to eq("process_crashed")
+      end
+    end
+
+    context "when the existing process record is healthy (fast restart with pid reuse)" do
+      let(:process) { create(:process, :current, last_heartbeat_at: Time.current) }
+
+      before do
+        process
+      end
+
+      it "still recovers incomplete claims, since same pid + machine means the prior incarnation is dead" do
+        branch = create(:branch, :claimed)
+        transition = create(:transition, branch:)
+        advancement = create(:advancement, process:, transition:)
+        execution = create(:execution, process:)
+
+        described_class.adopt_or_create_current!(:supervisor)
+
+        expect(advancement.reload.completed_at).to be_present
+        expect(advancement.error_klass).to eq("Ductwork::ProcessCrash")
+        expect(execution.reload.completed_at).to be_present
+        expect(execution.result.result_type).to eq("process_crashed")
       end
     end
   end
@@ -320,6 +357,54 @@ RSpec.describe Ductwork::Process do
           end.not_to raise_error
         end
       end
+    end
+  end
+
+  describe "#recover_crashed_claims!" do
+    subject(:process) { create(:process, :current) }
+
+    it "abandons associated incomplete branch advancements" do
+      branch = create(:branch, :claimed)
+      transition = create(:transition, branch:)
+      advancement = create(:advancement, process:, transition:)
+
+      expect do
+        process.recover_crashed_claims!(:process_supervisor)
+      end.to change { branch.reload.claimed_for_advancing_at }.to(nil)
+        .and change { advancement.reload.completed_at }.to(be_almost_now)
+        .and change { advancement.error_klass }.to("Ductwork::ProcessCrash")
+    end
+
+    it "re-enqueues claimed jobs with incomplete executions" do
+      execution = create(:execution, process:)
+
+      process.recover_crashed_claims!(:thread_supervisor)
+
+      expect(execution.reload.completed_at).to be_present
+      expect(execution.result.result_type).to eq("process_crashed")
+
+      new_execution = execution.job.executions.where.not(id: execution.id).sole
+      expect(new_execution.retry_count).to eq(execution.retry_count)
+      expect(new_execution.availability).to be_present
+      expect(new_execution.availability.completed_at).to be_nil
+    end
+
+    it "does not destroy the record" do
+      expect do
+        process.recover_crashed_claims!(:thread_supervisor)
+      end.not_to change(process, :persisted?).from(true)
+    end
+
+    it "logs" do
+      allow(Ductwork.logger).to receive(:debug).and_call_original
+
+      process.recover_crashed_claims!(:process_supervisor)
+
+      expect(Ductwork.logger).to have_received(:debug).with(
+        msg: "Recovering in-flight claims on reused process record #{process.id}",
+        id: process.id,
+        role: :process_supervisor
+      )
     end
   end
 

@@ -28,9 +28,13 @@ module Ductwork
       last_heartbeat_at = Ductwork::DatabaseClock.now
       existing = Ductwork::Process.find_by(pid:, machine_identifier:)
 
-      if existing.present? && !existing.healthy?
-        existing.reap!(role)
-      end
+      # NOTE: Same pid + machine_identifier can only mean the OS reused this
+      # pid, which happens after the prior process at this identity has
+      # exited -- a live process can never be replaced while still running.
+      # So its in-flight claims belong to a dead incarnation and must always
+      # be recovered here, even when the heartbeat still looks fresh because
+      # the reaper's timeout hasn't elapsed yet.
+      existing&.recover_crashed_claims!(role)
 
       Ductwork::Process
         .find_or_initialize_by(pid:, machine_identifier:)
@@ -101,8 +105,7 @@ module Ductwork
 
         return unless scope.exists?
 
-        advancements.where(completed_at: nil).find_each(&:process_crashed!)
-        executions.where(completed_at: nil).find_each(&:crashed!)
+        recover_crashed_claims!(role)
         destroy
       end
 
@@ -117,6 +120,19 @@ module Ductwork
         id: id,
         role: role
       )
+    end
+
+    def recover_crashed_claims!(role)
+      Ductwork.logger.debug(
+        msg: "Recovering in-flight claims on reused process record #{id}",
+        id: id,
+        role: role
+      )
+
+      Ductwork::Record.transaction do
+        advancements.where(completed_at: nil).find_each(&:process_crashed!)
+        executions.where(completed_at: nil).find_each(&:crashed!)
+      end
     end
 
     def healthy?
