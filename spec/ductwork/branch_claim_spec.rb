@@ -197,5 +197,49 @@ RSpec.describe Ductwork::BranchClaim do
           .and not_change(Ductwork::Transition, :count)
       end
     end
+
+    context "when the process record is reaped mid-claim" do
+      before do
+        create(:step, :advancing, branch:)
+        process = create(:process, :current)
+
+        # NOTE: simulates the reaper destroying our own process record between
+        # `Process.current` returning it and `transition.advancements.create!`
+        # referencing it -- `delete_all` bypasses `dependent: :nullify` (no
+        # advancement exists yet to nullify), leaving the FK check on the
+        # subsequent insert to fail exactly like a real concurrent reap would.
+        allow(Ductwork::FaultInjection).to receive(:checkpoint) do |key|
+          Ductwork::Process.where(id: process.id).delete_all if key == :before_advancement_create
+        end
+      end
+
+      it "returns nil instead of raising" do
+        expect(claim.latest).to be_nil
+      end
+
+      it "does not leave the branch claimed or a partial transition/advancement behind" do
+        claim.latest
+
+        expect(branch.reload).to be_in_progress
+        expect(branch.claimed_for_advancing_at).to be_nil
+        expect(Ductwork::Transition.count).to eq(0)
+        expect(Ductwork::Advancement.count).to eq(0)
+      end
+
+      it "logs the lost race with context" do
+        allow(Ductwork.logger).to receive(:warn).and_call_original
+
+        claim.latest
+
+        expect(Ductwork.logger).to have_received(:warn).with(
+          msg: "Did not claim branch, our process record was reaped mid-claim",
+          branch_id: branch.id,
+          pipeline_klass: pipeline_klass,
+          error_klass: "ActiveRecord::InvalidForeignKey",
+          error_message: an_instance_of(String),
+          role: :pipeline_advancer
+        )
+      end
+    end
   end
 end

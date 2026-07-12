@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: rescue invalid foreign key error as to not let thread die
 - fix: reap claims that lost their process ID on a process destroy racing a fresh claim
 - fix: always recover incomplete claims when reusing a PID + machine identifier
 - fix: recover an advancement whose transition completed the branch and then rolled back (e.g. a run-row deadlock victim) instead of stranding the branch in `advancing` — the claim fence and `release!` now use the token captured when advancement starts rather than the in-memory attribute that `complete!`/`halt!` null mid-transition

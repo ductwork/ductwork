@@ -33,6 +33,15 @@ module Ductwork
       else
         log_race_condition(id)
       end
+    rescue ActiveRecord::InvalidForeignKey => e
+      # NOTE: our own `process` record was reaped (heartbeat-stale, destroyed)
+      # between the nil-check above and `transition.advancements.create!`
+      # inside `claim_and_setup_records`. The insert's FK check blocks on the
+      # reaper's row lock and then fails once the parent is gone, rolling back
+      # the whole claim transaction (branch + transition + advancement) --
+      # nothing is left half-committed. Treat it like any other lost claim
+      # race instead of letting it propagate and kill the advancer thread.
+      log_process_reaped_mid_claim(id, e)
     end
 
     private
@@ -154,6 +163,19 @@ module Ductwork
         msg: "Did not claim branch, avoided race condition",
         branch_id: id,
         pipeline_klass: pipeline_klass,
+        role: :pipeline_advancer
+      )
+
+      nil
+    end
+
+    def log_process_reaped_mid_claim(id, error)
+      Ductwork.logger.warn(
+        msg: "Did not claim branch, our process record was reaped mid-claim",
+        branch_id: id,
+        pipeline_klass: pipeline_klass,
+        error_klass: error.class.to_s,
+        error_message: error.message,
         role: :pipeline_advancer
       )
 
