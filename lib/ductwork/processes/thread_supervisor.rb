@@ -140,6 +140,7 @@ module Ductwork
       def reap_process_records
         Ductwork.wrap_with_app_executor do
           Ductwork::Process.reap_all!(:thread_supervisor)
+          Ductwork::Process.sweep_orphaned_claims!(:thread_supervisor)
         end
       end
 

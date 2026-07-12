@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: reap claims that lost their process ID on a process destroy racing a fresh claim
 - fix: always recover incomplete claims when reusing a PID + machine identifier
 - fix: recover an advancement whose transition completed the branch and then rolled back (e.g. a run-row deadlock victim) instead of stranding the branch in `advancing` — the claim fence and `release!` now use the token captured when advancement starts rather than the in-memory attribute that `complete!`/`halt!` null mid-transition
 - fix: lock the run `FOR NO KEY UPDATE` on Postgres when resolving terminal state so it does not deadlock upgrading past the `FOR KEY SHARE` locks concurrent transitions hold from inserting run-referencing rows

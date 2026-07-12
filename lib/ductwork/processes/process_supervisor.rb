@@ -107,6 +107,7 @@ module Ductwork
       def reap_process_records
         Ductwork.wrap_with_app_executor do
           Ductwork::Process.reap_all!(:process_supervisor)
+          Ductwork::Process.sweep_orphaned_claims!(:process_supervisor)
         end
       end
 

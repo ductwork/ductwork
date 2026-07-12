@@ -66,6 +66,7 @@ module Ductwork
         if rows_updated == 1
           branch = Branch.find(id)
           @transition = find_or_create_transition(branch, now)
+          Ductwork::FaultInjection.checkpoint(:before_advancement_create)
           @advancement = transition.advancements.create!(
             process: process,
             started_at: now,

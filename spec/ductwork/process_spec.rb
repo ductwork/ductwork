@@ -198,6 +198,115 @@ RSpec.describe Ductwork::Process do
     end
   end
 
+  describe ".sweep_orphaned_claims!" do
+    let(:stale_threshold) do
+      Ductwork.configuration.supervisor_reaper_timeout *
+        described_class::ORPHANED_CLAIM_SWEEP_MULTIPLIER
+    end
+
+    it "crashes a stale advancement orphaned by a nullified process" do
+      branch = create(:branch, :claimed)
+      transition = create(:transition, branch:)
+      advancement = create(
+        :advancement,
+        process: nil,
+        transition: transition,
+        started_at: (stale_threshold + 1).seconds.ago
+      )
+
+      described_class.sweep_orphaned_claims!(:process_supervisor)
+
+      expect(advancement.reload.completed_at).to be_present
+      expect(advancement.error_klass).to eq("Ductwork::ProcessCrash")
+      expect(branch.reload.claimed_for_advancing_at).to be_nil
+    end
+
+    it "leaves an orphaned advancement alone if it is not old enough yet" do
+      branch = create(:branch, :claimed)
+      transition = create(:transition, branch:)
+      advancement = create(
+        :advancement,
+        process: nil,
+        transition: transition,
+        started_at: (stale_threshold - 1).seconds.ago
+      )
+
+      described_class.sweep_orphaned_claims!(:process_supervisor)
+
+      expect(advancement.reload.completed_at).to be_nil
+    end
+
+    it "leaves a healthy (process-attached) advancement alone" do
+      process = create(:process, last_heartbeat_at: Time.current)
+      branch = create(:branch, :claimed)
+      transition = create(:transition, branch:)
+      advancement = create(
+        :advancement,
+        process: process,
+        transition: transition,
+        started_at: (stale_threshold + 1).seconds.ago
+      )
+
+      described_class.sweep_orphaned_claims!(:process_supervisor)
+
+      expect(advancement.reload.completed_at).to be_nil
+    end
+
+    it "re-enqueues a stale execution orphaned by a nullified process, once claimed" do
+      execution = create(:execution, process: nil)
+      create(
+        :availability,
+        execution: execution,
+        process: nil,
+        completed_at: (stale_threshold + 1).seconds.ago
+      )
+
+      described_class.sweep_orphaned_claims!(:process_supervisor)
+
+      expect(execution.reload.completed_at).to be_present
+      expect(execution.result.result_type).to eq("process_crashed")
+
+      new_execution = execution.job.executions.where.not(id: execution.id).sole
+      expect(new_execution.availability).to be_present
+      expect(new_execution.availability.completed_at).to be_nil
+    end
+
+    it "does not touch an execution that has never been claimed" do
+      execution = create(:execution, process: nil)
+      create(:availability, execution: execution, process: nil, completed_at: nil)
+
+      described_class.sweep_orphaned_claims!(:process_supervisor)
+
+      expect(execution.reload.completed_at).to be_nil
+    end
+
+    it "leaves a claimed execution alone if it is not old enough yet" do
+      execution = create(:execution, process: nil)
+      create(
+        :availability,
+        execution: execution,
+        process: nil,
+        completed_at: (stale_threshold - 1).seconds.ago
+      )
+
+      described_class.sweep_orphaned_claims!(:process_supervisor)
+
+      expect(execution.reload.completed_at).to be_nil
+    end
+
+    it "logs" do
+      allow(Ductwork.logger).to receive(:debug).and_call_original
+
+      described_class.sweep_orphaned_claims!(:process_supervisor)
+
+      expect(Ductwork.logger).to have_received(:debug).with(
+        msg: "Swept 0 orphaned claims",
+        count: 0,
+        role: :process_supervisor
+      )
+    end
+  end
+
   describe ".report_heartbeat!" do
     it "updates the heartbeat timestamp" do
       last_heartbeat_at = 1.day.ago

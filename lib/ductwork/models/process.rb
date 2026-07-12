@@ -22,6 +22,8 @@ module Ductwork
          pipeline_advancer: "pipeline_advancer",
          job_worker: "job_worker"
 
+    ORPHANED_CLAIM_SWEEP_MULTIPLIER = 3
+
     def self.adopt_or_create_current!(role)
       pid = ::Process.pid
       machine_identifier = Ductwork::MachineIdentifier.fetch
@@ -65,6 +67,50 @@ module Ductwork
 
       Ductwork.logger.debug(
         msg: "Reaped #{count} orphaned process records",
+        count: count,
+        role: role
+      )
+    end
+
+    # NOTE: backstop for claims that lost their process_id (dependent: :nullify
+    # on a process destroy racing a fresh claim) and so are unreachable through
+    # any Process association -- `reap!`/`reap_all!` above only ever look
+    # through a Process record's own advancements/executions, and a nil
+    # process_id means there is no Process record to look through. This scans
+    # the orphaned rows directly instead.
+    #
+    # Executions are additionally scoped to availabilities with a completed_at
+    # present: an unclaimed execution legitimately has process_id: nil while
+    # it waits to be picked up (see RowLockingExecutionClaim#claim_availability,
+    # which only sets process_id at claim time), so process_id: nil alone
+    # would misidentify perfectly healthy queued work as orphaned.
+    def self.sweep_orphaned_claims!(role)
+      timeout = Ductwork.configuration.supervisor_reaper_timeout * ORPHANED_CLAIM_SWEEP_MULTIPLIER
+      count = 0
+      advancement_sql = Ductwork::DatabaseClock.ago_sql("started_at", timeout)
+
+      Ductwork::Advancement
+        .where(process_id: nil, completed_at: nil)
+        .where(advancement_sql)
+        .find_each do |advancement|
+          advancement.process_crashed!
+          count += 1
+        end
+
+      execution_sql = Ductwork::DatabaseClock.ago_sql("ductwork_availabilities.completed_at", timeout)
+
+      Ductwork::Execution
+        .joins(:availability)
+        .where(process_id: nil, completed_at: nil)
+        .where.not(ductwork_availabilities: { completed_at: nil })
+        .where(execution_sql)
+        .find_each do |execution|
+          execution.crashed!
+          count += 1
+        end
+
+      Ductwork.logger.debug(
+        msg: "Swept #{count} orphaned claims",
         count: count,
         role: role
       )
