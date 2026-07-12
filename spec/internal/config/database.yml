@@ -23,4 +23,5 @@ test:
   database: db/combustion_test.sqlite
   pool: 5
   timeout: 5000
+  default_transaction_mode: immediate
 <% end %>
