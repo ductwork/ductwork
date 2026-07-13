@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- fix: rescue transient errors in supervisor/runner work loops so one bad iteration doesn't skip graceful shutdown or kill the process
 - chore: rescue invalid foreign key error as to not let thread die
 - fix: reap claims that lost their process ID on a process destroy racing a fresh claim
 - fix: always recover incomplete claims when reusing a PID + machine identifier

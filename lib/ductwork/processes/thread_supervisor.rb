@@ -65,6 +65,13 @@ module Ductwork
         Ductwork::Processes::WorkerHealthCheck
           .new(workers, :thread_supervisor)
           .check
+      rescue StandardError => e
+        Ductwork.logger.warn(
+          msg: "Checking worker health failed",
+          error_klass: e.class.to_s,
+          error_message: e.message,
+          role: :thread_supervisor
+        )
       end
 
       def shutdown
@@ -142,6 +149,13 @@ module Ductwork
           Ductwork::Process.reap_all!(:thread_supervisor)
           Ductwork::Process.sweep_orphaned_claims!(:thread_supervisor)
         end
+      rescue StandardError => e
+        Ductwork.logger.warn(
+          msg: "Reaping process records failed",
+          error_klass: e.class.to_s,
+          error_message: e.message,
+          role: :thread_supervisor
+        )
       end
 
       def reap_process_record!

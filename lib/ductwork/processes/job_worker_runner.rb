@@ -78,6 +78,13 @@ module Ductwork
         Ductwork::Processes::WorkerHealthCheck
           .new(job_workers, :job_worker_runner)
           .check
+      rescue StandardError => e
+        Ductwork.logger.warn(
+          msg: "Checking worker health failed",
+          error_klass: e.class.to_s,
+          error_message: e.message,
+          role: :job_worker_runner
+        )
       end
 
       def report_heartbeat!

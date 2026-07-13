@@ -68,6 +68,13 @@ module Ductwork
         Ductwork::Processes::WorkerHealthCheck
           .new(advancers, :pipeline_advancer_runner)
           .check
+      rescue StandardError => e
+        Ductwork.logger.warn(
+          msg: "Checking worker health failed",
+          error_klass: e.class.to_s,
+          error_message: e.message,
+          role: :pipeline_advancer_runner
+        )
       end
 
       def adopt_or_create_process!

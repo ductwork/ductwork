@@ -102,6 +102,13 @@ module Ductwork
           msg: "All workers are alive or revived",
           role: :process_supervisor
         )
+      rescue StandardError => e
+        Ductwork.logger.warn(
+          msg: "Checking workers failed",
+          error_klass: e.class.to_s,
+          error_message: e.message,
+          role: :process_supervisor
+        )
       end
 
       def reap_process_records
@@ -109,6 +116,13 @@ module Ductwork
           Ductwork::Process.reap_all!(:process_supervisor)
           Ductwork::Process.sweep_orphaned_claims!(:process_supervisor)
         end
+      rescue StandardError => e
+        Ductwork.logger.warn(
+          msg: "Reaping process records failed",
+          error_klass: e.class.to_s,
+          error_message: e.message,
+          role: :process_supervisor
+        )
       end
 
       def terminate_gracefully
