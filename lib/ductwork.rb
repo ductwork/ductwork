@@ -65,6 +65,7 @@ module Ductwork
     def validate!
       step_directory = Rails.root.join("app/steps")
       pipeline_directory = Rails.root.join("app/pipelines")
+      workflow_directory = Rails.root.join("app/workflows")
       loader = if defined?(Rails.autoloaders)
                  Rails.autoloaders.main
                else
@@ -77,6 +78,10 @@ module Ductwork
 
       if pipeline_directory.exist?
         loader.eager_load_dir(pipeline_directory)
+      end
+
+      if workflow_directory.exist?
+        loader.eager_load_dir(workflow_directory)
       end
 
       true

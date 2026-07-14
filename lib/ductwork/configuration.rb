@@ -23,6 +23,7 @@ module Ductwork
     DEFAULT_SUPERVISOR_REAPER_TIMEOUT = 300 # seconds
     DEFAULT_SUPERVISOR_SHUTDOWN_TIMEOUT = 30 # seconds
     DEFAULT_LOGGER = ::Logger.new($stdout)
+    PIPELINES_DIRECTORIES = %w[app/pipelines app/workflows].freeze
     PIPELINES_WILDCARD = "*"
     VALID_ROLES = %w[all advancer worker].freeze
 
@@ -66,9 +67,10 @@ module Ductwork
       raw_pipelines = config[:pipelines] || []
 
       if raw_pipelines == PIPELINES_WILDCARD
-        Dir
-          .glob("**/*.rb", base: "app/pipelines")
+        PIPELINES_DIRECTORIES
+          .flat_map { |dir| Dir.glob("**/*.rb", base: dir) }
           .map { |path| path.delete_suffix(".rb").camelize }
+          .uniq
       else
         raw_pipelines.map(&:strip)
       end
