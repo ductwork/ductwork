@@ -3,9 +3,9 @@
 [![CI](https://github.com/ductwork/ductwork/actions/workflows/main.yml/badge.svg)](https://github.com/ductwork/ductwork/actions/workflows/main.yml)
 [![Gem Version](https://badge.fury.io/rb/ductwork.svg?icon=si%3Arubygems)](https://rubygems.org/gems/ductwork)
 
-A durable workflow orchestration platform for Ruby.
+A durable workflow orchestration framework for Ruby.
 
-Ductwork lets you build complex pipelines and workflows quickly and easily using intuitive Ruby tooling and a natural DSL. No need to learn complicated unified object models or stand up separate runner instances, just write Ruby code and let Ductwork handle the orchestration.
+Ductwork lets you build durable pipelines and workflows quickly and easily using intuitive Ruby tooling and a natural DSL. No need to learn complicated unified object models or stand up separate runner instances, just write Ruby code and let Ductwork handle the orchestration.
 
 There is also a paid [Ductwork Pro](https://www.getductwork.io/) version with more features and support. See the [Pricing](https://www.getductwork.io/#pricing) page to buy a license.
 
@@ -31,12 +31,12 @@ bin/rails generate ductwork:install
 bin/rails generate ductwork:update
 ```
 
-Run migrations and you're ready to start building pipelines!
+Run migrations and you're ready to start building workflows!
+
 
 ## Configuration
 
-
-The only required configuration is specifying which pipelines to run. Edit the default configuration file `config/ductwork.yml`:
+The only required configuration is specifying which workflows and pipelines to run. Edit the default configuration file `config/ductwork.yml`:
 
 ```yaml
 default: &default
@@ -45,7 +45,7 @@ default: &default
     - SendMonthlyStatusReportsPipeline
 ```
 
-Or use the wildcard to run all pipelines (use cautiously—this can consume significant resources):
+Or use the wildcard to run all pipelines (use cautiously as this can consume significant resources):
 
 ```yaml
 default: &default
@@ -56,9 +56,9 @@ See the [Configuration Guide](https://www.getductwork.io/docs/getting-started/co
 
 ## Usage
 
-### 1. Create a Pipeline Class
+### 1. Create a Workflow Class
 
-Pipeline classes live in `app/pipelines` and inherit from `Ductwork::Pipeline`. While the "Pipeline" suffix is optional, it can help avoid naming collisions:
+Your workflow and pipeline classes live in `app/pipelines` or `app/workflows` and inherit from `Ductwork::Pipeline` or `Ductwork::Workflow`. While the "Pipeline" or "Workflow" suffix is optional, it can help avoid naming collisions:
 
 ```ruby
 # app/pipelines/enrich_user_data_pipeline.rb
@@ -129,7 +129,7 @@ bin/ductwork -c config/ductwork.0.yml
 
 ### 5. Trigger Your Pipeline
 
-Trigger pipelines from anywhere in your Rails application. The `trigger` method returns a `Ductwork::Pipeline` instance for monitoring:
+Trigger workflows from anywhere in your Rails application. The `trigger` method returns a `Ductwork::Pipeline` instance for monitoring:
 
 ```ruby
 # In a Rake task
@@ -142,9 +142,19 @@ end
 def create
   pipeline = EnrichUserDataPipeline.trigger(params[:days_outdated])
 
-  render json: { pipeline_id: pipeline.id, status: pipeline.status }
+  render json: { id: pipeline.id, status: pipeline.status }
 end
 ```
+
+## Delivery Guarantees
+
+Ductwork guarantees **at-least-once**, never exactly-once, execution of each step.
+
+If a worker process is killed (`kill -9`, OOM, host failure, deploy) mid-job, Ductwork can't know whether the step's side effects already ran. Rather than risk silently dropping work, it favors re-running it: a reaper detects the orphaned claim via missed heartbeats and, after a timeout, makes the job eligible to be claimed and executed again, potentially re-running side effects that already completed.
+
+**Write step side effects to be idempotent.** Prefer upserts over inserts, guard non-idempotent external calls (charges, emails, webhooks) with your own dedupe key, etc. Every `Ductwork::Step` exposes `idempotency_key` (a stable ID for that step's execution) for exactly this purpose. Keep steps as small as possible and limit each one to as few side effects as you can; the smaller the blast radius of a re-run, the easier it is to make idempotent.
+
+Pipeline advancement (moving a branch from one step to the next) is tracked separately via its own claim/commit records, so a crash between "step finished" and "pipeline advanced" is handled the same way: the stalled advancement is reaped and retried rather than left stuck.
 
 ## Development
 
