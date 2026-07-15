@@ -42,7 +42,7 @@ The only required configuration is specifying which workflows and pipelines to r
 default: &default
   pipelines:
     - EnrichUserDataPipeline
-    - SendMonthlyStatusReportsPipeline
+    - SendMonthlyStatusReportsWorkflow
 ```
 
 Or use the wildcard to run all pipelines (use cautiously as this can consume significant resources):
@@ -58,7 +58,7 @@ See the [Configuration Guide](https://www.getductwork.io/docs/getting-started/co
 
 ### 1. Create a Workflow Class
 
-Your workflow and pipeline classes live in `app/pipelines` or `app/workflows` and inherit from `Ductwork::Pipeline` or `Ductwork::Workflow`. While the "Pipeline" or "Workflow" suffix is optional, it can help avoid naming collisions:
+Your workflow and pipeline classes live in `app/pipelines` or `app/workflows` and inherit from `Ductwork::Pipeline` or `Ductwork::Workflow` — `Ductwork::Workflow` is an alias for `Ductwork::Pipeline`, so pick whichever name reads best for the process you're modeling. While the "Pipeline" or "Workflow" suffix is optional, it can help avoid naming collisions:
 
 ```ruby
 # app/pipelines/enrich_user_data_pipeline.rb
