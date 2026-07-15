@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [1.0.0] (Unreleased)
+## [1.0.0]
 
 - chore: add `trilogy` database adapter to the CI test matrix
 - chore: read workflow/pipelines definitions from `app/workflows` directory
