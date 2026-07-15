@@ -197,6 +197,8 @@ GEM
     stringio (3.2.0)
     thor (1.5.0)
     timeout (0.6.0)
+    trilogy (2.12.6)
+      bigdecimal
     tsort (0.2.0)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
@@ -230,6 +232,7 @@ DEPENDENCIES
   rubocop-rspec
   rubocop-rspec_rails
   sqlite3
+  trilogy
 
 BUNDLED WITH
   4.0.16

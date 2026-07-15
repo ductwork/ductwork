@@ -8,6 +8,15 @@ test:
   host: 127.0.0.1
   port: 3306
   pool: 5
+<% when "trilogy" %>
+test:
+  adapter: trilogy
+  database: ductwork_test
+  username: root
+  password: root
+  host: 127.0.0.1
+  port: 3306
+  pool: 5
 <% when "postgresql" %>
 test:
   adapter: postgresql

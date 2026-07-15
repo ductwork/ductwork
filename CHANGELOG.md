@@ -2,6 +2,7 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: add `trilogy` database adapter to the CI test matrix
 - chore: read workflow/pipelines definitions from `app/workflows` directory
 - fix: rescue transient errors in supervisor/runner work loops so one bad iteration doesn't skip graceful shutdown or kill the process
 - chore: rescue invalid foreign key error as to not let thread die

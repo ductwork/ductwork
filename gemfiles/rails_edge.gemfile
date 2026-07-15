@@ -20,6 +20,7 @@ gem "rubocop-rake"
 gem "rubocop-rspec"
 gem "rubocop-rspec_rails"
 gem "sqlite3"
+gem "trilogy", require: false
 gem "rails", git: "https://github.com/rails/rails", branch: "main"
 
 gemspec path: "../"
