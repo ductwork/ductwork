@@ -2,6 +2,9 @@
 
 ## [1.0.0] (Unreleased)
 
+- chore: add multiple database adapters to CI test matrix
+- fix: inspect `in_batches` parameters for passing `cursor` option
+- fix: only use cursor options for ActiveRecord versions that support it
 - chore: wire payloads to jobs without instantiating whole model objects
 - fix: avoid race condition of `nil`-ing out `execution` on job worker
 - fix: no longer strand `combine`/`collapse` branches in `advancing` when a run-row deadlock rolls back a transition that had already completed the branch (via the shared OSS claim-fence fix); previously the run stalled until the advancer process was reaped
