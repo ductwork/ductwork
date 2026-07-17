@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [1.1.0] (Unreleased)
+
+- chore: change CLI banner to be more on-theme
+
 ## [1.0.0]
 
 - chore: add `trilogy` database adapter to the CI test matrix
