@@ -2,6 +2,7 @@
 
 ## [1.1.0] (Unreleased)
 
+- chore: add color to CLI banner
 - chore: change CLI banner to be more on-theme
 
 ## [1.0.0]
