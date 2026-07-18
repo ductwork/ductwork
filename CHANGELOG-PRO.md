@@ -1,6 +1,10 @@
 # Ductwork Pro Changelog
 
-## [1.0.0] (Unreleased)
+## [1.1.0]
+
+- chore: update CLI banner to match OSS
+
+## [1.0.0]
 
 - chore: add multiple database adapters to CI test matrix
 - fix: inspect `in_batches` parameters for passing `cursor` option
