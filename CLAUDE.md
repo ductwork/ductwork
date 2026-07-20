@@ -1,4 +1,4 @@
-# Ductwork OSS Architecture Context
+# Ductwork OSS Context
 
 This is the OSS `ductwork` gem (LGPL v3). The paid `ductwork-pro` gem
 extends it via `prepend` and adds features that MUST NOT be reimplemented
