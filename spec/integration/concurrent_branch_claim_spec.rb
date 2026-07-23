@@ -15,7 +15,7 @@ RSpec.describe "Concurrent branch claim", :no_transaction do
 
   before { create(:process, :current) }
 
-  it "grants each claimable branch to exactly one advancer under contention" do
+  it "grants each claimable branch to exactly one advancer under contention" do # rubocop:todo RSpec/ExampleLength
     adapter = ActiveRecord::Base.connection.adapter_name
     skip "race is untestable on SQLite (global write lock)" if adapter.match?(/sqlite/i)
 
@@ -25,9 +25,21 @@ RSpec.describe "Concurrent branch claim", :no_transaction do
     anomalies = []
 
     rounds.times do |round|
-      run = create(:run, status: :in_progress, pipeline_klass:, definition:)
+      run = create(
+        :run,
+        status: :in_progress,
+        pipeline_klass: pipeline_klass,
+        definition: definition
+      )
       branch = create(:branch, :in_progress, pipeline_klass:, run:)
-      step = create(:step, :advancing, node: "MyStepA.0", klass: "MyStepA", branch:, run:)
+      step = create(
+        :step,
+        :advancing,
+        node: "MyStepA.0",
+        klass: "MyStepA",
+        branch: branch,
+        run: run
+      )
 
       # release the main thread's connection so every pool slot is available to
       # the workers — otherwise a worker blocks on checkout and never reaches
