@@ -201,13 +201,28 @@ module Ductwork
       end
     end
 
+    # NOTE: the unrescued form of the halt, for callers that are ALREADY inside a
+    # `with_claim_fence`. Those callers must NOT use the rescuing wrapper below:
+    # `Ductwork::Record.transaction` nests by joining (no savepoint), so a rescue
+    # here swallows the error without unwinding the caller's still-open outer
+    # transaction. The fence would then commit the caller's partial work (a step
+    # already flipped to `completed`) alongside a branch the rescue put back to
+    # `in_progress` — a branch `find_candidate_branch_id` can never select again
+    # (no step in `advancing`/`failed`) and no reaper covers (the advancement was
+    # closed). Letting the error propagate instead lets `route_by_edge`'s rescue,
+    # which sits outside the fence, roll the whole thing back and retry.
+    def halt_branch_and_resolve_run_without_rescue!(transition, advancement, halt_reason)
+      now = Time.current
+      advancement.update!(completed_at: now)
+      transition.update!(completed_at: now)
+      halt!(halt_reason)
+      run.resolve_terminal_state!
+    end
+
+    # NOTE: only for callers outside a claim fence (`advance!`'s direct halts).
     def halt_branch_and_resolve_run!(transition, advancement, halt_reason)
       with_claim_fence do
-        now = Time.current
-        advancement.update!(completed_at: now)
-        transition.update!(completed_at: now)
-        halt!(halt_reason)
-        run.resolve_terminal_state!
+        halt_branch_and_resolve_run_without_rescue!(transition, advancement, halt_reason)
       end
     rescue StandardError => e
       # NOTE: re-enter the claim fence before mutating branch/advancement state.
@@ -604,7 +619,11 @@ module Ductwork
       if node.nil?
         with_claim_fence do
           latest_step.update!(status: :completed, completed_at: Time.current)
-          halt_branch_and_resolve_run!(transition, advancement, "condition_unmatched")
+          halt_branch_and_resolve_run_without_rescue!(
+            transition,
+            advancement,
+            "condition_unmatched"
+          )
         end
       else
         with_claim_fence do
@@ -641,7 +660,11 @@ module Ductwork
       if too_many
         with_claim_fence do
           latest_step.update!(status: :completed, completed_at: Time.current)
-          halt_branch_and_resolve_run!(transition, advancement, "max_fanout_exceeded")
+          halt_branch_and_resolve_run_without_rescue!(
+            transition,
+            advancement,
+            "max_fanout_exceeded"
+          )
         end
       else
         with_claim_fence do
@@ -686,7 +709,11 @@ module Ductwork
       if max_depth != -1 && return_value.count > max_depth
         with_claim_fence do
           latest_step.update!(status: :completed, completed_at: Time.current)
-          halt_branch_and_resolve_run!(transition, advancement, "max_fanout_exceeded")
+          halt_branch_and_resolve_run_without_rescue!(
+            transition,
+            advancement,
+            "max_fanout_exceeded"
+          )
         end
       elsif return_value.none?
         complete_branch_and_pipeline(transition, advancement)

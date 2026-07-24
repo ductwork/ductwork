@@ -98,5 +98,55 @@ RSpec.describe Ductwork::Branch, "#advance!" do
       expect(run.reload).to be_halted
       expect(run.pipeline).to be_halted
     end
+
+    context "when the halt itself errors" do
+      # NOTE: regression. The halt runs inside an already-open `with_claim_fence`
+      # and `Ductwork::Record.transaction` nests by joining (no savepoint), so a
+      # rescue inside the halt would not unwind the fence. The fence would then
+      # commit the step as `completed` alongside a non-terminal branch, which
+      # `BranchClaim` can never select again (no step in `advancing`/`failed`)
+      # and no reaper covers (the advancement was closed) — the run would hang
+      # forever. The error must instead propagate to `route_by_edge`'s rescue,
+      # which sits outside the fence, so the whole attempt rolls back and the
+      # branch is released for a retry.
+      subject(:branch) { create(:branch, :claimed, run:) }
+
+      before do
+        allow(run)
+          .to receive(:resolve_terminal_state!)
+          .and_raise(ActiveRecord::RecordInvalid.new(Ductwork::Pipeline.new))
+      end
+
+      it "rolls back the step completion" do
+        branch.advance!(transition, advancement)
+
+        expect(step.reload.status).to eq("advancing")
+        expect(step.completed_at).to be_nil
+      end
+
+      it "releases the branch for retry instead of stranding it" do
+        branch.advance!(transition, advancement)
+        branch.reload
+
+        expect(branch.status).to eq("in_progress")
+        expect(branch.halt_reason).to be_nil
+        expect(branch.claim_token).to be_nil
+        expect(branch.claimed_for_advancing_at).to be_nil
+      end
+
+      it "leaves the run and pipeline unresolved" do
+        branch.advance!(transition, advancement)
+
+        expect(run.reload).to be_in_progress
+        expect(run.pipeline).not_to be_halted
+      end
+
+      it "records the error on the advancement" do
+        branch.advance!(transition, advancement)
+
+        expect(advancement.reload.error_klass).to eq("ActiveRecord::RecordInvalid")
+        expect(advancement.completed_at).to be_almost_now
+      end
+    end
   end
 end

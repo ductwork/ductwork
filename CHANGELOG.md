@@ -2,6 +2,7 @@
 
 ## [1.1.0]
 
+- fix: let the nested halt path (`divert` no-match, `divide`/`expand` fan-out cap) propagate errors to the advancement rescue instead of committing a step as `completed` alongside an unclaimable branch
 - chore: add color to CLI banner
 - chore: change CLI banner to be more on-theme
 
