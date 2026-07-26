@@ -1,5 +1,9 @@
 # Ductwork Pro Changelog
 
+## [1.1.1] (Unreleased)
+
+- fix: don't use `unique_by` argument for `insert_all` for mysql and trilogy database adapters
+
 ## [1.1.0]
 
 - chore: update CLI banner to match OSS
