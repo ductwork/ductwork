@@ -26,6 +26,8 @@ module Ductwork
 
       return log_no_branches if id.blank?
 
+      Ductwork::FaultInjection.checkpoint(:after_branch_candidate_select)
+
       rows_updated = claim_and_setup_records(id, process)
 
       if rows_updated == 1
@@ -48,11 +50,31 @@ module Ductwork
 
     attr_reader :pipeline_klass, :claimed_for_advancing_at
 
-    def find_candidate_branch_id
+    # NOTE: the single source of truth for "this branch has work to advance",
+    # shared by the candidate `SELECT` and the claiming `UPDATE` so the two can
+    # never drift. Without a `SELECT ... FOR UPDATE`, candidate selection and
+    # claiming are separate statements, so the claim MUST re-assert every
+    # predicate the selection relied on -- not just `claimed_for_advancing_at IS
+    # NULL`. Between the two, the advancer that already owned this branch can
+    # finish and `release!` it (back to `in_progress`, claim nulled), which
+    # leaves the null check satisfied by a branch whose latest step is now a
+    # freshly enqueued `in_progress` one. Claiming that would advance the branch
+    # off a step whose job has not run yet -- routing on a nil return value and
+    # minting a duplicate downstream step. The window is normally microseconds,
+    # but the candidate `SELECT` scans the branch/step tables, so at scale
+    # (~1M live branches, every advancer thread converging on the same
+    # `ORDER BY last_advanced_at LIMIT 1` row) it stretches into the tens of
+    # milliseconds and the race becomes routine. Re-asserting the status keeps a
+    # `completed`/`halted` branch from being resurrected the same way.
+    def claimable_branches
       Ductwork::Branch
         .in_progress
         .where(pipeline_klass:, claimed_for_advancing_at:)
-        .where(steps: Ductwork::Step.where(status: %w[advancing failed]))
+        .where(steps: Ductwork::Step.where(status: Ductwork::Step::ADVANCEABLE_STATUSES))
+    end
+
+    def find_candidate_branch_id
+      claimable_branches
         .order(:last_advanced_at)
         .limit(1)
         .pluck(:id)
@@ -64,8 +86,12 @@ module Ductwork
       @token = SecureRandom.uuid
 
       Ductwork::Record.transaction do
-        rows_updated = Ductwork::Branch
-                       .where(id:, claimed_for_advancing_at:)
+        # NOTE: `claimed_for_advancing_at IS NULL` remains the serialization
+        # point between two advancers claiming at the same instant (the row lock
+        # makes the loser re-evaluate and match zero rows); the rest of the
+        # predicate closes the stale-candidate window described above.
+        rows_updated = claimable_branches
+                       .where(id:)
                        .update_all(
                          claimed_for_advancing_at: now,
                          claim_token: token,

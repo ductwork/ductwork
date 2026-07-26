@@ -2,6 +2,12 @@
 
 module Ductwork
   class Step < Ductwork::Record
+    # The statuses that mean this step is done running and its branch is ready
+    # to be advanced: `advancing` (the job succeeded) or `failed` (the job
+    # exhausted its retry or crash budget). Shared by branch candidate
+    # selection, branch claiming, and the guard in `Branch#advance!`.
+    ADVANCEABLE_STATUSES = %w[advancing failed].freeze
+
     belongs_to :run, class_name: "Ductwork::Run"
     belongs_to :branch, class_name: "Ductwork::Branch"
     belongs_to :source_step, class_name: "Ductwork::Step", optional: true

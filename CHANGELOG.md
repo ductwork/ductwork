@@ -2,6 +2,8 @@
 
 ## [1.1.0]
 
+- fix: re-assert the full candidate predicate (branch status and an `advancing`/`failed` step, not just a null claim) in the claim `UPDATE` query so an advancer whose candidate went stale can no longer claim a branch that another advancer already advanced and released — which advanced the branch off a freshly enqueued step whose job had not run, routing on a nil return value
+- fix: release the claim instead of routing or halting when `Branch#advance!` finds no step to advance
 - fix: confirm a stuck thread actually died before restarting it, so a `Thread#kill` that cannot interrupt a blocking C-level database call no longer leaves two threads sharing one worker's claim state
 - fix: give each worker/advancer thread a fresh running context on `start` so a thread restarted after a kill is not immediately shut down by the context the kill tore down
 - fix: reset the heartbeat timestamp on `start` so a restarted thread is not judged stuck on the stale timestamp that got it killed

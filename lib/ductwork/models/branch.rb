@@ -107,6 +107,19 @@ module Ductwork
       step = latest_step
       max_crash = Ductwork.configuration.pipeline_advancer_max_crash
 
+      # NOTE: backstop for a stale claim, checked before anything else because a
+      # branch with no advanceable step must be neither routed NOR halted. Every
+      # legitimate claim arrives with its latest step in `advancing` (job
+      # succeeded, or `revive!`'s re-advance) or `failed` (budgets exhausted);
+      # `BranchClaim` re-asserts exactly that in its claiming UPDATE. If we
+      # nonetheless hold a branch whose latest step is still running, the
+      # previous advancer already handled that step and enqueued the next one --
+      # there is nothing to advance and no failure to attribute. A poison branch
+      # that keeps crashing the advancer is unaffected: its step stays
+      # `advancing` (the crash rolled the transition back), so the crash cap
+      # below still fires.
+      return release_stale_claim!(transition, advancement, step) unless advanceable_step?(step)
+
       # NOTE: the crash cap is checked first as the true backstop against a
       # poison branch that repeatedly crashes the advancer process/thread. In a
       # normal failed-step halt no advancer crashes have accrued, so this only
@@ -179,6 +192,34 @@ module Ductwork
     end
 
     private
+
+    def advanceable_step?(step)
+      step.present? && Ductwork::Step::ADVANCEABLE_STATUSES.include?(step.status)
+    end
+
+    # NOTE: close our bookkeeping and hand the branch back untouched. The
+    # advancement is closed WITHOUT an `error_klass` on purpose: this is not an
+    # advancer failure, and stamping one would burn either the retry budget
+    # (`too_many_failed_attempts?`) or the crash budget (`next_crash_count`) and
+    # eventually halt a perfectly healthy branch. `release!` restores
+    # `in_progress`, so the branch no longer matches the candidate predicate
+    # until its running step lands -- no reclaim loop.
+    def release_stale_claim!(transition, advancement, step)
+      with_claim_fence do
+        now = Time.current
+        advancement&.update!(completed_at: now)
+        transition.update!(completed_at: now)
+        release!
+      end
+
+      Ductwork.logger.warn(
+        msg: "Branch claimed with no step to advance, released",
+        branch_id: id,
+        step_id: step&.id,
+        step_status: step&.status,
+        role: :pipeline_advancer
+      )
+    end
 
     def log_claim_diverged
       Ductwork.logger.info(
