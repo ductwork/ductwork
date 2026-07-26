@@ -39,6 +39,17 @@ RSpec.describe Ductwork::Processes::JobWorker do
 
       shutdown(job_worker)
     end
+
+    it "does not replace a live thread" do
+      job_worker = described_class.new(pipeline, id)
+      job_worker.start
+      original_thread = job_worker.thread
+
+      expect(job_worker.start).to be(false)
+      expect(job_worker.thread).to be(original_thread)
+
+      shutdown(job_worker)
+    end
   end
 
   describe "#restart", :not_transaction do
@@ -54,6 +65,31 @@ RSpec.describe Ductwork::Processes::JobWorker do
 
       expect(execution).to have_received(:crashed!)
       expect(job_worker.execution).to be_nil
+
+      shutdown(job_worker)
+    end
+
+    it "does not spawn a second thread while the current one is alive" do
+      create(:process, :current)
+      job_worker.start
+      original_thread = job_worker.thread
+
+      expect(job_worker.restart).to be(false)
+      expect(job_worker.thread).to be(original_thread)
+
+      shutdown(job_worker)
+    end
+
+    it "keeps the replacement thread running after a kill" do
+      create(:process, :current)
+      job_worker.start
+      job_worker.kill
+      sleep(0.1)
+
+      expect(job_worker.restart).to be(true)
+      sleep(0.3)
+
+      expect(job_worker).to be_alive
 
       shutdown(job_worker)
     end

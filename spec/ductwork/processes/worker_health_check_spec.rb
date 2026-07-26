@@ -20,7 +20,6 @@ RSpec.describe Ductwork::Processes::WorkerHealthCheck do
     let(:stuck_job_worker) do
       instance_double(
         Ductwork::Processes::JobWorker,
-        alive?: true,
         stuck?: true,
         kill: nil,
         join: nil,
@@ -28,6 +27,21 @@ RSpec.describe Ductwork::Processes::WorkerHealthCheck do
         pipeline: pipeline.klass,
         execution: execution,
         name: "stuck"
+      ).tap do |worker|
+        allow(worker).to receive(:alive?).and_return(true, true, false)
+      end
+    end
+    let(:unkillable_job_worker) do
+      instance_double(
+        Ductwork::Processes::JobWorker,
+        alive?: true,
+        stuck?: true,
+        kill: nil,
+        join: nil,
+        restart: nil,
+        pipeline: pipeline.klass,
+        execution: execution,
+        name: "unkillable"
       )
     end
     let(:healthy_job_worker) do
@@ -52,14 +66,15 @@ RSpec.describe Ductwork::Processes::WorkerHealthCheck do
       instance_double(
         Ductwork::Processes::PipelineAdvancer,
         is_a?: true,
-        alive?: true,
         stuck?: true,
         kill: nil,
         join: nil,
         restart: nil,
         branch: branch,
         name: "stuck"
-      )
+      ).tap do |advancer|
+        allow(advancer).to receive(:alive?).and_return(true, true, false)
+      end
     end
     let(:workers) do
       [
@@ -127,6 +142,40 @@ RSpec.describe Ductwork::Processes::WorkerHealthCheck do
         role: role,
         thread: "stuck"
       ).twice
+    end
+
+    context "when a stuck worker cannot be confirmed dead" do # rubocop:disable RSpec/MultipleMemoizedHelpers
+      let(:workers) { [unkillable_job_worker] }
+
+      before do
+        stub_const("#{described_class}::KILL_BUDGET", 0.2)
+        stub_const("#{described_class}::JOIN_TIMEOUT", 0.05)
+      end
+
+      it "does not start a replacement thread" do
+        worker_health_check.check
+
+        expect(unkillable_job_worker).to have_received(:kill).at_least(:once)
+        expect(unkillable_job_worker).not_to have_received(:restart)
+      end
+
+      it "logs the deferral" do
+        worker_health_check.check
+
+        expect(Ductwork.logger).to have_received(:warn).with(
+          msg: "Unable to confirm stuck thread died, deferring restart",
+          role: role,
+          thread: "unkillable"
+        )
+      end
+
+      it "retries the kill on the next check" do
+        worker_health_check.check
+        worker_health_check.check
+
+        expect(unkillable_job_worker).to have_received(:restart).exactly(0).times
+        expect(unkillable_job_worker).to have_received(:kill).at_least(:twice)
+      end
     end
   end
 end

@@ -2,6 +2,10 @@
 
 ## [1.1.0]
 
+- fix: confirm a stuck thread actually died before restarting it, so a `Thread#kill` that cannot interrupt a blocking C-level database call no longer leaves two threads sharing one worker's claim state
+- fix: give each worker/advancer thread a fresh running context on `start` so a thread restarted after a kill is not immediately shut down by the context the kill tore down
+- fix: reset the heartbeat timestamp on `start` so a restarted thread is not judged stuck on the stale timestamp that got it killed
+- fix: log the claimed job/branch of a dead thread before the restart clears it
 - fix: let the nested halt path (`divert` no-match, `divide`/`expand` fan-out cap) propagate errors to the advancement rescue instead of committing a step as `completed` alongside an unclaimable branch
 - chore: add color to CLI banner
 - chore: change CLI banner to be more on-theme

@@ -66,6 +66,9 @@ Naming/MemoizedInstanceVariableName:
 
 Naming/PredicateMethod:
   AllowBangMethods: true
+  AllowedMethods:
+    - start
+    - restart
 
 RSpec/DescribeClass:
   Exclude:

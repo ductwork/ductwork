@@ -33,35 +33,72 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
 
       shutdown(pipeline_advancer)
     end
+
+    it "does not replace a live thread" do
+      pipeline_advancer = described_class.new(klass)
+      pipeline_advancer.start
+      original_thread = pipeline_advancer.thread
+
+      expect(pipeline_advancer.start).to be(false)
+      expect(pipeline_advancer.thread).to be(original_thread)
+
+      shutdown(pipeline_advancer)
+    end
   end
 
   describe "#restart" do
     subject(:pipeline_advancer) { described_class.new(klass) }
 
-    let(:branch) { create(:branch, :claimed) }
-    let(:claim_token) { branch.claim_token }
-    let(:transition) { create(:transition, branch:) }
-    let(:advancement) { create(:advancement, transition:) }
+    it "does not spawn a second thread while the current one is alive" do
+      pipeline_advancer.start
+      original_thread = pipeline_advancer.thread
 
-    before do
-      advancement
-    end
-
-    it "cleans up claimed resources from a thread crash" do
-      pipeline_advancer.instance_variable_set(:@branch, branch)
-      pipeline_advancer.instance_variable_set(:@original_claim_token, claim_token)
-
-      expect do
-        pipeline_advancer.restart
-      end.to change { branch.reload.claimed_for_advancing_at }.to(nil)
-        .and change { advancement.reload.completed_at }.to(be_almost_now)
-        .and change(advancement, :error_klass).to("Ductwork::ThreadCrash")
-        .and change(advancement, :error_message).to(
-          "Advancement abandoned from a thread crash"
-        )
-      expect(pipeline_advancer.branch).to be_nil
+      expect(pipeline_advancer.restart).to be(false)
+      expect(pipeline_advancer.thread).to be(original_thread)
 
       shutdown(pipeline_advancer)
+    end
+
+    it "keeps the replacement thread running after a kill" do
+      pipeline_advancer.start
+      pipeline_advancer.kill
+      sleep(0.1)
+
+      expect(pipeline_advancer.restart).to be(true)
+      sleep(0.3)
+
+      expect(pipeline_advancer).to be_alive
+
+      pipeline_advancer.stop
+      pipeline_advancer.join(2)
+    end
+
+    context "when the previous thread crashed holding a claim" do
+      let(:branch) { create(:branch, :claimed) }
+      let(:claim_token) { branch.claim_token }
+      let(:transition) { create(:transition, branch:) }
+      let(:advancement) { create(:advancement, transition:) }
+
+      before do
+        advancement
+      end
+
+      it "cleans up claimed resources from a thread crash" do
+        pipeline_advancer.instance_variable_set(:@branch, branch)
+        pipeline_advancer.instance_variable_set(:@original_claim_token, claim_token)
+
+        expect do
+          pipeline_advancer.restart
+        end.to change { branch.reload.claimed_for_advancing_at }.to(nil)
+          .and change { advancement.reload.completed_at }.to(be_almost_now)
+          .and change(advancement, :error_klass).to("Ductwork::ThreadCrash")
+          .and change(advancement, :error_message).to(
+            "Advancement abandoned from a thread crash"
+          )
+        expect(pipeline_advancer.branch).to be_nil
+
+        shutdown(pipeline_advancer)
+      end
     end
   end
 

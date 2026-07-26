@@ -8,17 +8,25 @@ module Ductwork
       def initialize(klass, index = nil)
         @klass = klass
         @index = index || 0
-        @running_context = Ductwork::RunningContext.new
+        @running_context = nil
         @last_heartbeat_at = Time.current
         @thread = nil
       end
 
       def start
+        return false if alive?
+
+        @running_context = Ductwork::RunningContext.new
+        @last_heartbeat_at = Time.current
         @thread = Thread.new { work_loop }
         @thread.name = name
+
+        true
       end
 
       def restart
+        return false if alive?
+
         cleanup_dead_thread!
         start
       end
@@ -32,7 +40,7 @@ module Ductwork
       end
 
       def stop
-        running_context.shutdown!
+        running_context&.shutdown!
       end
 
       def kill
