@@ -4,8 +4,9 @@ RSpec.describe Ductwork::Branch, "#advance!" do
   subject(:branch) { create(:branch, :in_progress, run:) }
 
   let(:run) do
-    create(:run, status: :in_progress, definition: definition)
+    create(:run, status: :in_progress, definition: definition, pipeline: pipeline)
   end
+  let(:pipeline) { create(:pipeline, status: :in_progress) }
   let(:definition) do
     {
       nodes: %w[MyStepA.0 MyStepB.1 MyStepC.2 MyStepD.3],
