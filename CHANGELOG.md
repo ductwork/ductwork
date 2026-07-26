@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [1.1.0]
+## [1.1.1] (Unreleased)
 
 - fix: re-assert the full candidate predicate (branch status and an `advancing`/`failed` step, not just a null claim) in the claim `UPDATE` query so an advancer whose candidate went stale can no longer claim a branch that another advancer already advanced and released — which advanced the branch off a freshly enqueued step whose job had not run, routing on a nil return value
 - fix: release the claim instead of routing or halting when `Branch#advance!` finds no step to advance
@@ -9,6 +9,9 @@
 - fix: reset the heartbeat timestamp on `start` so a restarted thread is not judged stuck on the stale timestamp that got it killed
 - fix: log the claimed job/branch of a dead thread before the restart clears it
 - fix: let the nested halt path (`divert` no-match, `divide`/`expand` fan-out cap) propagate errors to the advancement rescue instead of committing a step as `completed` alongside an unclaimable branch
+
+## [1.1.0]
+
 - chore: add color to CLI banner
 - chore: change CLI banner to be more on-theme
 
