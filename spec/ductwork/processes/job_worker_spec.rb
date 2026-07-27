@@ -171,6 +171,27 @@ RSpec.describe Ductwork::Processes::JobWorker do
     end
   end
 
+  describe "work loop backoff", :not_transaction do
+    subject(:job_worker) { described_class.new(pipeline, id) }
+
+    let(:claim) { instance_double(Ductwork::ExecutionClaim, latest: nil) }
+
+    before do
+      create(:process, :current)
+      allow(Ductwork::PollingInterval).to receive(:jittered).and_call_original
+      allow(Ductwork::ExecutionClaim).to receive(:new).and_return(claim)
+
+      job_worker.start
+      sleep(0.3)
+      shutdown(job_worker)
+    end
+
+    it "jitters the backoff so workers do not poll in lockstep" do
+      expect(Ductwork::PollingInterval)
+        .to have_received(:jittered).with(0.1).at_least(:once)
+    end
+  end
+
   describe "#name" do
     it "returns the thread name" do
       job_worker = described_class.new(pipeline, id)

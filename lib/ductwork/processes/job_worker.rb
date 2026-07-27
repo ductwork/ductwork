@@ -98,7 +98,8 @@ module Ductwork
                 role: :job_worker,
                 pipeline: pipeline
               )
-              sleep(polling_timeout)
+
+              sleep(timeout)
             end
           rescue Ductwork::Execution::CommitFailed => e
             Ductwork.logger.error(
@@ -175,7 +176,9 @@ module Ductwork
       end
 
       def polling_timeout
-        Ductwork.configuration.job_worker_polling_timeout(pipeline)
+        timeout = Ductwork.configuration.job_worker_polling_timeout(pipeline)
+
+        Ductwork::PollingInterval.jittered(timeout)
       end
     end
   end

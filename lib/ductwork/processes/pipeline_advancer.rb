@@ -134,7 +134,9 @@ module Ductwork
       end
 
       def polling_timeout
-        Ductwork.configuration.pipeline_polling_timeout(klass)
+        timeout = Ductwork.configuration.pipeline_polling_timeout(klass)
+
+        Ductwork::PollingInterval.jittered(timeout)
       end
     end
   end

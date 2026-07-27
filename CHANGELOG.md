@@ -2,6 +2,7 @@
 
 ## [1.1.1] (Unreleased)
 
+- fix: jitter the idle polling sleep of advancer and worker threads by ±25% of the configured `polling_timeout` so threads spawned together stop waking in lockstep and piling onto the same claim candidates — the configured timeout remains the average poll latency
 - fix: distinguish a contended claim (candidates existed but every sampled one lost its race) from an idle queue so an advancer that loses a race re-enters the work loop immediately instead of sleeping a full polling interval — `Branch.with_latest_claimed` now returns `:claimed`/`:contended`/`:idle` rather than a boolean
 - fix: sample the branch to claim from a window of the oldest candidates (sized off `pipeline_advancer.count`) and walk to the next sampled ID when a claim loses its race, instead of every advancer thread in every process contending for the single oldest row — raising the advancer count or adding advancer processes now increases advancement throughput instead of degrading it
 - fix: re-assert the full candidate predicate (branch status and an `advancing`/`failed` step, not just a null claim) in the claim `UPDATE` query so an advancer whose candidate went stale can no longer claim a branch that another advancer already advanced and released — which advanced the branch off a freshly enqueued step whose job had not run, routing on a nil return value

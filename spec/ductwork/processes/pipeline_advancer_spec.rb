@@ -197,6 +197,8 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
     let(:pipeline_advancer) { described_class.new(klass) }
 
     before do
+      allow(Ductwork::PollingInterval).to receive(:jittered).and_call_original
+
       # each pass costs 0.01s of claim work, so a backing-off loop manages
       # ~4 passes over the run window while a draining one manages dozens
       allow(Ductwork::Branch).to receive(:with_latest_claimed) do
@@ -216,6 +218,11 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
         expect(Ductwork::Branch)
           .to have_received(:with_latest_claimed).at_most(10).times
       end
+
+      it "jitters the backoff so advancers do not poll in lockstep" do
+        expect(Ductwork::PollingInterval)
+          .to have_received(:jittered).with(0.1).at_least(:once)
+      end
     end
 
     context "when every sampled candidate lost its race" do
@@ -225,6 +232,10 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
         expect(Ductwork::Branch)
           .to have_received(:with_latest_claimed).at_least(20).times
       end
+
+      it "does not back off" do
+        expect(Ductwork::PollingInterval).not_to have_received(:jittered)
+      end
     end
 
     context "when a branch was claimed" do
@@ -233,6 +244,10 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
       it "drains without backing off" do
         expect(Ductwork::Branch)
           .to have_received(:with_latest_claimed).at_least(20).times
+      end
+
+      it "does not back off" do
+        expect(Ductwork::PollingInterval).not_to have_received(:jittered)
       end
     end
   end
