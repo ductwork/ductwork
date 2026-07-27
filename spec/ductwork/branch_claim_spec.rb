@@ -147,7 +147,7 @@ RSpec.describe Ductwork::BranchClaim do
         let(:transition) do
           in_step = create(:step, :advancing, branch:)
 
-          create(:transition, branch:, in_step:, out_step: nil)
+          create(:transition, branch: branch, in_step: in_step, out_step: nil)
         end
         let(:advancement) { create(:advancement, transition:) }
 
