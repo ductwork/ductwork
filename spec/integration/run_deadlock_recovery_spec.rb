@@ -54,13 +54,13 @@ RSpec.describe "Run-row deadlock recovery" do
 
     # First pass: claims the branch, completes it (nulling the in-memory token),
     # then deadlocks resolving the run. It must roll back and release the branch.
-    expect(advance_once).to be(true)
+    expect(advance_once).to be(:claimed)
     expect(branch.reload.status).to eq("in_progress")
     expect(branch.claim_token).to be_nil
     expect(step.reload.status).to eq("advancing")
 
     # Second pass: re-claims the released branch and completes it.
-    expect(advance_once).to be(true)
+    expect(advance_once).to be(:claimed)
     expect(branch.reload.status).to eq("completed")
     expect(run.reload.status).to eq("completed")
 

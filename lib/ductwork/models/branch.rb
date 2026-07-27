@@ -56,9 +56,11 @@ module Ductwork
 
         yield branch, branch_claim.transition, branch_claim.advancement
 
-        true
+        :claimed
+      elsif branch_claim.contended?
+        :contended
       else
-        false
+        :idle
       end
     ensure
       advancement = branch_claim.advancement

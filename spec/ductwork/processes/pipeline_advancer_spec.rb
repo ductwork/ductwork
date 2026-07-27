@@ -193,6 +193,50 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
     end
   end
 
+  describe "work loop backoff" do
+    let(:pipeline_advancer) { described_class.new(klass) }
+
+    before do
+      # each pass costs 0.01s of claim work, so a backing-off loop manages
+      # ~4 passes over the run window while a draining one manages dozens
+      allow(Ductwork::Branch).to receive(:with_latest_claimed) do
+        Kernel.sleep(0.01)
+        outcome
+      end
+
+      pipeline_advancer.start
+      Kernel.sleep(0.5)
+      shutdown(pipeline_advancer)
+    end
+
+    context "when the queue is empty" do
+      let(:outcome) { :idle }
+
+      it "backs off a polling interval between passes" do
+        expect(Ductwork::Branch)
+          .to have_received(:with_latest_claimed).at_most(10).times
+      end
+    end
+
+    context "when every sampled candidate lost its race" do
+      let(:outcome) { :contended }
+
+      it "re-enters the loop immediately instead of backing off" do
+        expect(Ductwork::Branch)
+          .to have_received(:with_latest_claimed).at_least(20).times
+      end
+    end
+
+    context "when a branch was claimed" do
+      let(:outcome) { :claimed }
+
+      it "drains without backing off" do
+        expect(Ductwork::Branch)
+          .to have_received(:with_latest_claimed).at_least(20).times
+      end
+    end
+  end
+
   def shutdown(pipeline_advancer)
     pipeline_advancer.stop
     sleep(0.1)

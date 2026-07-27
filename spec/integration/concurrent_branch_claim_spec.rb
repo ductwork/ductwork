@@ -61,7 +61,7 @@ RSpec.describe "Concurrent branch claim", :no_transaction do
       end
       results = threads.map(&:value)
 
-      winners = results.count { |r| r == true }
+      winners = results.count { |r| r == :claimed }
       transitions = Ductwork::Transition.where(in_step_id: step.id).count
       errors = results.grep(Exception)
 

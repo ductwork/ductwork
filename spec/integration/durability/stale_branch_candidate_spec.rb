@@ -58,7 +58,7 @@ RSpec.describe "Branch stops being claimable between selection and claim", :no_t
     Process.wait(pid)
 
     expect($?.exitstatus).to eq(0)
-    expect(advanced).to be(true)
+    expect(advanced).to be(:claimed)
 
     # the chain advanced exactly once: one transition over the original step,
     # one advancement under it, and one new step still waiting on its job

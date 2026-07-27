@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Ductwork
-  class BranchClaim
+  class BranchClaim # rubocop:disable Metrics/ClassLength
     attr_reader :transition, :advancement, :token
 
     MAX_CLAIM_ATTEMPTS = 3
@@ -9,6 +9,11 @@ module Ductwork
     def initialize(pipeline_klass)
       @pipeline_klass = pipeline_klass
       @claimed_for_advancing_at = nil
+      @contended = false
+    end
+
+    def contended?
+      @contended
     end
 
     def latest
@@ -35,6 +40,8 @@ module Ductwork
       if claimed_id
         Ductwork::Branch.find(claimed_id)
       else
+        @contended = true
+
         log_lost_claim_races
       end
     rescue ActiveRecord::InvalidForeignKey => e

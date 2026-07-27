@@ -70,10 +70,10 @@ module Ductwork
         )
 
         while running_context.running?
-          claimed = false
+          outcome = :idle
 
           Ductwork.wrap_with_app_executor do
-            claimed = Branch.with_latest_claimed(klass) do |branch, transition, advancement|
+            outcome = Branch.with_latest_claimed(klass) do |branch, transition, advancement|
               @branch = branch
               @original_claim_token = branch.claim_token
 
@@ -88,7 +88,7 @@ module Ductwork
 
           @last_heartbeat_at = Time.current
 
-          if !claimed
+          if outcome == :idle
             sleep(polling_timeout)
           end
         end

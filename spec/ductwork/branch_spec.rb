@@ -106,12 +106,17 @@ RSpec.describe Ductwork::Branch do
       end.to yield_with_args(branch, transition, advancement)
     end
 
-    it "returns true when a branch was claimed" do
-      expect(described_class.with_latest_claimed(pipeline_klass) {}).to be(true)
+    it "returns :claimed when a branch was claimed" do
+      expect(described_class.with_latest_claimed(pipeline_klass) {}).to be(:claimed)
     end
 
     it "does not yield if there is no branch to claim" do
-      claim = instance_double(Ductwork::BranchClaim, latest: nil, advancement: nil)
+      claim = instance_double(
+        Ductwork::BranchClaim,
+        latest: nil,
+        advancement: nil,
+        contended?: false
+      )
       allow(Ductwork::BranchClaim).to receive(:new).and_return(claim)
 
       expect do |block|
@@ -119,11 +124,28 @@ RSpec.describe Ductwork::Branch do
       end.not_to yield_control
     end
 
-    it "returns false when there is no branch to claim" do
-      claim = instance_double(Ductwork::BranchClaim, latest: nil, advancement: nil)
+    it "returns :idle when there is no branch to claim" do
+      claim = instance_double(
+        Ductwork::BranchClaim,
+        latest: nil,
+        advancement: nil,
+        contended?: false
+      )
       allow(Ductwork::BranchClaim).to receive(:new).and_return(claim)
 
-      expect(described_class.with_latest_claimed(pipeline_klass) {}).to be(false)
+      expect(described_class.with_latest_claimed(pipeline_klass) {}).to be(:idle)
+    end
+
+    it "returns :contended when every sampled candidate lost its race" do
+      claim = instance_double(
+        Ductwork::BranchClaim,
+        latest: nil,
+        advancement: nil,
+        contended?: true
+      )
+      allow(Ductwork::BranchClaim).to receive(:new).and_return(claim)
+
+      expect(described_class.with_latest_claimed(pipeline_klass) {}).to be(:contended)
     end
 
     it "cleans up the advancement if the thread crashes" do
