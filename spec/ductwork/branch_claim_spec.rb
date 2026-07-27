@@ -53,6 +53,83 @@ RSpec.describe Ductwork::BranchClaim do
         expect(record.claimed_for_advancing_at).to be_almost_now
       end
 
+      context "when competing advancers win the race on other sampled candidates" do
+        let!(:stolen_branches) do
+          Array.new(2) do
+            other = create(:branch, :in_progress, pipeline_klass:)
+            create(:step, :advancing, branch: other)
+            other
+          end
+        end
+
+        before do
+          # NOTE: simulates competing advancers claiming candidates between our
+          # window `SELECT` and our claiming `UPDATE`s, leaving exactly one
+          # survivor. Whichever position the survivor lands in the sample, the
+          # walk has to reach it instead of giving up on the first lost race --
+          # the sample is randomized, so the assertion holds for every ordering.
+          allow(Ductwork::FaultInjection).to receive(:checkpoint) do |key|
+            if key == :after_branch_candidate_select
+              Ductwork::Branch
+                .where(id: stolen_branches.map(&:id))
+                .update_all(
+                  claimed_for_advancing_at: Time.current,
+                  status: "advancing"
+                )
+            end
+          end
+        end
+
+        it "keeps walking the sample and claims the surviving branch" do
+          record = claim.latest
+
+          expect(record).to eq(branch)
+          expect(record).to be_advancing
+          expect(record.claim_token).to eq(claim.token)
+        end
+
+        it "sets up the transition and advancement for the surviving branch" do
+          claim.latest
+
+          expect(claim.transition.branch).to eq(branch)
+          expect(claim.advancement).to eq(Ductwork::Advancement.sole)
+        end
+      end
+
+      context "when competing advancers win the race on every sampled candidate" do
+        before do
+          allow(Ductwork::FaultInjection).to receive(:checkpoint) do |key|
+            if key == :after_branch_candidate_select
+              Ductwork::Branch
+                .where(pipeline_klass:)
+                .update_all(
+                  claimed_for_advancing_at: Time.current,
+                  status: "advancing"
+                )
+            end
+          end
+        end
+
+        it "returns nil without creating a transition or advancement" do
+          expect do
+            expect(claim.latest).to be_nil
+          end.to not_change(Ductwork::Advancement, :count)
+            .and not_change(Ductwork::Transition, :count)
+        end
+
+        it "logs the lost races" do
+          allow(Ductwork.logger).to receive(:debug).and_call_original
+
+          claim.latest
+
+          expect(Ductwork.logger).to have_received(:debug).with(
+            msg: "Did not claim branch, lost races on all sampled IDs",
+            pipeline_klass: pipeline_klass,
+            role: :pipeline_advancer
+          )
+        end
+      end
+
       context "when the branch's latest step is failed" do
         before do
           Ductwork::Step.where(branch:).destroy_all
@@ -239,6 +316,53 @@ RSpec.describe Ductwork::BranchClaim do
           error_message: an_instance_of(String),
           role: :pipeline_advancer
         )
+      end
+    end
+
+    describe "candidate window sizing" do
+      subject(:window_size) { claim.send(:candidate_window_size) }
+
+      before do
+        allow(Ductwork.configuration)
+          .to receive(:pipeline_advancer_count)
+          .with(pipeline_klass)
+          .and_return(advancer_count)
+      end
+
+      context "with a pool between the floor and the ceiling" do
+        let(:advancer_count) { 10 }
+
+        it "derives the window from the advancer pool" do
+          expect(window_size).to eq(40)
+        end
+      end
+
+      context "with a small pool" do
+        let(:advancer_count) { 1 }
+
+        it "floors the window so multi-process contention still spreads" do
+          expect(window_size).to eq(20)
+        end
+      end
+
+      context "with a large pool" do
+        let(:advancer_count) { 200 }
+
+        it "caps the window so the plucked ID array stays small" do
+          expect(window_size).to eq(100)
+        end
+      end
+
+      context "when read more than once" do
+        let(:advancer_count) { 10 }
+
+        it "only reads the configuration once" do
+          2.times { claim.send(:candidate_window_size) }
+
+          expect(Ductwork.configuration)
+            .to have_received(:pipeline_advancer_count)
+            .once
+        end
       end
     end
   end

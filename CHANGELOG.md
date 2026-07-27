@@ -2,6 +2,7 @@
 
 ## [1.1.1] (Unreleased)
 
+- fix: sample the branch to claim from a window of the oldest candidates (sized off `pipeline_advancer.count`) and walk to the next sampled ID when a claim loses its race, instead of every advancer thread in every process contending for the single oldest row — raising the advancer count or adding advancer processes now increases advancement throughput instead of degrading it
 - fix: re-assert the full candidate predicate (branch status and an `advancing`/`failed` step, not just a null claim) in the claim `UPDATE` query so an advancer whose candidate went stale can no longer claim a branch that another advancer already advanced and released — which advanced the branch off a freshly enqueued step whose job had not run, routing on a nil return value
 - fix: release the claim instead of routing or halting when `Branch#advance!` finds no step to advance
 - fix: confirm a stuck thread actually died before restarting it, so a `Thread#kill` that cannot interrupt a blocking C-level database call no longer leaves two threads sharing one worker's claim state

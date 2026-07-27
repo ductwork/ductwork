@@ -4,6 +4,8 @@ module Ductwork
   class BranchClaim
     attr_reader :transition, :advancement, :token
 
+    MAX_CLAIM_ATTEMPTS = 3
+
     def initialize(pipeline_klass)
       @pipeline_klass = pipeline_klass
       @claimed_for_advancing_at = nil
@@ -22,18 +24,18 @@ module Ductwork
 
       return log_no_process if process.nil?
 
-      id = find_candidate_branch_id
+      ids = find_candidate_branch_ids
 
-      return log_no_branches if id.blank?
+      return log_no_branches if ids.blank?
 
       Ductwork::FaultInjection.checkpoint(:after_branch_candidate_select)
 
-      rows_updated = claim_and_setup_records(id, process)
+      claimed_id = claim_and_setup_records(ids, process)
 
-      if rows_updated == 1
-        Ductwork::Branch.find(id)
+      if claimed_id
+        Ductwork::Branch.find(claimed_id)
       else
-        log_race_condition(id)
+        log_lost_claim_races
       end
     rescue ActiveRecord::InvalidForeignKey => e
       # NOTE: our own `process` record was reaped (heartbeat-stale, destroyed)
@@ -43,12 +45,22 @@ module Ductwork
       # the whole claim transaction (branch + transition + advancement) --
       # nothing is left half-committed. Treat it like any other lost claim
       # race instead of letting it propagate and kill the advancer thread.
-      log_process_reaped_mid_claim(id, e)
+      log_process_reaped_mid_claim(e)
     end
 
     private
 
-    attr_reader :pipeline_klass, :claimed_for_advancing_at
+    attr_reader :pipeline_klass, :claimed_for_advancing_at, :attempted_branch_id
+
+    def candidate_window_size
+      @candidate_window_size ||= begin
+        pipeline_advancer_count = Ductwork
+                                  .configuration
+                                  .pipeline_advancer_count(pipeline_klass)
+
+        (pipeline_advancer_count * 4).clamp(20, 100)
+      end
+    end
 
     # NOTE: the single source of truth for "this branch has work to advance",
     # shared by the candidate `SELECT` and the claiming `UPDATE` so the two can
@@ -62,10 +74,14 @@ module Ductwork
     # off a step whose job has not run yet -- routing on a nil return value and
     # minting a duplicate downstream step. The window is normally microseconds,
     # but the candidate `SELECT` scans the branch/step tables, so at scale
-    # (~1M live branches, every advancer thread converging on the same
-    # `ORDER BY last_advanced_at LIMIT 1` row) it stretches into the tens of
-    # milliseconds and the race becomes routine. Re-asserting the status keeps a
-    # `completed`/`halted` branch from being resurrected the same way.
+    # (~1M live branches) it stretches into the tens of milliseconds and the
+    # race becomes routine. Sampling from a window rather than always taking
+    # the single oldest row spreads advancers across distinct candidates, but
+    # it also means an id can sit unattempted while earlier attempts in the
+    # walk run -- so the ids reaching the claiming `UPDATE` are, if anything,
+    # staler than before and the re-assertion matters more, not less.
+    # Re-asserting the status keeps a `completed`/`halted` branch from being
+    # resurrected the same way.
     def claimable_branches
       Ductwork::Branch
         .in_progress
@@ -73,23 +89,30 @@ module Ductwork
         .where(steps: Ductwork::Step.where(status: Ductwork::Step::ADVANCEABLE_STATUSES))
     end
 
-    def find_candidate_branch_id
+    def find_candidate_branch_ids
       claimable_branches
         .order(:last_advanced_at)
-        .limit(1)
+        .limit(candidate_window_size)
         .pluck(:id)
-        .first
+        .sample(MAX_CLAIM_ATTEMPTS)
     end
 
-    def claim_and_setup_records(id, process)
+    def claim_and_setup_records(ids, process)
+      ids.each do |id|
+        @attempted_branch_id = id
+        claimed_id = attempt_claim(id, process)
+
+        return claimed_id if claimed_id
+      end
+
+      nil
+    end
+
+    def attempt_claim(id, process)
       now = Time.current
       @token = SecureRandom.uuid
 
       Ductwork::Record.transaction do
-        # NOTE: `claimed_for_advancing_at IS NULL` remains the serialization
-        # point between two advancers claiming at the same instant (the row lock
-        # makes the loser re-evaluate and match zero rows); the rest of the
-        # predicate closes the stale-candidate window described above.
         rows_updated = claimable_branches
                        .where(id:)
                        .update_all(
@@ -98,18 +121,18 @@ module Ductwork
                          status: :advancing
                        )
 
-        if rows_updated == 1
-          branch = Branch.find(id)
-          @transition = find_or_create_transition(branch, now)
-          Ductwork::FaultInjection.checkpoint(:before_advancement_create)
-          @advancement = transition.advancements.create!(
-            process: process,
-            started_at: now,
-            crash_count: next_crash_count(transition)
-          )
-        end
+        next nil unless rows_updated == 1
 
-        rows_updated
+        branch = Branch.find(id)
+        @transition = find_or_create_transition(branch, now)
+        Ductwork::FaultInjection.checkpoint(:before_advancement_create)
+        @advancement = transition.advancements.create!(
+          process: process,
+          started_at: now,
+          crash_count: next_crash_count(transition)
+        )
+
+        id
       end
     end
 
@@ -184,10 +207,9 @@ module Ductwork
       nil
     end
 
-    def log_race_condition(id)
+    def log_lost_claim_races
       Ductwork.logger.debug(
-        msg: "Did not claim branch, avoided race condition",
-        branch_id: id,
+        msg: "Did not claim branch, lost races on all sampled IDs",
         pipeline_klass: pipeline_klass,
         role: :pipeline_advancer
       )
@@ -195,10 +217,10 @@ module Ductwork
       nil
     end
 
-    def log_process_reaped_mid_claim(id, error)
+    def log_process_reaped_mid_claim(error)
       Ductwork.logger.warn(
         msg: "Did not claim branch, our process record was reaped mid-claim",
-        branch_id: id,
+        branch_id: attempted_branch_id,
         pipeline_klass: pipeline_klass,
         error_klass: error.class.to_s,
         error_message: error.message,
