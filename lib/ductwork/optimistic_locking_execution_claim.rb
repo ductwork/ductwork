@@ -78,20 +78,7 @@ module Ductwork
     end
 
     def update_state
-      step = execution.job.step
-
-      Ductwork::Step
-        .where(id: step.id)
-        .where.not(status: "in_progress")
-        .update_all(status: "in_progress", updated_at: Time.current)
-      Ductwork::Run
-        .where(id: step.run_id)
-        .where.not(status: "in_progress")
-        .update_all(status: "in_progress", updated_at: Time.current)
-      Ductwork::Pipeline
-        .where(id: Ductwork::Run.where(id: step.run_id).select(:pipeline_id))
-        .where.not(status: "in_progress")
-        .update_all(status: "in_progress", updated_at: Time.current)
+      Ductwork::ClaimedState.mark_in_progress!(execution.job.step)
     end
   end
 end
