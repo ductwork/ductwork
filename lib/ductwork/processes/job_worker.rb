@@ -99,7 +99,7 @@ module Ductwork
                 pipeline: pipeline
               )
 
-              sleep(timeout)
+              sleep(polling_timeout)
             end
           rescue Ductwork::Execution::CommitFailed => e
             Ductwork.logger.error(
