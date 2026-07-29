@@ -4,6 +4,9 @@ plugins:
   - rubocop-rspec
   - rubocop-rspec_rails
 
+require:
+  - ./rubocop/cop/ductwork/bulk_update_timestamps.rb
+
 AllCops:
   NewCops: enable
   TargetRubyVersion: 3.3
@@ -11,6 +14,15 @@ AllCops:
     - Appraisals
     - gemfiles/**/*
     - vendor/**/*
+
+# NOTE: migration templates are excluded on purpose. A backfill rewrites rows
+# to satisfy a schema change, not a domain event, and stamping `updated_at`
+# there would destroy the real mutation history for every existing row.
+Ductwork/BulkUpdateTimestamps:
+  Enabled: true
+  Exclude:
+    - lib/generators/**/*
+    - spec/**/*
 
 Layout/MultilineMethodCallIndentation:
   Exclude:

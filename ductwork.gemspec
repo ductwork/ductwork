@@ -22,8 +22,8 @@ Gem::Specification.new do |spec|
 
   gemspec = File.basename(__FILE__)
   excludes = %w[
-    bin/ log/ gemfiles/ spec/ .git .github .rspec .rubocop.yml .ruby-version
-    Gemfile Appraisals CODE_OF_CONDUCT.md config.ru
+    bin/ log/ gemfiles/ spec/ rubocop/ .git .github .rspec .rubocop.yml
+    .ruby-version Gemfile Appraisals CODE_OF_CONDUCT.md config.ru
   ]
   spec.files = IO.popen(%w[git ls-files -z], chdir: __dir__, err: IO::NULL) do |ls|
     ls.readlines("\x0", chomp: true).reject do |f|
