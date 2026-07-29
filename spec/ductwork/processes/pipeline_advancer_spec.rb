@@ -21,15 +21,14 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
     end
 
     it "updates the last heartbet timestamp" do
-      be_now = be_within(1.second).of(Time.current)
       pipeline_advancer = described_class.new(klass)
 
-      expect(pipeline_advancer.last_heartbeat_at).to be_now
+      expect(pipeline_advancer.last_heartbeat_at).to be_almost_now
 
       pipeline_advancer.start
       sleep(1)
 
-      expect(pipeline_advancer.last_heartbeat_at).to be_now
+      expect(pipeline_advancer.last_heartbeat_at).to be_almost_now
 
       shutdown(pipeline_advancer)
     end
