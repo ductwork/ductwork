@@ -2,6 +2,7 @@
 
 ## [1.1.1] (Unreleased)
 
+- fix: use `Ductwork::DatabaseClock` instead of `Time.current` in claiming queries
 - fix: set `updated_at` timestamp when touching record through `update_all` or `update_columns`
 - fix: reap the forking supervisor's own process record on shutdown, as the threaded supervisor already did, so a clean stop no longer leaves a record behind for a peer to sweep up `supervisor.reaper_timeout` later
 - fix: skip the reaping process's own record in `Process.reap_all!` so a supervisor whose work loop stalled past `supervisor.reaper_timeout` cannot declare its own in-flight work crashed — in threaded mode the advancer and worker threads share the supervisor's process record, so self-reaping released branches and re-enqueued jobs that live threads were still running; a peer supervisor still reaps the record when the process genuinely dies

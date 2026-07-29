@@ -67,7 +67,7 @@ module Ductwork
     end
 
     def claim_availability
-      completed_at = updated_at = Time.current
+      completed_at = updated_at = Ductwork::DatabaseClock.now
 
       Ductwork::Availability
         .where(id: id, completed_at: nil)

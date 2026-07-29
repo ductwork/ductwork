@@ -116,7 +116,7 @@ module Ductwork
     end
 
     def attempt_claim(id, process)
-      now = Time.current
+      now = Ductwork::DatabaseClock.now
       @token = SecureRandom.uuid
 
       Ductwork::Record.transaction do

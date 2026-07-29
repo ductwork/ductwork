@@ -50,7 +50,7 @@ module Ductwork
 
       return unless availability
 
-      completed_at = updated_at = Time.current
+      completed_at = updated_at = Ductwork::DatabaseClock.now
       @execution = availability.execution
 
       availability.update_columns(completed_at:, process_id:, updated_at:)
