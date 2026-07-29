@@ -183,13 +183,16 @@ module Ductwork
     # silently leave the branch stranded in `advancing`. Callers outside an
     # advancement (fresh branch objects, explicit tokens) are unaffected.
     def release!(expected_token = @claim_fence_token || claim_token)
+      last_advanced_at = updated_at = Time.current
+
       Ductwork::Branch
         .where(id: id, claim_token: expected_token, status: :advancing)
         .update_all(
           claimed_for_advancing_at: nil,
           claim_token: nil,
           status: :in_progress,
-          last_advanced_at: Time.current
+          last_advanced_at: last_advanced_at,
+          updated_at: updated_at
         )
     end
 

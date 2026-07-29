@@ -50,11 +50,11 @@ module Ductwork
 
       return unless availability
 
-      completed_at = Time.current
+      completed_at = updated_at = Time.current
       @execution = availability.execution
 
-      availability.update_columns(completed_at:, process_id:)
-      execution.update_columns(process_id:)
+      availability.update_columns(completed_at:, process_id:, updated_at:)
+      execution.update_columns(process_id:, updated_at:)
     end
 
     def update_state

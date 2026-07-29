@@ -2,6 +2,7 @@
 
 ## [1.1.1] (Unreleased)
 
+- fix: set `updated_at` timestamp when touching record through `update_all` or `update_columns`
 - fix: reap the forking supervisor's own process record on shutdown, as the threaded supervisor already did, so a clean stop no longer leaves a record behind for a peer to sweep up `supervisor.reaper_timeout` later
 - fix: skip the reaping process's own record in `Process.reap_all!` so a supervisor whose work loop stalled past `supervisor.reaper_timeout` cannot declare its own in-flight work crashed — in threaded mode the advancer and worker threads share the supervisor's process record, so self-reaping released branches and re-enqueued jobs that live threads were still running; a peer supervisor still reaps the record when the process genuinely dies
 - fix: report a heartbeat from the forking supervisor's own work loop — its process record went stale after `supervisor.reaper_timeout` and its own reaper sweep destroyed it, so a healthy supervisor disappeared from the dashboard and the health check reported it `dead` five minutes into every boot, failing any container liveness probe wired to it

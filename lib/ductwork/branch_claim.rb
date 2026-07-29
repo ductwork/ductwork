@@ -125,7 +125,8 @@ module Ductwork
                        .update_all(
                          claimed_for_advancing_at: now,
                          claim_token: token,
-                         status: :advancing
+                         status: :advancing,
+                         updated_at: now
                        )
 
         next nil unless rows_updated == 1

@@ -84,9 +84,10 @@ module Ductwork
 
       return if klass.blank?
 
+      on_halt_dispatched_at = updated_at = Time.current
       claimed = self.class
                     .where(id: id, status: "halted", on_halt_dispatched_at: nil)
-                    .update_all(on_halt_dispatched_at: Time.current)
+                    .update_all(on_halt_dispatched_at:, updated_at:)
 
       return if claimed.zero?
 

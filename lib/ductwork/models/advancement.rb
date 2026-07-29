@@ -14,11 +14,14 @@ module Ductwork
     end
 
     def process_crashed!
+      completed_at = updated_at = Time.current
+
       Ductwork::Record.transaction do
         rows_updated = self.class
                            .where(id: id, completed_at: nil)
                            .update_all(
-                             completed_at: Time.current,
+                             completed_at: completed_at,
+                             updated_at: updated_at,
                              error_klass: "Ductwork::ProcessCrash",
                              error_message: "Reaped from orphaned process"
                            )
@@ -30,11 +33,14 @@ module Ductwork
     end
 
     def thread_crashed!(expected_token)
+      completed_at = updated_at = Time.current
+
       Ductwork::Record.transaction do
         rows_updated = self.class
                            .where(id: id, completed_at: nil)
                            .update_all(
-                             completed_at: Time.current,
+                             completed_at: completed_at,
+                             updated_at: updated_at,
                              error_klass: "Ductwork::ThreadCrash",
                              error_message: "Advancement abandoned from a thread crash"
                            )

@@ -52,13 +52,13 @@ module Ductwork
     end
 
     def succeeded!(output_payload, owner_process_id)
-      completed_at = Time.current
+      completed_at = updated_at = Time.current
       payload = JSON.dump({ payload: output_payload })
 
       Ductwork::Record.transaction do
         rows_updated = Ductwork::Execution
                        .where(id: id, completed_at: nil, process_id: owner_process_id)
-                       .update_all(completed_at:)
+                       .update_all(completed_at:, updated_at:)
 
         if rows_updated.zero?
           raise Ductwork::Execution::CommitFailed, "Reaper clobbered claimed job execution"
@@ -78,10 +78,12 @@ module Ductwork
         step: job.klass
       )
 
+      completed_at = updated_at = Time.current
+
       Ductwork::Record.transaction do # rubocop:todo Metrics/BlockLength
         rows_updated = Ductwork::Execution
                        .where(id: id, process_id: process_id, completed_at: nil)
-                       .update_all(completed_at: Time.current)
+                       .update_all(completed_at:, updated_at:)
 
         return if rows_updated.zero?
 
@@ -118,7 +120,7 @@ module Ductwork
 
     def errored!(error, owner_process_id) # rubocop:todo Metrics
       run = job.step.run
-      completed_at = Time.current
+      completed_at = updated_at = Time.current
       max_retry = Ductwork.configuration.job_worker_max_retry(
         pipeline: run.pipeline_klass,
         step: job.klass
@@ -127,7 +129,7 @@ module Ductwork
       Ductwork::Record.transaction do # rubocop:todo Metrics/BlockLength
         rows_updated = Ductwork::Execution
                        .where(id: id, completed_at: nil, process_id: owner_process_id)
-                       .update_all(completed_at:)
+                       .update_all(completed_at:, updated_at:)
 
         if rows_updated.zero?
           raise Ductwork::Execution::CommitFailed, "Reaper clobbered claimed job execution"

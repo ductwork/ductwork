@@ -24,8 +24,9 @@ module Ductwork
               availability_id: id
             )
 
+            updated_at = Time.current
             @execution = find_execution
-            execution.update_columns(process_id:)
+            execution.update_columns(process_id:, updated_at:)
 
             update_state
           else
@@ -66,9 +67,11 @@ module Ductwork
     end
 
     def claim_availability
+      completed_at = updated_at = Time.current
+
       Ductwork::Availability
         .where(id: id, completed_at: nil)
-        .update_all(completed_at: Time.current, process_id: process_id)
+        .update_all(completed_at:, process_id:, updated_at:)
     end
 
     def find_execution
