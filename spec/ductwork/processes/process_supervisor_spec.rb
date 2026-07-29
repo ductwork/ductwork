@@ -107,6 +107,14 @@ RSpec.describe Ductwork::Processes::ProcessSupervisor do
       end
     end
 
+    it "reaps its own process record" do
+      Ductwork::Process.adopt_or_create_current!(:supervisor)
+
+      supervisor.shutdown
+
+      expect(Ductwork::Process.current).to be_nil
+    end
+
     it "calls the supervisor stop lifecycle hooks" do
       allow(block).to receive(:call).and_call_original
       Ductwork.on_supervisor_stop(&block)

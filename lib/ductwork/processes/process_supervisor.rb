@@ -62,6 +62,7 @@ module Ductwork
         terminate_gracefully
         wait_for_workers_to_exit
         terminate_immediately
+        reap_own_process_record!
         run_hooks_for(:stop)
       end
 
@@ -241,6 +242,12 @@ module Ductwork
           Ductwork::Process
             .find_by(pid:, machine_identifier:)
             &.reap!(:process_supervisor, force: true)
+        end
+      end
+
+      def reap_own_process_record!
+        Ductwork.wrap_with_app_executor do
+          Ductwork::Process.current&.reap!(:process_supervisor, force: true)
         end
       end
 
