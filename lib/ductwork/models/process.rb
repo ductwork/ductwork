@@ -105,7 +105,9 @@ module Ductwork
         .where.not(ductwork_availabilities: { completed_at: nil })
         .where(execution_sql)
         .find_each do |execution|
-          execution.crashed!
+          execution.crashed!(
+            Ductwork::OrphanedClaim.new("Swept claim with no owning process record")
+          )
           count += 1
         end
 
@@ -177,7 +179,9 @@ module Ductwork
 
       Ductwork::Record.transaction do
         advancements.where(completed_at: nil).find_each(&:process_crashed!)
-        executions.where(completed_at: nil).find_each(&:crashed!)
+        executions.where(completed_at: nil).find_each do |execution|
+          execution.crashed!(Ductwork::ProcessCrash.new("Reaped from orphaned process"))
+        end
       end
     end
 

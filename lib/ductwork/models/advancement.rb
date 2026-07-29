@@ -7,7 +7,7 @@ module Ductwork
 
     validates :started_at, presence: true
 
-    CRASH_ERROR_KLASSES = %w[Ductwork::ProcessCrash Ductwork::ThreadCrash].freeze
+    CRASH_ERROR_KLASSES = [Ductwork::ProcessCrash.name, Ductwork::ThreadCrash.name].freeze
 
     def crash?
       CRASH_ERROR_KLASSES.include?(error_klass)
@@ -22,7 +22,7 @@ module Ductwork
                            .update_all(
                              completed_at: completed_at,
                              updated_at: updated_at,
-                             error_klass: "Ductwork::ProcessCrash",
+                             error_klass: Ductwork::ProcessCrash.name,
                              error_message: "Reaped from orphaned process"
                            )
 
@@ -41,7 +41,7 @@ module Ductwork
                            .update_all(
                              completed_at: completed_at,
                              updated_at: updated_at,
-                             error_klass: "Ductwork::ThreadCrash",
+                             error_klass: Ductwork::ThreadCrash.name,
                              error_message: "Advancement abandoned from a thread crash"
                            )
 

@@ -4,10 +4,11 @@ RSpec.describe Ductwork::Execution, "#crashed!" do
   subject(:execution) { create(:execution, job:) }
 
   let(:job) { create(:job) }
+  let(:error) { Ductwork::ProcessCrash.new("Reaped from orphaned process") }
 
   it "completes the execution" do
     expect do
-      execution.crashed!
+      execution.crashed!(error)
     end.to change { execution.reload.completed_at }.to(be_almost_now)
   end
 
@@ -15,22 +16,81 @@ RSpec.describe Ductwork::Execution, "#crashed!" do
     attempt = create(:attempt, execution:)
 
     expect do
-      execution.crashed!
+      execution.crashed!(error)
     end.to change { attempt.reload.completed_at }.to(be_almost_now)
   end
 
   it "creates a 'process crashed' result record" do
     expect do
-      execution.crashed!
+      execution.crashed!(error)
     end.to change(Ductwork::Result, :count).by(1)
     expect(execution.result.result_type).to eq("process_crashed")
+  end
+
+  it "records the crash marker on the result" do
+    execution.crashed!(error)
+
+    expect(execution.result).to have_attributes(
+      error_klass: "Ductwork::ProcessCrash",
+      error_message: "Reaped from orphaned process",
+      error_backtrace: nil
+    )
+  end
+
+  context "when the work loop passes the exception that killed it" do
+    let(:error) do
+      raise "boom"
+    rescue RuntimeError => e
+      e
+    end
+
+    it "records the class, message, and backtrace" do
+      execution.crashed!(error)
+
+      expect(execution.result).to have_attributes(
+        error_klass: "RuntimeError",
+        error_message: "boom"
+      )
+      expect(execution.result.error_backtrace).to include("crashed_spec.rb")
+    end
+  end
+
+  # NOTE: text caps at 64KB on MySQL, so an unbounded backtrace can raise on
+  # insert inside `crashed!` -- which is itself the recovery path
+  context "when the backtrace is deeper than the frame limit" do
+    let(:error) do
+      raise "boom"
+    rescue RuntimeError => e
+      e.set_backtrace(Array.new(40) { |i| "frame_#{i}.rb:1:in 'call'" })
+      e
+    end
+
+    it "keeps the frames nearest the raise and notes the rest" do
+      execution.crashed!(error)
+
+      lines = execution.result.error_backtrace.split("\n")
+      expect(lines.length).to eq(11)
+      expect(lines.first).to eq("frame_0.rb:1:in 'call'")
+      expect(lines[9]).to eq("frame_9.rb:1:in 'call'")
+      expect(lines.last).to eq("... 30 more frames")
+    end
+  end
+
+  context "when the error message exceeds the column limit" do
+    let(:error) { Ductwork::ThreadCrash.new("a" * 500) }
+
+    it "truncates rather than failing the crash path" do
+      execution.crashed!(error)
+
+      expect(execution.result.error_message.length).to eq(255)
+    end
   end
 
   it "creates new execution and availability records" do
     execution
 
     expect do
-      execution.crashed!
+      execution.crashed!(error)
     end.to change(described_class, :count).by(1)
       .and change(Ductwork::Availability, :count).by(1)
   end
@@ -42,7 +102,7 @@ RSpec.describe Ductwork::Execution, "#crashed!" do
       execution
 
       expect do
-        execution.crashed!
+        execution.crashed!(error)
       end.to change(described_class, :count).by(1)
         .and change(Ductwork::Availability, :count).by(1)
 
@@ -62,7 +122,7 @@ RSpec.describe Ductwork::Execution, "#crashed!" do
     end
 
     it "re-enqueues with a linear backoff" do
-      execution.crashed!
+      execution.crashed!(error)
 
       new_execution = job.executions.order(:created_at).last
       expect(new_execution.crash_count).to eq(4)
@@ -83,7 +143,7 @@ RSpec.describe Ductwork::Execution, "#crashed!" do
       step = execution.job.step
 
       expect do
-        execution.crashed!
+        execution.crashed!(error)
       end.to change { step.reload.status }.to("failed")
         .and not_change(described_class, :count)
         .and not_change(Ductwork::Availability, :count)
@@ -92,10 +152,12 @@ RSpec.describe Ductwork::Execution, "#crashed!" do
     it "logs" do
       allow(Ductwork.logger).to receive(:error).and_call_original
 
-      execution.crashed!
+      execution.crashed!(error)
 
       expect(Ductwork.logger).to have_received(:error).with(
         msg: "Job exceeded crash limit and failed",
+        error_klass: "Ductwork::ProcessCrash",
+        error_message: "Reaped from orphaned process",
         job_id: execution.job.id,
         job_klass: execution.job.klass,
         run_id: execution.job.step.run_id,
@@ -108,7 +170,7 @@ RSpec.describe Ductwork::Execution, "#crashed!" do
     execution.update!(completed_at: Time.current)
 
     expect do
-      execution.crashed!
+      execution.crashed!(error)
     end.to not_change(described_class, :count)
       .and not_change(Ductwork::Availability, :count)
       .and not_change(Ductwork::Result, :count)
@@ -118,10 +180,10 @@ RSpec.describe Ductwork::Execution, "#crashed!" do
   # both can converge on the same execution and otherwise produce duplicate
   # process_crashed results, replacement executions, and availabilities
   it "is idempotent when called twice on the same execution" do
-    execution.crashed!
+    execution.crashed!(error)
 
     expect do
-      execution.crashed!
+      execution.crashed!(error)
     end.to not_change(described_class, :count)
       .and not_change(Ductwork::Availability, :count)
       .and not_change(Ductwork::Result, :count)
@@ -142,7 +204,7 @@ RSpec.describe Ductwork::Execution, "#crashed!" do
       .update_all(process_id: reclaiming_process.id)
 
     expect do
-      execution.crashed!
+      execution.crashed!(error)
     end.to not_change(described_class, :count)
       .and not_change(Ductwork::Availability, :count)
       .and not_change(Ductwork::Result, :count)

@@ -190,7 +190,7 @@ module Ductwork
         .first
         &.update!(
           completed_at: now,
-          error_klass: "Ductwork::ProcessCrash",
+          error_klass: Ductwork::ProcessCrash.name,
           error_message: "Advancement was abandoned from a process crash"
         )
     end

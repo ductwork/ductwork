@@ -63,7 +63,7 @@ RSpec.describe Ductwork::Processes::JobWorker do
 
       job_worker.restart
 
-      expect(execution).to have_received(:crashed!)
+      expect(execution).to have_received(:crashed!).with(an_instance_of(Ductwork::ThreadCrash))
       expect(job_worker.execution).to be_nil
 
       shutdown(job_worker)

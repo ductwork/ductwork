@@ -12,6 +12,12 @@ module Ductwork
     validates :started_at, presence: true
 
     FAILED_EXECUTION_TIMEOUT = 10.seconds
+    ERROR_MESSAGE_LIMIT = 255
+    # NOTE: `error_backtrace` is a text column, which is unbounded on Postgres
+    # and SQLite but caps at 64KB on MySQL. The frames nearest the raise are
+    # the diagnostic ones; everything below is the work loop and the framework,
+    # identical on every crash
+    ERROR_BACKTRACE_LIMIT = 10
 
     class CommitFailed < StandardError; end
 
@@ -71,7 +77,7 @@ module Ductwork
       end
     end
 
-    def crashed! # rubocop:todo Metrics
+    def crashed!(error) # rubocop:todo Metrics
       run = job.step.run
       max_crash = Ductwork.configuration.job_worker_max_crash(
         pipeline: run.pipeline_klass,
@@ -89,7 +95,7 @@ module Ductwork
 
         reload
         attempt&.update!(completed_at: Time.current)
-        create_result!(result_type: "process_crashed")
+        create_result!(result_type: "process_crashed", **error_attributes(error))
 
         if crash_count < max_crash
           new_crash_count = crash_count + 1
@@ -109,6 +115,8 @@ module Ductwork
 
           Ductwork.logger.error(
             msg: "Job exceeded crash limit and failed",
+            error_klass: error.class.to_s,
+            error_message: error.message,
             job_id: job.id,
             job_klass: job.klass,
             run_id: run.id,
@@ -136,12 +144,7 @@ module Ductwork
         end
 
         attempt.update!(completed_at: Time.current)
-        create_result!(
-          result_type: "failure",
-          error_klass: error.class.to_s,
-          error_message: error.message,
-          error_backtrace: error.backtrace.join("\n")
-        )
+        create_result!(result_type: "failure", **error_attributes(error))
 
         if retry_count < max_retry
           retry_at = Ductwork::DatabaseClock.now + FAILED_EXECUTION_TIMEOUT
@@ -182,6 +185,28 @@ module Ductwork
     end
 
     private
+
+    def error_attributes(error)
+      {
+        error_klass: error.class.to_s,
+        error_message: error.message.truncate(ERROR_MESSAGE_LIMIT),
+        error_backtrace: truncated_backtrace(error),
+      }
+    end
+
+    # NOTE: `backtrace` is nil for a Ductwork::Crash marker, which is built
+    # rather than raised -- there is no stack worth capturing for "some other
+    # process noticed this claim was dead"
+    def truncated_backtrace(error)
+      frames = error.backtrace
+      return if frames.blank?
+
+      kept = frames.first(ERROR_BACKTRACE_LIMIT)
+      dropped = frames.size - kept.size
+      kept << "... #{dropped} more frames" if dropped.positive?
+
+      kept.join("\n")
+    end
 
     # NOTE: the first third (floored) of the crash budget retries immediately
     # so a one-off reaper clobber / deploy restart recovers fast; past that,

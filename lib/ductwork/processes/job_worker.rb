@@ -116,7 +116,7 @@ module Ductwork
           rescue StandardError => e
             if execution.present?
               Ductwork.wrap_with_app_executor do
-                execution.crashed!
+                execution.crashed!(e)
               end
             end
 
@@ -130,9 +130,15 @@ module Ductwork
               pipeline: pipeline
             )
           ensure
+            # NOTE: the rescue above already labelled anything that raised a
+            # StandardError, so reaching here with an uncommitted claim means
+            # either that its `crashed!` itself failed or that the iteration
+            # left by a path no rescue saw
             if execution.present? && execution.reload.completed_at.nil?
               Ductwork.wrap_with_app_executor do
-                execution.crashed!
+                execution.crashed!(
+                  Ductwork::AbandonedClaim.new("Work loop iteration exited holding an uncommitted claim")
+                )
               rescue StandardError
                 nil
               end
@@ -155,7 +161,9 @@ module Ductwork
 
       def cleanup_dead_thread!
         if execution.present? && execution.reload.completed_at.nil?
-          execution.crashed!
+          execution.crashed!(
+            Ductwork::ThreadCrash.new("Worker thread died holding an uncommitted claim")
+          )
         end
       ensure
         @execution = nil
