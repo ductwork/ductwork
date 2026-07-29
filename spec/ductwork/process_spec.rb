@@ -180,6 +180,27 @@ RSpec.describe Ductwork::Process do
       end.to raise_error(ActiveRecord::RecordNotFound)
     end
 
+    it "does not reap the sweeping process's own record" do
+      own_record = create(:process, :current, last_heartbeat_at: 6.minutes.ago)
+
+      expect do
+        described_class.reap_all!(:thread_supervisor)
+      end.not_to change(described_class, :count)
+
+      expect(own_record.reload).to be_persisted
+    end
+
+    it "leaves the sweeping process's own in-flight advancements claimed" do
+      own_record = create(:process, :current, last_heartbeat_at: 6.minutes.ago)
+      branch = create(:branch, :claimed)
+      transition = create(:transition, branch:)
+      create(:advancement, process: own_record, transition: transition)
+
+      expect do
+        described_class.reap_all!(:thread_supervisor)
+      end.not_to(change { branch.reload.claimed_for_advancing_at })
+    end
+
     it "logs" do
       create(:process, last_heartbeat_at: 6.minutes.ago)
       allow(Ductwork.logger).to receive(:debug).and_call_original

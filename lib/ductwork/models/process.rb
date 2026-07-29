@@ -60,7 +60,7 @@ module Ductwork
         role: role
       )
 
-      where(sql).find_each do |process|
+      where(sql).where.not(id: current&.id).find_each do |process|
         process.reap!(role)
         count += 1
       end
