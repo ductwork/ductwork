@@ -49,6 +49,20 @@ RSpec.describe Ductwork::Processes::ProcessSupervisor do
       supervisor.shutdown
       thread.join
     end
+
+    it "keeps its own process record's heartbeat fresh", :no_transaction do
+      Ductwork.configuration.supervisor_polling_timeout = 0.1
+      thread = Thread.new { supervisor.run }
+      sleep(0.3) # Wait for the supervisor to adopt its process record
+      adopted_at = Ductwork::Process.current.last_heartbeat_at
+
+      sleep(1.2) # Outlast a whole-second timestamp column precision
+
+      expect(Ductwork::Process.current.last_heartbeat_at).to be > adopted_at
+
+      supervisor.shutdown
+      thread.join
+    end
   end
 
   describe "#shutdown" do

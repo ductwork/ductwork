@@ -2,6 +2,7 @@
 
 ## [1.1.1] (Unreleased)
 
+- fix: report a heartbeat from the forking supervisor's own work loop — its process record went stale after `supervisor.reaper_timeout` and its own reaper sweep destroyed it, so a healthy supervisor disappeared from the dashboard and the health check reported it `dead` five minutes into every boot, failing any container liveness probe wired to it
 - fix: read the run and pipeline status before writing when marking a claimed job `in_progress`, so a no-op conditional `UPDATE` no longer takes an exclusive row lock held for the rest of the claim transaction — InnoDB at REPEATABLE READ locks the row during the primary key lookup even when the qualification fails, so on MySQL and Trilogy every worker claiming a step of the same run serialized on the two rows the whole run shares, capping per-run claim throughput regardless of worker count
 - fix: jitter the idle polling sleep of advancer and worker threads by ±25% of the configured `polling_timeout` so threads spawned together stop waking in lockstep and piling onto the same claim candidates — the configured timeout remains the average poll latency
 - fix: distinguish a contended claim (candidates existed but every sampled one lost its race) from an idle queue so an advancer that loses a race re-enters the work loop immediately instead of sleeping a full polling interval — `Branch.with_latest_claimed` now returns `:claimed`/`:contended`/`:idle` rather than a boolean

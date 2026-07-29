@@ -45,6 +45,7 @@ module Ductwork
         while running_context.running?
           sleep(Ductwork.configuration.supervisor_polling_timeout)
           check_workers
+          report_heartbeat!
           reap_process_records
         end
 
@@ -105,6 +106,19 @@ module Ductwork
       rescue StandardError => e
         Ductwork.logger.warn(
           msg: "Checking workers failed",
+          error_klass: e.class.to_s,
+          error_message: e.message,
+          role: :process_supervisor
+        )
+      end
+
+      def report_heartbeat!
+        Ductwork.wrap_with_app_executor do
+          Ductwork::Process.report_heartbeat!(:supervisor)
+        end
+      rescue StandardError => e
+        Ductwork.logger.warn(
+          msg: "Reporting heartbeat failed",
           error_klass: e.class.to_s,
           error_message: e.message,
           role: :process_supervisor
