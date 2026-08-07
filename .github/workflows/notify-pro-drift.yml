@@ -1,0 +1,25 @@
+name: Notify Pro of drift
+
+on:
+  push:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    name: Trigger drift triage in Pro
+
+    steps:
+      - name: Dispatch
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/ductwork/ductwork-pro/actions/workflows/drift.yml/dispatches" \
+            -d "$(jq -nc --arg sha "$SHA" '{ref: "main", inputs: {oss_sha: $sha}}')"
+        env:
+          TOKEN: ${{ secrets.PRO_DISPATCH_TOKEN }}
+          SHA: ${{ github.sha }}
