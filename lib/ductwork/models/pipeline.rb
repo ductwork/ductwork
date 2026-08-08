@@ -56,7 +56,7 @@ module Ductwork
           raise DefinitionError, "Pipeline must be defined before triggering"
         end
 
-        now = Time.current
+        now = Ductwork::DatabaseClock.now
         node = pipeline_definition.dig(:nodes, 0)
         klass = pipeline_definition.dig(:edges, node, :klass)
         definition = JSON.dump(pipeline_definition)
@@ -118,7 +118,7 @@ module Ductwork
         raise ReviveError, "Cannot revive pipeline without previous run"
       end
 
-      now = Time.current
+      now = Ductwork::DatabaseClock.now
       new_run = last_run.dup
       new_run.triggered_at = now
       new_run.started_at = now

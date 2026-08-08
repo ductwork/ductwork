@@ -407,7 +407,7 @@ module Ductwork
       input_arg = Ductwork::Job.find_by(step: latest_step).return_value
       node = edge[:to].sole
       klass = run.parsed_definition.dig(:edges, node, :klass)
-      started_at = Time.current
+      started_at = Ductwork::DatabaseClock.now
 
       with_claim_fence do
         latest_step.update!(status: :completed, completed_at: Time.current)
@@ -457,7 +457,7 @@ module Ductwork
                       .map(&:return_value)
           next_node = edge[:to].sole
           klass = run.parsed_definition.dig(:edges, next_node, :klass)
-          started_at = Time.current
+          started_at = Ductwork::DatabaseClock.now
           next_branch = run.branches.create!(
             started_at: started_at,
             status: "in_progress",
@@ -598,7 +598,7 @@ module Ductwork
                       .map(&:return_value)
           next_node = edge[:to].sole
           klass = run.parsed_definition.dig(:edges, next_node, :klass)
-          started_at = Time.current
+          started_at = Ductwork::DatabaseClock.now
           next_branch = run.branches.create!(
             started_at: started_at,
             status: "in_progress",
@@ -634,7 +634,7 @@ module Ductwork
       input_arg = Ductwork::Job.find_by(step: latest_step).return_value
       node = edge[:to].sole
       klass = run.parsed_definition.dig(:edges, node, :klass)
-      started_at = Time.current
+      started_at = Ductwork::DatabaseClock.now
 
       with_claim_fence do
         latest_step.update!(status: :completed, completed_at: Time.current)
@@ -660,7 +660,7 @@ module Ductwork
       input_arg = Ductwork::Job.find_by(step: latest_step).return_value
       node = edge[:to][input_arg.to_s] || edge[:to]["otherwise"]
       klass = run.parsed_definition.dig(:edges, node, :klass)
-      started_at = Time.current
+      started_at = Ductwork::DatabaseClock.now
 
       if node.nil?
         with_claim_fence do
@@ -693,7 +693,7 @@ module Ductwork
     end
 
     def divide_branch(edge, transition, advancement) # rubocop:todo Metrics
-      started_at = Time.current
+      started_at = Ductwork::DatabaseClock.now
       input_arg = Ductwork::Job.find_by(step: latest_step).return_value
       too_many = edge[:to].tally.any? do |to_klass, count|
         depth = Ductwork
@@ -771,7 +771,7 @@ module Ductwork
     def bulk_create_steps_and_jobs(edge:, return_value:, transition:, advancement:) # rubocop:todo Metrics
       node = edge[:to].sole
       next_klass = run.parsed_definition.dig(:edges, node, :klass)
-      now = Time.current
+      now = Ductwork::DatabaseClock.now
 
       with_claim_fence do # rubocop:todo Metrics/BlockLength
         latest_step.update!(status: :completed, completed_at: Time.current)

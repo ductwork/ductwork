@@ -2,6 +2,7 @@
 
 ## [1.1.1] (Unreleased)
 
+- fix: use database clock instead of `Time.current` to avoid clock skew in `Branch#latest_step` paths
 - fix: record error metadata on `process_crashed` results — `Execution#crashed!` now takes the exception that killed the work loop (writing its class, message, and backtrace, as `errored!` already did) or one of the new `Ductwork::Crash` markers (`ProcessCrash`, `ThreadCrash`, `AbandonedClaim`, `OrphanedClaim`) naming which recovery path noticed the lost claim; previously all five call sites collapsed into a single unlabeled result row and the work loop logged the error class and message before discarding them, leaving a crash loop undiagnosable from the database; recorded backtraces are now capped at the 10 frames nearest the raise, since `text` tops out at 64KB on MySQL and an insert failure inside `crashed!` would leak the claim
 - fix: use `Ductwork::DatabaseClock` instead of `Time.current` in claiming queries
 - fix: set `updated_at` timestamp when touching record through `update_all` or `update_columns`
