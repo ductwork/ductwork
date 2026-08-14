@@ -1,7 +1,15 @@
 # Ductwork Pro Changelog
 
-## [1.1.1] (Unreleased)
+## [1.1.1]
 
+- fix: use `Ductwork::DatabaseClock` instead of `Time.current` for every `started_at` Pro stamps, mirroring the OSS fix
+- fix: evaluate the step-timeout deadline in the database (`DatabaseClock.ago_sql`) instead of subtracting `attempt.started_at` from the worker's `Time.current`, so an NTP correction mid-job cannot stretch or collapse a step's timeout
+- fix: temporarily handle multiple return types from `Branch.with_latest_claimed` - this is a result of changes in OSS from v1.1.0 and v1.1.1
+- fix: log the claimed job/branch of a dead thread before the restart clears it
+- fix: add rubocop cop for ensuring `updated_at` is updated (copied from OSS)
+- fix: explicitly set `updated_at` for queries that update the record directly
+- fix: mirror OSS `halt_branch_and_resolve_run_without_rescue!` implementation
+- fix: walk the `collapse` fan-in with an explicit keyset scan so each batch is one indexed range seek, instead of a per-batch subquery plus a second `in_batches` query that re-ran the whole scope
 - fix: don't use `unique_by` argument for `insert_all` for mysql and trilogy database adapters
 
 ## [1.1.0]
