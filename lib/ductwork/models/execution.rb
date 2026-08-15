@@ -29,7 +29,7 @@ module Ductwork
         job_klass: job.klass
       )
       args = JSON.parse(job.input_args)["args"]
-      instance = Object.const_get(job.klass).build_for_execution(job.step.run_id, *args)
+      instance = Object.const_get(job.klass).build_for_execution(job.step.run_id, job.step.id, *args)
       create_attempt!(started_at: Time.current)
       output_payload = nil
 

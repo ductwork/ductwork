@@ -44,7 +44,7 @@ RSpec.describe Ductwork::Step do
 
   describe ".build_for_execution" do
     it "returns an instantiated instance of step" do
-      step = described_class.build_for_execution(spy)
+      step = described_class.build_for_execution(spy, spy)
 
       expect(step).to be_a(described_class)
     end
@@ -52,9 +52,23 @@ RSpec.describe Ductwork::Step do
     it "sets the run id instance variable" do
       run_id = 1
 
-      step = described_class.build_for_execution(run_id)
+      step = described_class.build_for_execution(run_id, 2)
 
       expect(step.instance_variable_get(:@run_id)).to eq(run_id)
+    end
+
+    it "sets the idempotency key instance variable" do
+      idempotency_key = 2
+
+      step = described_class.build_for_execution(1, idempotency_key)
+
+      expect(step.instance_variable_get(:@idempotency_key)).to eq(idempotency_key)
+    end
+
+    it "forwards the remaining arguments to the user defined initializer" do
+      step = MyFirstStep.build_for_execution(1, 2, "input_arg")
+
+      expect(step).to be_a(MyFirstStep)
     end
   end
 
@@ -72,6 +86,34 @@ RSpec.describe Ductwork::Step do
       step = described_class.new(run_id:)
 
       expect(step.run_id).to eq(run_id)
+    end
+  end
+
+  describe "#idempotency_key" do
+    let(:idempotency_key) { SecureRandom.uuid_v7 }
+
+    it "returns the value of the instance variable" do
+      step = described_class.new
+      step.instance_variable_set(:@idempotency_key, idempotency_key)
+
+      expect(step.idempotency_key).to eq(idempotency_key)
+    end
+
+    it "returns the id otherwise" do
+      step = create(:step)
+
+      expect(step.idempotency_key).to eq(step.id)
+    end
+
+    it "does not raise for a user defined step that never calls super" do
+      step = MyFirstStep.build_for_execution(
+        SecureRandom.uuid_v7,
+        idempotency_key,
+        "input_arg"
+      )
+
+      expect(step.instance_variable_get(:@attributes)).to be_nil
+      expect(step.idempotency_key).to eq(idempotency_key)
     end
   end
 

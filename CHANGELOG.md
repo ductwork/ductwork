@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [1.1.2] (Unreleased)
+
+- fix: prevent step's idempotency key from returning `nil`
+
 ## [1.1.1]
 
 - fix: use database clock instead of `Time.current` to avoid clock skew in `Branch#latest_step` paths

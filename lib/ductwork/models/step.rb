@@ -40,23 +40,22 @@ module Ductwork
          converge: "converge",
          dampen: "dampen"
 
-    def self.build_for_execution(run_id, *, **)
+    def self.build_for_execution(run_id, idempotency_key, *, **)
       instance = allocate
       instance.instance_variable_set(:@run_id, run_id)
+      instance.instance_variable_set(:@idempotency_key, idempotency_key)
       instance.send(:initialize, *, **)
       instance
     end
-
-    alias_attribute :idempotency_key, :id
 
     def run_id
       @run_id || (@attributes && super)
     end
 
-    # The result_type of the most recent execution to finish for this step's
-    # job, used to distinguish *why* a step failed (e.g. `errored!` writes
-    # "failure", `crashed!` writes "process_crashed"). Returns nil when no
-    # execution has produced a result yet.
+    def idempotency_key
+      @idempotency_key || (@attributes && id)
+    end
+
     def terminal_result_type
       return if job.blank?
 

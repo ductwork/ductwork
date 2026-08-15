@@ -17,8 +17,19 @@ RSpec.describe Ductwork::Execution, "#call" do
 
     execution.call(pipeline_klass, process.id)
 
-    expect(MyFirstStep).to have_received(:build_for_execution).with(step.run.id, 1)
+    expect(MyFirstStep).to have_received(:build_for_execution).with(step.run.id, step.id, 1)
     expect(user_step).to have_received(:execute)
+  end
+
+  it "builds the step with an idempotency key that survives a re-run" do
+    execution.call(pipeline_klass, process.id)
+    retried = create(:execution, job: job, retry_count: 1)
+
+    keys = [execution, retried].map do |exec|
+      MyFirstStep.build_for_execution(exec.job.step.run_id, exec.job.step.id, 1).idempotency_key
+    end
+
+    expect(keys.uniq).to eq([step.id])
   end
 
   it "updates the job record with the output payload" do
