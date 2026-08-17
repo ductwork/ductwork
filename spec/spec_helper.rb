@@ -55,7 +55,6 @@ RSpec.configure do |config|
   end
 
   config.before do
-    Ductwork.configuration = Ductwork::Configuration.new
     Ductwork.logger = ::Logger.new("log/test.log", 10, 1_024_000)
   end
 
