@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [1.1.2] (Unreleased)
+## [1.1.2]
 
 - fix: lazily create configuration
 - fix: prevent step's idempotency key from returning `nil`
