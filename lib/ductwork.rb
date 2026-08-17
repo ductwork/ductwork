@@ -11,8 +11,12 @@ require "zeitwerk"
 
 module Ductwork
   class << self
-    attr_accessor :app_executor, :configuration, :loader, :logger
-    attr_writer :defined_pipelines, :hooks
+    attr_accessor :app_executor, :loader, :logger
+    attr_writer :configuration, :defined_pipelines, :hooks
+
+    def configuration
+      @configuration ||= Ductwork::Configuration.new
+    end
 
     def eager_load
       loader.eager_load

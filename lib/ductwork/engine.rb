@@ -20,7 +20,6 @@ module Ductwork
     end
 
     initializer "ductwork.configure" do
-      Ductwork.configuration ||= Ductwork::Configuration.new
       Ductwork.logger ||= Ductwork::Configuration::DEFAULT_LOGGER
     end
   end

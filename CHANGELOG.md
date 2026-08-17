@@ -2,6 +2,7 @@
 
 ## [1.1.2] (Unreleased)
 
+- fix: lazily create configuration
 - fix: prevent step's idempotency key from returning `nil`
 
 ## [1.1.1]
