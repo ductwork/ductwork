@@ -1,5 +1,10 @@
 # Ductwork Pro Changelog
 
+## [1.1.2]
+
+- fix: remove unnecessary setting of configuration object during class-level evaluation - this catches up with OSS changes
+- fix: pass extra step id argument when instantiating steps during execution - this catches up with current OSS changes
+
 ## [1.1.1]
 
 - fix: use `Ductwork::DatabaseClock` instead of `Time.current` for every `started_at` Pro stamps, mirroring the OSS fix
