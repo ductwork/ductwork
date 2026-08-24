@@ -8,7 +8,7 @@ RSpec.describe Ductwork::Processes::JobWorker do
     Ductwork.configuration.job_worker_polling_timeout = 0.1
   end
 
-  describe "#start", :not_transaction do
+  describe "#start", :no_transaction do
     before do
       create(:process, :current)
     end
@@ -52,7 +52,7 @@ RSpec.describe Ductwork::Processes::JobWorker do
     end
   end
 
-  describe "#restart", :not_transaction do
+  describe "#restart", :no_transaction do
     subject(:job_worker) { described_class.new(pipeline, id) }
 
     let(:execution) { create(:execution) }
@@ -171,7 +171,7 @@ RSpec.describe Ductwork::Processes::JobWorker do
     end
   end
 
-  describe "work loop backoff", :not_transaction do
+  describe "work loop backoff", :no_transaction do
     subject(:job_worker) { described_class.new(pipeline, id) }
 
     let(:claim) { instance_double(Ductwork::ExecutionClaim, latest: nil) }
