@@ -1,7 +1,36 @@
 # frozen_string_literal: true
 
+module StartedWorkerRegistry
+  class << self
+    def started
+      @started ||= []
+    end
+
+    def register(worker)
+      started << worker
+    end
+
+    def reset!
+      @started = []
+    end
+  end
+
+  def start
+    started = super
+    StartedWorkerRegistry.register(self) if started
+
+    started
+  end
+end
+
+Ductwork::Processes::JobWorker.prepend(StartedWorkerRegistry)
+Ductwork::Processes::PipelineAdvancer.prepend(StartedWorkerRegistry)
+
 RSpec.configure do |config|
-  config.after do |example|
+  config.prepend_after do |example|
+    kill_workers(StartedWorkerRegistry.started)
+    StartedWorkerRegistry.reset!
+
     leaked = Thread.list.select do |thread|
       thread.name.to_s.start_with?("ductwork.")
     end
@@ -13,15 +42,9 @@ RSpec.configure do |config|
       "#{leaked.map(&:name).join(", ")}"
     )
 
-    deadline = Time.current + Helpers::WORKER_KILL_BUDGET
-
     leaked.each do |thread|
-      thread.kill
-
-      while thread.alive? && Time.current < deadline
-        thread.join(Helpers::WORKER_JOIN_TIMEOUT)
-        thread.kill if thread.alive?
-      end
+      thread.join(Helpers::WORKER_JOIN_TIMEOUT)
+      thread.kill if thread.alive?
     end
   end
 end
