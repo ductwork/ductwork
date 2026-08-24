@@ -5,6 +5,7 @@ plugins:
   - rubocop-rspec_rails
 
 require:
+  - ./rubocop/cop/ductwork/availability_claim_index.rb
   - ./rubocop/cop/ductwork/bulk_update_timestamps.rb
 
 AllCops:
@@ -14,6 +15,16 @@ AllCops:
     - Appraisals
     - gemfiles/**/*
     - vendor/**/*
+
+# NOTE: the migration helper is excluded because it is where the canonical
+# definition lives. The cop spec is excluded because it quotes the name in its
+# fixtures.
+Ductwork/AvailabilityClaimIndex:
+  Enabled: true
+  Exclude:
+    - lib/ductwork/migration_helper.rb
+    - rubocop/cop/ductwork/availability_claim_index.rb
+    - spec/rubocop/cop/ductwork/availability_claim_index_spec.rb
 
 # NOTE: migration templates are excluded on purpose. A backfill rewrites rows
 # to satisfy a schema change, not a domain event, and stamping `updated_at`

@@ -1,5 +1,10 @@
 # Ductwork Changelog
 
+## [1.2.0] (Unreleased)
+
+- feat: add `add_availability_claim_index` and `remove_availability_claim_index` to `Ductwork::MigrationHelper`, which own the adapter-specific shape and the name of the availability claim index
+- chore: build the availability claim index through the new migration helpers
+
 ## [1.1.2]
 
 - fix: lazily create configuration

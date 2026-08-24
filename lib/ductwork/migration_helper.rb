@@ -2,6 +2,29 @@
 
 module Ductwork
   module MigrationHelper
+    AVAILABILITY_CLAIM_INDEX_NAME = "index_ductwork_availabilities_on_claim_latest"
+
+    def add_availability_claim_index(extra_columns: [], where_extra: nil)
+      if mysql?
+        add_index :ductwork_availabilities,
+                  [:pipeline_klass, :completed_at, *extra_columns, :started_at],
+                  name: AVAILABILITY_CLAIM_INDEX_NAME
+      else
+        predicate = ["completed_at IS NULL", where_extra].compact.join(" AND ")
+
+        add_index :ductwork_availabilities,
+                  %i[pipeline_klass started_at],
+                  name: AVAILABILITY_CLAIM_INDEX_NAME,
+                  where: predicate
+      end
+    end
+
+    def remove_availability_claim_index
+      remove_index :ductwork_availabilities,
+                   name: AVAILABILITY_CLAIM_INDEX_NAME,
+                   if_exists: true
+    end
+
     def create_ductwork_table(table_name, &block)
       if postgresql?
         create_table table_name, id: :uuid, &block
