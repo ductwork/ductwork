@@ -17,7 +17,7 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
       expect(pipeline_advancer.thread).to be_alive
       expect(pipeline_advancer.thread.name).to eq("ductwork.pipeline_advancer.#{klass}.0")
 
-      shutdown(pipeline_advancer)
+      kill_workers(pipeline_advancer)
     end
 
     it "updates the last heartbet timestamp" do
@@ -30,7 +30,7 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
 
       expect(pipeline_advancer.last_heartbeat_at).to be_almost_now
 
-      shutdown(pipeline_advancer)
+      kill_workers(pipeline_advancer)
     end
 
     it "does not replace a live thread" do
@@ -41,7 +41,7 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
       expect(pipeline_advancer.start).to be(false)
       expect(pipeline_advancer.thread).to be(original_thread)
 
-      shutdown(pipeline_advancer)
+      kill_workers(pipeline_advancer)
     end
   end
 
@@ -55,7 +55,7 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
       expect(pipeline_advancer.restart).to be(false)
       expect(pipeline_advancer.thread).to be(original_thread)
 
-      shutdown(pipeline_advancer)
+      kill_workers(pipeline_advancer)
     end
 
     it "keeps the replacement thread running after a kill" do
@@ -96,7 +96,7 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
           )
         expect(pipeline_advancer.branch).to be_nil
 
-        shutdown(pipeline_advancer)
+        kill_workers(pipeline_advancer)
       end
     end
   end
@@ -108,7 +108,7 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
 
       expect(pipeline_advancer).to be_alive
 
-      shutdown(pipeline_advancer)
+      kill_workers(pipeline_advancer)
     end
 
     it "returns false if the thread is dead" do
@@ -119,7 +119,7 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
 
       expect(pipeline_advancer).not_to be_alive
 
-      shutdown(pipeline_advancer)
+      kill_workers(pipeline_advancer)
     end
 
     it "returns false when the thread is nil" do
@@ -207,7 +207,7 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
 
       pipeline_advancer.start
       Kernel.sleep(0.5)
-      shutdown(pipeline_advancer)
+      kill_workers(pipeline_advancer)
     end
 
     context "when the queue is empty" do
@@ -249,11 +249,5 @@ RSpec.describe Ductwork::Processes::PipelineAdvancer do
         expect(Ductwork::PollingInterval).not_to have_received(:jittered)
       end
     end
-  end
-
-  def shutdown(pipeline_advancer)
-    pipeline_advancer.stop
-    sleep(0.1)
-    pipeline_advancer.kill
   end
 end

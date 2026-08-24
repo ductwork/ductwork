@@ -22,7 +22,7 @@ RSpec.describe Ductwork::Processes::JobWorker do
       expect(job_worker.thread).to be_alive
       expect(job_worker.thread.name).to eq("ductwork.job_worker.#{pipeline}.#{id}")
 
-      shutdown(job_worker)
+      kill_workers(job_worker)
     end
 
     it "updates the last heartbeat timestamp" do
@@ -37,7 +37,7 @@ RSpec.describe Ductwork::Processes::JobWorker do
       expect(job_worker.thread).to be_alive
       expect(job_worker.last_heartbeat_at).to be_now
 
-      shutdown(job_worker)
+      kill_workers(job_worker)
     end
 
     it "does not replace a live thread" do
@@ -48,7 +48,7 @@ RSpec.describe Ductwork::Processes::JobWorker do
       expect(job_worker.start).to be(false)
       expect(job_worker.thread).to be(original_thread)
 
-      shutdown(job_worker)
+      kill_workers(job_worker)
     end
   end
 
@@ -66,7 +66,7 @@ RSpec.describe Ductwork::Processes::JobWorker do
       expect(execution).to have_received(:crashed!).with(an_instance_of(Ductwork::ThreadCrash))
       expect(job_worker.execution).to be_nil
 
-      shutdown(job_worker)
+      kill_workers(job_worker)
     end
 
     it "does not spawn a second thread while the current one is alive" do
@@ -77,7 +77,7 @@ RSpec.describe Ductwork::Processes::JobWorker do
       expect(job_worker.restart).to be(false)
       expect(job_worker.thread).to be(original_thread)
 
-      shutdown(job_worker)
+      kill_workers(job_worker)
     end
 
     it "keeps the replacement thread running after a kill" do
@@ -91,7 +91,7 @@ RSpec.describe Ductwork::Processes::JobWorker do
 
       expect(job_worker).to be_alive
 
-      shutdown(job_worker)
+      kill_workers(job_worker)
     end
   end
 
@@ -102,7 +102,7 @@ RSpec.describe Ductwork::Processes::JobWorker do
 
       expect(job_worker).to be_alive
 
-      shutdown(job_worker)
+      kill_workers(job_worker)
     end
 
     it "returns false if the thread is dead" do
@@ -183,7 +183,7 @@ RSpec.describe Ductwork::Processes::JobWorker do
 
       job_worker.start
       sleep(0.3)
-      shutdown(job_worker)
+      kill_workers(job_worker)
     end
 
     it "jitters the backoff so workers do not poll in lockstep" do
@@ -198,11 +198,5 @@ RSpec.describe Ductwork::Processes::JobWorker do
 
       expect(job_worker.name).to eq("ductwork.job_worker.#{pipeline}.#{id}")
     end
-  end
-
-  def shutdown(job_worker)
-    job_worker.stop
-    sleep(0.1)
-    job_worker.thread&.kill
   end
 end

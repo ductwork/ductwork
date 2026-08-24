@@ -23,10 +23,11 @@ RSpec.describe Ductwork::Processes::ThreadSupervisor, :no_transaction do
       supervisor.add_worker { Ductwork::Processes::JobWorker.new(pipeline, 1) }
 
       expect(supervisor.workers.count).to eq(2)
-      supervisor.workers.each do |worker|
-        expect(worker).to be_alive
-        worker.kill
-      end
+      expect(supervisor.workers).to all(be_alive)
+    ensure
+      # NOTE: in an `ensure` so a failed expectation above still tears the
+      # threads down instead of leaking them into the next example
+      kill_workers(supervisor.workers)
     end
   end
 end
