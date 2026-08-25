@@ -224,6 +224,8 @@ RSpec.describe Ductwork::Process do
       Ductwork.configuration.supervisor_reaper_timeout *
         described_class::ORPHANED_CLAIM_SWEEP_MULTIPLIER
     end
+    let(:stale_timestamp) { (stale_threshold + 60).seconds.ago }
+    let(:fresh_timestamp) { (stale_threshold - 60).seconds.ago }
 
     it "crashes a stale advancement orphaned by a nullified process" do
       branch = create(:branch, :claimed)
@@ -232,7 +234,7 @@ RSpec.describe Ductwork::Process do
         :advancement,
         process: nil,
         transition: transition,
-        started_at: (stale_threshold + 1).seconds.ago
+        started_at: stale_timestamp
       )
 
       described_class.sweep_orphaned_claims!(:process_supervisor)
@@ -249,7 +251,7 @@ RSpec.describe Ductwork::Process do
         :advancement,
         process: nil,
         transition: transition,
-        started_at: (stale_threshold - 1).seconds.ago
+        started_at: fresh_timestamp
       )
 
       described_class.sweep_orphaned_claims!(:process_supervisor)
@@ -265,7 +267,7 @@ RSpec.describe Ductwork::Process do
         :advancement,
         process: process,
         transition: transition,
-        started_at: (stale_threshold + 1).seconds.ago
+        started_at: stale_timestamp
       )
 
       described_class.sweep_orphaned_claims!(:process_supervisor)
@@ -279,7 +281,7 @@ RSpec.describe Ductwork::Process do
         :availability,
         execution: execution,
         process: nil,
-        completed_at: (stale_threshold + 1).seconds.ago
+        completed_at: stale_timestamp
       )
 
       described_class.sweep_orphaned_claims!(:process_supervisor)
@@ -307,7 +309,7 @@ RSpec.describe Ductwork::Process do
         :availability,
         execution: execution,
         process: nil,
-        completed_at: (stale_threshold - 1).seconds.ago
+        completed_at: fresh_timestamp
       )
 
       described_class.sweep_orphaned_claims!(:process_supervisor)
