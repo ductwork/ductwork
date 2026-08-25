@@ -3,8 +3,14 @@
 RSpec.describe Ductwork::Processes::ProcessSupervisor do
   let(:supervisor) { described_class.new }
   let(:block) { ->(_supervisor) {} }
+  let(:running_supervisors) { [] }
 
   after do
+    running_supervisors.each do |running_supervisor, thread|
+      running_supervisor.shutdown
+      thread.join(Helpers::WORKER_SHUTDOWN_BUDGET) || thread.kill
+    end
+
     supervisor.workers.each do |worker|
       ::Process.kill(:KILL, worker[:pid])
     end
@@ -36,32 +42,30 @@ RSpec.describe Ductwork::Processes::ProcessSupervisor do
 
   describe "#run" do
     it "monitors and restarts workers when they crash" do
-      thread = Thread.new { supervisor.run }
+      run_in_thread(supervisor)
 
       supervisor.add_worker { raise "simulating a crash" }
 
-      sleep(0.5) # Wait for process to be restarted
+      sleep(0.5) # Wait for process to be restarted (squishy)
 
       status = ::Process.kill(0, supervisor.workers.first[:pid])
       expect(supervisor.workers.count).to eq(1)
       expect(status).to eq(1)
-
-      supervisor.shutdown
-      thread.join
     end
 
     it "keeps its own process record's heartbeat fresh", :no_transaction do
       Ductwork.configuration.supervisor_polling_timeout = 0.1
-      thread = Thread.new { supervisor.run }
-      sleep(0.3) # Wait for the supervisor to adopt its process record
-      adopted_at = Ductwork::Process.current.last_heartbeat_at
+      run_in_thread(supervisor)
 
-      sleep(1.2) # Outlast a whole-second timestamp column precision
+      adopted_at = wait_for do
+        Ductwork::Process.current&.last_heartbeat_at
+      end
+      refreshed_at = wait_for do
+        latest = Ductwork::Process.current&.last_heartbeat_at
+        latest if latest && latest > adopted_at
+      end
 
-      expect(Ductwork::Process.current.last_heartbeat_at).to be > adopted_at
-
-      supervisor.shutdown
-      thread.join
+      expect(refreshed_at).to be > adopted_at
     end
   end
 
@@ -123,6 +127,13 @@ RSpec.describe Ductwork::Processes::ProcessSupervisor do
       supervisor.shutdown
 
       expect(block).to have_received(:call).with(supervisor)
+    end
+  end
+
+  def run_in_thread(supervisor)
+    Thread.new { supervisor.run }.tap do |thread|
+      thread.name = "ductwork.spec.process_supervisor"
+      running_supervisors << [supervisor, thread]
     end
   end
 end
