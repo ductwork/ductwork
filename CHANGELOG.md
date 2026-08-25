@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [1.3.0] (Unreleased)
+## [1.3.0]
 
 - feat: add more `MigrationHelper` methods for swapping and updating the availability claim index
 - fix: resolve the database adapter from the configuration (`Ductwork::Record.adapter`) instead of `Ductwork::Record.connection.adapter_name`, and take the database clock's reading through `connection_pool.with_connection` - `ActiveRecord::Base#connection` is soft deprecated and takes a *sticky* lease, so `ConnectionPool#with_connection` skips its own checkin (it releases only `unless lease.sticky`) and every advancer or worker thread that touched the claim hot path pinned a pool slot for its lifetime; the Rails executor checked those back in per unit of work so long-running processes did not leak, but a host app setting `config.active_record.permanent_connection_checkout = :disallowed` would have raised, and `:deprecated` emitted a warning per claim
