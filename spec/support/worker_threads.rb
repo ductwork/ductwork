@@ -26,32 +26,6 @@ end
 Ductwork::Processes::JobWorker.prepend(StartedWorkerRegistry)
 Ductwork::Processes::PipelineAdvancer.prepend(StartedWorkerRegistry)
 
-module AbandonedConnections
-  class << self
-    def reclaim!
-      handler = ActiveRecord::Base.connection_handler
-
-      handler.connection_pool_list(:all).each do |pool|
-        next if pool.discarded?
-
-        abandoned(pool).each do |conn|
-          conn.discard!
-          pool.remove(conn)
-        end
-      end
-    end
-
-    private
-
-    def abandoned(pool)
-      pool.connections.select do |conn|
-        owner = conn.owner
-        owner && !owner.alive?
-      end
-    end
-  end
-end
-
 RSpec.configure do |config|
   config.prepend_after do |example|
     kill_workers(StartedWorkerRegistry.started)
@@ -75,7 +49,5 @@ RSpec.configure do |config|
         thread.join(Helpers::WORKER_JOIN_TIMEOUT)
       end
     end
-
-    AbandonedConnections.reclaim!
   end
 end

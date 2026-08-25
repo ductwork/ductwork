@@ -5,7 +5,7 @@ module Ductwork
     def initialize(klass, owner_process_id)
       @klass = klass
       @owner_process_id = owner_process_id
-      @adapter = Ductwork::Record.connection.adapter_name.downcase
+      @adapter = Ductwork::Record.adapter
     end
 
     def latest

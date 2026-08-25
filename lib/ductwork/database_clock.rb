@@ -1,10 +1,6 @@
 # frozen_string_literal: true
 
 module Ductwork
-  # NOTE: these are SQL fragments that resolve against the database server's
-  # clock instead of the calling Ruby process's clock. use them in `WHERE`
-  # clauses that compare between a stored timestamp and "now" so that NTP
-  # drift between hosts cannot make healthy work look stale (or vice versa)
   class DatabaseClock
     def self.ago_sql(column, interval)
       new(column).ago_sql(interval)
@@ -15,7 +11,7 @@ module Ductwork
     end
 
     def self.now
-      adapter = Ductwork::Record.connection.adapter_name.downcase
+      adapter = Ductwork::Record.adapter
       sql =
         case adapter
         when /postgresql|cockroach/i
@@ -29,7 +25,9 @@ module Ductwork
         else
           raise NotImplementedError, "Database clock does not support adapter #{adapter}"
         end
-      raw = Ductwork::Record.connection.select_value(sql)
+      raw = Ductwork::Record.connection_pool.with_connection do |conn|
+        conn.select_value(sql)
+      end
 
       case raw
       when ::Time, ::DateTime
@@ -41,7 +39,7 @@ module Ductwork
     end
 
     def initialize(column)
-      @adapter = Ductwork::Record.connection.adapter_name.downcase
+      @adapter = Ductwork::Record.adapter
       @column = column
     end
 

@@ -14,6 +14,10 @@ module Ductwork
       "ductwork_"
     end
 
+    def self.adapter
+      connection_db_config.adapter.to_s.downcase
+    end
+
     private
 
     def generate_uuid_v7

@@ -16,7 +16,7 @@ RSpec.describe "Concurrent branch claim", :no_transaction do
   before { create(:process, :current) }
 
   it "grants each claimable branch to exactly one advancer under contention" do # rubocop:todo RSpec/ExampleLength
-    adapter = ActiveRecord::Base.connection.adapter_name
+    adapter = Ductwork::Record.adapter
     skip "race is untestable on SQLite (global write lock)" if adapter.match?(/sqlite/i)
 
     # one worker per free pool slot; leave a slot so the main thread can still
@@ -57,10 +57,6 @@ RSpec.describe "Concurrent branch claim", :no_transaction do
           end
         rescue Exception => e # rubocop:disable Lint/RescueException
           e
-        ensure
-          # the claim path reaches `Ductwork::Record.connection`, whose sticky
-          # lease makes `with_connection` skip its own checkin
-          ActiveRecord::Base.connection_pool.release_connection
         end
       end
       results = threads.map(&:value)

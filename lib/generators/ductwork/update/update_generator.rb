@@ -10,113 +10,113 @@ module Ductwork
     source_root File.expand_path("templates", __dir__)
 
     def create_files
-      connection = Ductwork::Record.connection
+      Ductwork::Record.connection_pool.with_connection do |connection|
+        if Ductwork::Availability.column_names.exclude?("pipeline_klass")
+          migration_template "db/denormalize_pipeline_klass_on_availabilities.rb",
+                             "db/migrate/denormalize_pipeline_klass_on_availabilities.rb"
+        end
 
-      if Ductwork::Availability.column_names.exclude?("pipeline_klass")
-        migration_template "db/denormalize_pipeline_klass_on_availabilities.rb",
-                           "db/migrate/denormalize_pipeline_klass_on_availabilities.rb"
-      end
+        if Ductwork::Pipeline.column_for_attribute("id").type != :uuid
+          migration_template "db/migrate_tables_to_uuid_primary_key.rb",
+                             "db/migrate/migrate_tables_to_uuid_primary_key.rb"
+        end
 
-      if Ductwork::Pipeline.column_for_attribute("id").type != :uuid
-        migration_template "db/migrate_tables_to_uuid_primary_key.rb",
-                           "db/migrate/migrate_tables_to_uuid_primary_key.rb"
-      end
+        if !connection.table_exists?(:ductwork_branches)
+          migration_template "db/create_ductwork_branches.rb",
+                             "db/migrate/create_ductwork_branches.rb"
+        end
 
-      if !connection.table_exists?(:ductwork_branches)
-        migration_template "db/create_ductwork_branches.rb",
-                           "db/migrate/create_ductwork_branches.rb"
-      end
+        if !connection.table_exists?(:ductwork_branch_links)
+          migration_template "db/create_ductwork_branch_links.rb",
+                             "db/migrate/create_ductwork_branch_links.rb"
+        end
 
-      if !connection.table_exists?(:ductwork_branch_links)
-        migration_template "db/create_ductwork_branch_links.rb",
-                           "db/migrate/create_ductwork_branch_links.rb"
-      end
+        if Ductwork::Step.column_names.exclude?("branch_id")
+          migration_template "db/associate_steps_to_branches.rb",
+                             "db/migrate/associate_steps_to_branches.rb"
+          migration_template "db/backfill_branch_ids_on_steps.rb",
+                             "db/migrate/backfill_branch_ids_on_steps.rb"
+        end
 
-      if Ductwork::Step.column_names.exclude?("branch_id")
-        migration_template "db/associate_steps_to_branches.rb",
-                           "db/migrate/associate_steps_to_branches.rb"
-        migration_template "db/backfill_branch_ids_on_steps.rb",
-                           "db/migrate/backfill_branch_ids_on_steps.rb"
-      end
+        if !connection.table_exists?(:ductwork_transitions)
+          migration_template "db/create_ductwork_transitions.rb",
+                             "db/migrate/create_ductwork_transitions.rb"
+        end
 
-      if !connection.table_exists?(:ductwork_transitions)
-        migration_template "db/create_ductwork_transitions.rb",
-                           "db/migrate/create_ductwork_transitions.rb"
-      end
+        if !connection.table_exists?(:ductwork_advancements)
+          migration_template "db/create_ductwork_advancements.rb",
+                             "db/migrate/create_ductwork_advancements.rb"
+        end
 
-      if !connection.table_exists?(:ductwork_advancements)
-        migration_template "db/create_ductwork_advancements.rb",
-                           "db/migrate/create_ductwork_advancements.rb"
-      end
+        if Ductwork::Execution.column_names.include?("process_id")
+          migration_template "db/update_process_associations.rb",
+                             "db/migrate/update_process_associations.rb"
+        end
 
-      if Ductwork::Execution.column_names.include?("process_id")
-        migration_template "db/update_process_associations.rb",
-                           "db/migrate/update_process_associations.rb"
-      end
+        if connection.table_exists?(:ductwork_runs)
+          migration_template "db/rename_runs_to_attempts.rb",
+                             "db/migrate/rename_runs_to_attempts.rb"
+        end
 
-      if connection.table_exists?(:ductwork_runs)
-        migration_template "db/rename_runs_to_attempts.rb",
-                           "db/migrate/rename_runs_to_attempts.rb"
-      end
+        if !connection.table_exists?(:ductwork_runs)
+          migration_template "db/create_ductwork_runs.rb",
+                             "db/migrate/create_ductwork_runs.rb"
+        end
 
-      if !connection.table_exists?(:ductwork_runs)
-        migration_template "db/create_ductwork_runs.rb",
-                           "db/migrate/create_ductwork_runs.rb"
-      end
+        if Ductwork::Branch.column_names.include?("pipeline_id")
+          migration_template "db/associate_branches_to_runs.rb",
+                             "db/migrate/associate_branches_to_runs.rb"
+        end
 
-      if Ductwork::Branch.column_names.include?("pipeline_id")
-        migration_template "db/associate_branches_to_runs.rb",
-                           "db/migrate/associate_branches_to_runs.rb"
-      end
+        if Ductwork::Step.column_names.include?("pipeline_id")
+          migration_template "db/associate_steps_to_runs.rb",
+                             "db/migrate/associate_steps_to_runs.rb"
+        end
 
-      if Ductwork::Step.column_names.include?("pipeline_id")
-        migration_template "db/associate_steps_to_runs.rb",
-                           "db/migrate/associate_steps_to_runs.rb"
-      end
+        if Ductwork::Tuple.column_names.include?("pipeline_id")
+          migration_template "db/associate_tuples_to_runs.rb",
+                             "db/migrate/associate_tuples_to_runs.rb"
+        end
 
-      if Ductwork::Tuple.column_names.include?("pipeline_id")
-        migration_template "db/associate_tuples_to_runs.rb",
-                           "db/migrate/associate_tuples_to_runs.rb"
-      end
+        if Ductwork::Execution.column_names.exclude?("crash_count")
+          migration_template "db/add_crash_count_to_ductwork_executions.rb",
+                             "db/migrate/add_crash_count_to_ductwork_executions.rb"
+        end
 
-      if Ductwork::Execution.column_names.exclude?("crash_count")
-        migration_template "db/add_crash_count_to_ductwork_executions.rb",
-                           "db/migrate/add_crash_count_to_ductwork_executions.rb"
-      end
+        if Ductwork::Advancement.column_names.exclude?("crash_count")
+          migration_template "db/add_crash_count_to_ductwork_advancements.rb",
+                             "db/migrate/add_crash_count_to_ductwork_advancements.rb"
+        end
 
-      if Ductwork::Advancement.column_names.exclude?("crash_count")
-        migration_template "db/add_crash_count_to_ductwork_advancements.rb",
-                           "db/migrate/add_crash_count_to_ductwork_advancements.rb"
-      end
+        if Ductwork::Execution.column_names.exclude?("process_id")
+          migration_template "db/add_process_id_to_ductwork_executions.rb",
+                             "db/migrate/add_process_id_to_ductwork_executions.rb"
+        end
 
-      if Ductwork::Execution.column_names.exclude?("process_id")
-        migration_template "db/add_process_id_to_ductwork_executions.rb",
-                           "db/migrate/add_process_id_to_ductwork_executions.rb"
-      end
+        if Ductwork::Process.column_names.exclude?("role")
+          migration_template "db/add_role_to_ductwork_processes.rb",
+                             "db/migrate/add_role_to_ductwork_processes.rb"
+        end
 
-      if Ductwork::Process.column_names.exclude?("role")
-        migration_template "db/add_role_to_ductwork_processes.rb",
-                           "db/migrate/add_role_to_ductwork_processes.rb"
-      end
+        if !connection.index_exists?(:ductwork_results, %i[result_type created_at])
+          migration_template "db/add_indexes_to_ductwork_results.rb",
+                             "db/migrate/add_indexes_to_ductwork_results.rb"
+        end
 
-      if !connection.index_exists?(:ductwork_results, %i[result_type created_at])
-        migration_template "db/add_indexes_to_ductwork_results.rb",
-                           "db/migrate/add_indexes_to_ductwork_results.rb"
-      end
+        if !connection.index_exists?(:ductwork_runs, :started_at)
+          migration_template "db/add_indexes_to_ductwork_runs.rb",
+                             "db/migrate/add_indexes_to_ductwork_runs.rb"
+        end
 
-      if !connection.index_exists?(:ductwork_runs, :started_at)
-        migration_template "db/add_indexes_to_ductwork_runs.rb",
-                           "db/migrate/add_indexes_to_ductwork_runs.rb"
-      end
+        if !connection.index_exists?(:ductwork_runs, %i[pipeline_id started_at])
+          migration_template "db/add_pipeline_started_index_to_ductwork_runs.rb",
+                             "db/migrate/add_pipeline_started_index_to_ductwork_runs.rb"
+        end
 
-      if !connection.index_exists?(:ductwork_runs, %i[pipeline_id started_at])
-        migration_template "db/add_pipeline_started_index_to_ductwork_runs.rb",
-                           "db/migrate/add_pipeline_started_index_to_ductwork_runs.rb"
-      end
-
-      if !connection.index_exists?(:ductwork_transitions, name: "index_ductwork_transitions_on_latest_open")
-        migration_template "db/add_indexes_to_ductwork_transitions.rb",
-                           "db/migrate/add_indexes_to_ductwork_transitions.rb"
+        if !connection.index_exists?(:ductwork_transitions, name: "index_ductwork_transitions_on_latest_open")
+          migration_template "db/add_indexes_to_ductwork_transitions.rb",
+                             "db/migrate/add_indexes_to_ductwork_transitions.rb"
+        end
       end
     end
   end

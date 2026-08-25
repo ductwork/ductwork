@@ -118,7 +118,7 @@ module Ductwork
     # relies on the advancer retrying a deadlock victim; SQLite has no row-level
     # locks, so `lock!` is a no-op there and the deadlock cannot occur.
     def lock_for_terminal_resolution!
-      if Ductwork::Record.connection.adapter_name.downcase.match?(/postgresql|cockroach/)
+      if Ductwork::Record.adapter.match?(/postgresql|cockroach/)
         lock!("FOR NO KEY UPDATE")
       else
         lock!

@@ -3,7 +3,7 @@
 RSpec.describe Ductwork::DatabaseClock do
   describe ".ago_sql" do
     before do
-      allow(Ductwork::Record.connection).to receive(:adapter_name).and_return(adapter)
+      allow(Ductwork::Record).to receive(:adapter).and_return(adapter.downcase)
     end
 
     context "with the PostgreSQL adapter" do
@@ -82,7 +82,7 @@ RSpec.describe Ductwork::DatabaseClock do
 
   describe ".now_sql" do
     before do
-      allow(Ductwork::Record.connection).to receive(:adapter_name).and_return(adapter)
+      allow(Ductwork::Record).to receive(:adapter).and_return(adapter.downcase)
     end
 
     context "with the SQLite adapter" do
@@ -139,7 +139,7 @@ RSpec.describe Ductwork::DatabaseClock do
 
     context "with an unsupported adapter" do
       before do
-        allow(Ductwork::Record.connection).to receive(:adapter_name).and_return("MongoDB")
+        allow(Ductwork::Record).to receive(:adapter).and_return("mongodb")
       end
 
       it "raises an error" do

@@ -1,7 +1,8 @@
 <%# reaping_frequency: 0 disables the Active Record pool Reaper. It pings
-    connections leased to dead threads, which on mysql2 has segfaulted in CI
-    inside SSL_free. See spec/support/worker_threads.rb, which reclaims those
-    pool slots by discarding the connection instead of probing it. %>
+    connections leased to dead threads -- on a connection it stole, under a
+    NullLock -- which on mysql2 has segfaulted in CI inside SSL_free. It is
+    the only thing here that does I/O on a connection it does not own, and a
+    test suite gains nothing from it. %>
 <% case ENV.fetch("DB", "sqlite")
    when "mysql" %>
 test:

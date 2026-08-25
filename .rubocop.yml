@@ -58,6 +58,7 @@ Metrics/AbcSize:
 Metrics/BlockLength:
   Exclude:
     - lib/generators/ductwork/install/templates/db/*.rb
+    - lib/generators/ductwork/update/update_generator.rb
     - lib/ductwork/testing/rspec.rb
 
 Metrics/ClassLength:
