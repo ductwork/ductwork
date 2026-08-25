@@ -1,3 +1,7 @@
+<%# reaping_frequency: 0 disables the Active Record pool Reaper. It pings
+    connections leased to dead threads, which on mysql2 has segfaulted in CI
+    inside SSL_free. See spec/support/worker_threads.rb, which reclaims those
+    pool slots by discarding the connection instead of probing it. %>
 <% case ENV.fetch("DB", "sqlite")
    when "mysql" %>
 test:
@@ -8,6 +12,7 @@ test:
   host: 127.0.0.1
   port: 3306
   pool: 5
+  reaping_frequency: 0
 <% when "trilogy" %>
 test:
   adapter: trilogy
@@ -17,6 +22,7 @@ test:
   host: 127.0.0.1
   port: 3306
   pool: 5
+  reaping_frequency: 0
 <% when "postgresql" %>
 test:
   adapter: postgresql
@@ -26,11 +32,13 @@ test:
   host: localhost
   port: 5432
   pool: 5
+  reaping_frequency: 0
 <% when "sqlite" %>
 test:
   adapter: sqlite3
   database: db/combustion_test.sqlite
   pool: 5
+  reaping_frequency: 0
   timeout: 5000
   default_transaction_mode: immediate
 <% end %>

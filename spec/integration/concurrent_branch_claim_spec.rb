@@ -57,6 +57,10 @@ RSpec.describe "Concurrent branch claim", :no_transaction do
           end
         rescue Exception => e # rubocop:disable Lint/RescueException
           e
+        ensure
+          # the claim path reaches `Ductwork::Record.connection`, whose sticky
+          # lease makes `with_connection` skip its own checkin
+          ActiveRecord::Base.connection_pool.release_connection
         end
       end
       results = threads.map(&:value)
