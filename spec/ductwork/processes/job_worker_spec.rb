@@ -26,16 +26,15 @@ RSpec.describe Ductwork::Processes::JobWorker do
     end
 
     it "updates the last heartbeat timestamp" do
-      be_now = be_within(1.second).of(Time.current)
       job_worker = described_class.new(pipeline, id)
 
-      expect(job_worker.last_heartbeat_at).to be_now
+      expect(job_worker.last_heartbeat_at).to be_almost_now
 
       job_worker.start
       sleep(1)
 
       expect(job_worker.thread).to be_alive
-      expect(job_worker.last_heartbeat_at).to be_now
+      expect(job_worker.last_heartbeat_at).to be_almost_now
 
       kill_workers(job_worker)
     end
