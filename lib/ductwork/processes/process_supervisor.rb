@@ -3,8 +3,6 @@
 module Ductwork
   module Processes
     class ProcessSupervisor # rubocop:todo Metrics/ClassLength
-      # Upper bound on how long sig_kill_process will block the supervisor
-      # loop waiting for a KILL'd child to be reaped (see sig_kill_process).
       KILL_REAP_TIMEOUT = 5 # seconds
       KILL_REAP_INTERVAL = 0.1
 
@@ -13,6 +11,8 @@ module Ductwork
       def initialize
         @running_context = Ductwork::RunningContext.new
         @workers = []
+        @shutdown_mutex = Mutex.new
+        @shutdown_complete = false
 
         run_hooks_for(:start)
 
@@ -53,22 +53,28 @@ module Ductwork
       end
 
       def shutdown
-        running_context.shutdown!
-        Ductwork.logger.debug(
-          msg: "Beginning shutdown",
-          role: :process_supervisor
-        )
+        shutdown_mutex.synchronize do
+          next if shutdown_complete
 
-        terminate_gracefully
-        wait_for_workers_to_exit
-        terminate_immediately
-        reap_own_process_record!
-        run_hooks_for(:stop)
+          running_context.shutdown!
+          Ductwork.logger.debug(
+            msg: "Beginning shutdown",
+            role: :process_supervisor
+          )
+
+          terminate_gracefully
+          wait_for_workers_to_exit
+          terminate_immediately
+          reap_own_process_record!
+          run_hooks_for(:stop)
+
+          @shutdown_complete = true
+        end
       end
 
       private
 
-      attr_reader :running_context
+      attr_reader :running_context, :shutdown_mutex, :shutdown_complete
 
       def adopt_or_create_process!
         Ductwork.wrap_with_app_executor do

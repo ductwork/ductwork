@@ -7,8 +7,11 @@ RSpec.describe Ductwork::Processes::ProcessSupervisor do
 
   after do
     running_supervisors.each do |running_supervisor, thread|
+      running_supervisor.send(:running_context).shutdown!
+      next if thread.join(Helpers::WORKER_SHUTDOWN_BUDGET)
+
+      thread.kill
       running_supervisor.shutdown
-      thread.join(Helpers::WORKER_SHUTDOWN_BUDGET) || thread.kill
     end
 
     supervisor.workers.each do |worker|
