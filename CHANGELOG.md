@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [1.3.0] (Unreleased)
+
+- feat: add more `MigrationHelper` methods for swapping and updating the availability claim index
+
 ## [1.2.0]
 
 - feat: add `add_availability_claim_index` and `remove_availability_claim_index` to `Ductwork::MigrationHelper`, which own the adapter-specific shape and the name of the availability claim index

@@ -63,6 +63,9 @@ Metrics/BlockLength:
 Metrics/ClassLength:
   Max: 150
 
+Metrics/ModuleLength:
+  Max: 150
+
 Metrics/CyclomaticComplexity:
   Exclude:
     - lib/generators/ductwork/install/install_generator.rb

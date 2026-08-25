@@ -20,11 +20,17 @@ module RuboCop
       #
       # `Ductwork::MigrationHelper` owns the definition. Use
       # `add_availability_claim_index` and `remove_availability_claim_index` to
-      # build it, and `AVAILABILITY_CLAIM_INDEX_NAME` to refer to it.
+      # build it, `swap_availability_claim_index` to change its shape without
+      # ever leaving the table unindexed, and the
+      # `AVAILABILITY_CLAIM_INDEX_NAME*` constants to refer to it.
       #
-      # The name is duplicated below rather than loaded from the helper because
-      # cops are required by RuboCop in isolation, without the gem or Rails
-      # loaded. The helper is excluded in `.rubocop.yml`.
+      # Every name the index has ever had is listed, not just the current one.
+      # A migration that hand-writes a superseded name can drop an index some
+      # other gem is relying on, which fails exactly as silently.
+      #
+      # The names are duplicated below rather than loaded from the helper
+      # because cops are required by RuboCop in isolation, without the gem or
+      # Rails loaded. The helper is excluded in `.rubocop.yml`.
       #
       # @example
       #   # bad
@@ -52,16 +58,19 @@ module RuboCop
         MSG = "Do not name the availability claim index directly; " \
               "use `Ductwork::MigrationHelper`'s claim index helpers."
 
-        INDEX_NAME = "index_ductwork_availabilities_on_claim_latest"
+        INDEX_NAMES = %w[
+          index_ductwork_availabilities_on_claim_latest
+          index_ductwork_availabilities_on_claim_latest_v2
+        ].freeze
 
         def on_str(node)
-          return unless node.value == INDEX_NAME
+          return unless INDEX_NAMES.include?(node.value)
 
           add_offense(node)
         end
 
         def on_sym(node)
-          return unless node.value.to_s == INDEX_NAME
+          return unless INDEX_NAMES.include?(node.value.to_s)
 
           add_offense(node)
         end
