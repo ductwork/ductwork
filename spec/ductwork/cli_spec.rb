@@ -2,10 +2,11 @@
 
 RSpec.describe Ductwork::CLI do
   describe ".start!" do
-    let(:logger) { instance_double(Logger, :level= => nil) }
+    let(:logger) { instance_double(Logger, :level= => nil, debug?: false) }
     let(:config) do
       instance_double(
         Ductwork::Configuration,
+        database: nil,
         logger_level: 0,
         logger_source: "default"
       )
@@ -17,7 +18,7 @@ RSpec.describe Ductwork::CLI do
       allow(Ductwork::Processes::HealthCheck).to receive(:run)
       allow(Ductwork::Configuration).to receive(:new).and_return(config)
       allow(Ductwork).to receive(:logger=).and_call_original
-      allow(Ductwork).to receive(:logger).and_return(logger)
+      allow(Ductwork).to receive_messages(logger: logger, validate!: true)
     end
 
     it "loads configuration" do
@@ -86,9 +87,63 @@ RSpec.describe Ductwork::CLI do
   \e[0m
         BANNER
       end
+
+      it "validates the steps and pipelines" do
+        described_class.start!(["start"])
+
+        expect(Ductwork).to have_received(:validate!)
+      end
+
+      context "when a definition fails to load" do
+        let(:error) do
+          Ductwork::Pipeline::DefinitionError.new("Definition block must be given").tap do |e|
+            e.set_backtrace(
+              [
+                Rails.root.join("app/pipelines/my_pipeline.rb:4:in `<class:MyPipeline>'").to_s,
+                "/gems/zeitwerk/loader/eager_load.rb:12:in `eager_load_dir'",
+              ]
+            )
+          end
+        end
+
+        before do
+          allow(Ductwork).to receive(:validate!).and_raise(error)
+        end
+
+        it "reports the error and exits without launching the processes" do
+          expect do
+            expect { described_class.start!(["start"]) }.to raise_error(SystemExit) do |exit|
+              expect(exit.status).to eq(1)
+            end
+          end.to output(
+            <<~REPORT
+              ductwork failed to validate your step and pipeline definitions
+
+                Ductwork::Pipeline::DefinitionError: Definition block must be given
+                  #{Rails.root.join("app/pipelines/my_pipeline.rb:4:in `<class:MyPipeline>'")}
+            REPORT
+          ).to_stderr
+
+          expect(Ductwork::Processes::Launcher).not_to have_received(:start_processes!)
+        end
+
+        it "reports the whole backtrace at the debug level" do
+          allow(logger).to receive(:debug?).and_return(true)
+
+          expect do
+            expect { described_class.start!(["start"]) }.to raise_error(SystemExit)
+          end.to output(/eager_load_dir/).to_stderr
+        end
+      end
     end
 
     context "when given the health command" do
+      it "does not validate the steps and pipelines" do
+        described_class.start!(["health"])
+
+        expect(Ductwork).not_to have_received(:validate!)
+      end
+
       it "calls the health check" do
         described_class.start!(["health"])
 

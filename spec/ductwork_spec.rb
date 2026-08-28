@@ -115,4 +115,66 @@ RSpec.describe Ductwork do
       expect(described_class.defined_pipelines).to eq([])
     end
   end
+
+  describe ".validate!" do
+    let(:loader) { instance_double(Zeitwerk::Loader, eager_load_dir: nil) }
+    let(:step_directory) { Rails.root.join("app/steps") }
+    let(:pipeline_directory) { Rails.root.join("app/pipelines") }
+    let(:workflow_directory) { Rails.root.join("app/workflows") }
+
+    before do
+      allow(Rails.autoloaders).to receive(:main).and_return(loader)
+    end
+
+    it "eager loads every definition directory that exists" do
+      described_class.validate!
+
+      expect(loader).to have_received(:eager_load_dir).with(step_directory)
+      expect(loader).to have_received(:eager_load_dir).with(pipeline_directory)
+    end
+
+    it "skips definition directories that do not exist" do
+      described_class.validate!
+
+      expect(loader).not_to have_received(:eager_load_dir).with(workflow_directory)
+    end
+
+    it "raises a load path error when a directory is not autoloadable" do
+      allow(loader).to receive(:eager_load_dir)
+        .with(step_directory)
+        .and_raise(Zeitwerk::Error, "not managed by this loader")
+
+      expect do
+        described_class.validate!
+      end.to raise_error(
+        Ductwork::LoadPathError,
+        %r{app/steps exists but is not autoloadable: not managed by this loader}
+      )
+    end
+
+    it "does not swallow errors raised by the definitions themselves" do
+      allow(loader).to receive(:eager_load_dir)
+        .with(pipeline_directory)
+        .and_raise(Ductwork::Pipeline::DefinitionError, "Pipeline has already been defined")
+
+      expect do
+        described_class.validate!
+      end.to raise_error(
+        Ductwork::Pipeline::DefinitionError,
+        "Pipeline has already been defined"
+      )
+    end
+
+    context "when using the application's real autoloader" do
+      before do
+        allow(Rails.autoloaders).to receive(:main).and_call_original
+      end
+
+      it "eager loads the definition directories without raising" do
+        expect do
+          described_class.validate!
+        end.not_to raise_error
+      end
+    end
+  end
 end

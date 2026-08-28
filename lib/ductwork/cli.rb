@@ -5,6 +5,7 @@ require "optparse"
 module Ductwork
   class CLI
     DEFAULT_COMMAND = "start"
+    BACKTRACE_FRAME_LIMIT = 5
 
     def self.start!(args)
       new(args).start!
@@ -31,8 +32,9 @@ module Ductwork
 
     def start!
       parse!
-      auto_configure
-      execute_command
+      configure
+      validate!
+      execute
     end
 
     private
@@ -44,9 +46,9 @@ module Ductwork
       top_level_parser.order(raw_args)
       @command = raw_args.shift || DEFAULT_COMMAND
 
-      if command == "start"
+      if start_command?
         start_command_parser.parse!(raw_args)
-      elsif command == "health"
+      elsif health_check_command?
         health_command_parser.parse!(raw_args)
       else
         warn "Unknown command: #{command}"
@@ -55,7 +57,15 @@ module Ductwork
       end
     end
 
-    def auto_configure
+    def start_command?
+      command == "start"
+    end
+
+    def health_check_command?
+      command == "health"
+    end
+
+    def configure
       configuration_options[:role] = ENV.fetch("DUCTWORK_ROLE", nil)
       Ductwork.configuration = Configuration.new(**configuration_options)
       Ductwork.logger = if Ductwork.configuration.logger_source == "rails"
@@ -82,10 +92,39 @@ module Ductwork
       BANNER
     end
 
-    def execute_command
-      if command == "start"
+    def validate!
+      if start_command?
+        Ductwork.validate!
+      end
+    rescue StandardError => e
+      report_invalid_definitions(e)
+      exit 1
+    end
+
+    def report_invalid_definitions(error)
+      warn "ductwork failed to validate your step and pipeline definitions"
+      warn ""
+      warn "  #{error.class}: #{error.message}"
+
+      definition_frames(error).each do |frame|
+        warn "    #{frame}"
+      end
+    end
+
+    def definition_frames(error)
+      frames = error.backtrace.to_a
+
+      return frames if Ductwork.logger.debug?
+
+      application_frames = frames.grep(/\A#{Regexp.escape(Rails.root.to_s)}/)
+
+      (application_frames.presence || frames).first(BACKTRACE_FRAME_LIMIT)
+    end
+
+    def execute
+      if start_command?
         launch_processes
-      elsif command == "health"
+      elsif health_check_command?
         check_health
       end
     end

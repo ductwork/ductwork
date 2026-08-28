@@ -1,5 +1,9 @@
 # Ductwork Changelog
 
+## [1.4.0] (Unreleased)
+
+- feat: validate steps and pipelines/workflows during boot of main process
+
 ## [1.3.0]
 
 - feat: add more `MigrationHelper` methods for swapping and updating the availability claim index

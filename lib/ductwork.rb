@@ -10,6 +10,14 @@ require "securerandom"
 require "zeitwerk"
 
 module Ductwork
+  DEFINITION_DIRECTORIES = %w[
+    app/steps
+    app/pipelines
+    app/workflows
+  ].freeze
+
+  class LoadPathError < StandardError; end
+
   class << self
     attr_accessor :app_executor, :loader, :logger
     attr_writer :configuration, :defined_pipelines, :hooks
@@ -67,25 +75,18 @@ module Ductwork
     end
 
     def validate!
-      step_directory = Rails.root.join("app/steps")
-      pipeline_directory = Rails.root.join("app/pipelines")
-      workflow_directory = Rails.root.join("app/workflows")
-      loader = if defined?(Rails.autoloaders)
-                 Rails.autoloaders.main
-               else
-                 Ductwork.loader
-               end
+      loader = Rails.autoloaders.main
 
-      if step_directory.exist?
-        loader.eager_load_dir(step_directory)
-      end
+      DEFINITION_DIRECTORIES.each do |relative|
+        directory = Rails.root.join(relative)
 
-      if pipeline_directory.exist?
-        loader.eager_load_dir(pipeline_directory)
-      end
-
-      if workflow_directory.exist?
-        loader.eager_load_dir(workflow_directory)
+        if directory.exist?
+          begin
+            loader.eager_load_dir(directory)
+          rescue Zeitwerk::Error => e
+            raise LoadPathError, "#{directory} exists but is not autoloadable: #{e.message}"
+          end
+        end
       end
 
       true

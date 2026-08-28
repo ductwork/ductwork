@@ -96,11 +96,6 @@ its place through divergent behavior rather than labeling. Cause metadata
 lives on `Branch#halt_reason` instead. Pipeline and Run states stay
 `in_progress`, `completed`, `halted`.
 
-## 7. `Ductwork.validate!` is not run at boot
-
-It runs in host-application specs, deliberately, for developer experience. Do
-not recommend moving it to boot-time or engine initialization.
-
 ---
 
 # Known Open — report only with new information
