@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [1.4.0] (Unreleased)
+## [1.4.0]
 
 - feat: validate steps and pipelines/workflows during boot of main process
 
