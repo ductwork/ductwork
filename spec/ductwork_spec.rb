@@ -33,9 +33,9 @@ RSpec.describe Ductwork do
     it "wraps the block with the app executor when configured" do
       # NOTE: we have to disable rubocop here because rails' app executor
       # is an anonymous class
-      # rubocop:disable RSpec/VerifiedDoubles
+      # rubocop:disable-next RSpec/VerifiedDoubles
       executor = double(Rails.application.executor, wrap: nil)
-      # rubocop:enable RSpec/VerifiedDoubles
+
       described_class.app_executor = executor
 
       expect do |block|
