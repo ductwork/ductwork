@@ -21,6 +21,6 @@ gem "rubocop-rspec"
 gem "rubocop-rspec_rails"
 gem "sqlite3"
 gem "trilogy", require: false
-gem "rails", "7.2.3.1"
+gem "rails", "7.2.4"
 
 gemspec path: "../"
