@@ -1,0 +1,7 @@
+<div class="error">
+  <div class="error-title"><%= result.error_klass %></div>
+  <p class="error-message"><%= result.error_message %></p>
+  <% if result.error_backtrace.present? %>
+    <pre class="code"><%= result.error_backtrace %></pre>
+  <% end %>
+</div>

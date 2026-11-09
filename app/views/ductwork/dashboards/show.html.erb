@@ -1,136 +1,85 @@
-<div>
-  <div class="grid metrics">
-    <%= link_to(pipelines_path(status: "completed"), class: "stealthy-link") do %>
-      <article>
-        <div class="metric-heading">Completed Pipelines</div>
-        <h1 class="metric-value"><%= number_with_delimiter(@metrics[:completed]) %></h1>
-      </article>
-    <% end %>
+<% content_for(:title, "Overview") %>
 
-    <%= link_to(pipelines_path(status: "in_progress"), class: "stealthy-link") do %>
-      <article>
-        <div class="metric-heading">In-Progress Pipelines</div>
-        <h1 class="metric-value"><%= number_with_delimiter(@metrics[:in_progress]) %></h1>
-      </article>
+<section class="section">
+  <div class="panel stats">
+    <%= link_to(pipelines_path(status: "in_progress"), class: "stat") do %>
+      <span class="stat-value"><%= number_with_delimiter(@metrics[:in_progress]) %></span>
+      In progress
     <% end %>
-
-    <%= link_to(pipelines_path(status: "halted"), class: "stealthy-link") do %>
-      <article>
-        <div class="metric-heading">Halted Pipelines</div>
-        <h1 class="metric-value"><%= number_with_delimiter(@metrics[:halted]) %></h1>
-      </article>
+    <%= link_to(pipelines_path(status: "halted"), class: "stat", data: { alert: @metrics[:halted].positive? }) do %>
+      <span class="stat-value"><%= number_with_delimiter(@metrics[:halted]) %></span>
+      Halted
     <% end %>
-
-    <%= link_to(step_errors_path, class: "stealthy-link") do %>
-      <article>
-        <div class="metric-heading">Step Errors</div>
-        <h1 class="metric-value"><%= @metrics[:step_errors] %></h1>
-      </article>
+    <%= link_to(pipelines_path(status: "completed"), class: "stat") do %>
+      <span class="stat-value"><%= number_with_delimiter(@metrics[:completed]) %></span>
+      Completed
+    <% end %>
+    <%= link_to(step_errors_path, class: "stat") do %>
+      <span class="stat-value"><%= number_with_delimiter(@metrics[:step_errors]) %></span>
+      Step errors
     <% end %>
   </div>
+</section>
 
-  <div>
-    <h1>All Pipelines</h1>
-    <div class="separate-content">
-      <div class="filter-group">
-        <span class="filter-group-item">Filters:</span>
-
-        <details class="dropdown filter-group-item">
-          <summary>Class</summary>
-          <ul>
-            <% @klasses.each do |klass| %>
-              <li>
-                <%= link_to(klass, pipelines_path(klass:)) %>
-              </li>
-            <% end %>
-          </ul>
-        </details>
-
-        <details class="dropdown filter-group-item">
-          <summary>Status</summary>
-          <ul>
-            <% @statuses.each do |status| %>
-              <li>
-                <%= link_to(status.gsub("_", "-"), pipelines_path(status:)) %>
-              </li>
-            <% end %>
-          </ul>
-        </details>
-      </div>
-
-      <div role="group" style="width: auto;">
-        <button <%= first_page? && "disabled" %> data-href="<%= previous_page_path %>">
-          &larr;
-        </button>
-        <button data-href="<%= next_page_path %>">
-          &rarr;
-        </button>
-      </div>
+<% if @halted_runs.any? %>
+  <section class="section">
+    <div class="section-head">
+      <h2 class="section-title">Needs attention</h2>
+      <%= link_to("All halted", pipelines_path(status: "halted")) %>
     </div>
+    <div class="panel">
+      <% @halted_runs.each do |run| %>
+        <div class="halt">
+          <div>
+            <%= link_to(run.pipeline_klass, pipeline_path(run.pipeline_id), class: "table-primary") %>
+            <%= short_id(run.pipeline_id) %>
+          </div>
+          <div class="halt-reason"><%= halt_summary(@halts.fetch(run.id, {})) %></div>
+          <div class="halt-time"><%= timestamp(run.halted_at) %></div>
+        </div>
+      <% end %>
+    </div>
+  </section>
+<% end %>
 
-    <table class="striped">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Class</th>
-          <th>Status</th>
-          <th>Errors</th>
-          <th>Started At</th>
-          <th>Runtime</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% @runs.each do |run| %>
-          <tr class="row-link" data-href="<%= pipeline_path(run.pipeline_id) %>">
-            <td>
-              <code>
-                <%= run.pipeline_id %>
-              </code>
-            </td>
-            <td>
-              <code>
-                <%= run.pipeline_klass %>
-              </code>
-            </td>
-            <td>
-              <div class="status-pill <%= run.status %>">
-                <%= run.status.gsub("_", "-") %>
-              </div>
-            </td>
-            <td>
-              <%
-                count = Ductwork::Result
-                        .joins(execution: { job: { step: { run: :pipeline }}})
-                        .failure
-                        .where(ductwork_pipelines: { id: run.pipeline_id })
-                        .count
-              %>
-              <% if count.zero? %>
-                0
-              <% else %>
-                <div class="errors">
-                  <%= image_tag("ductwork/octagon-x.svg", class: "icon") %>
-                  <%= count %>
-                </div>
-              <% end %>
-            </td>
-            <td>
-              <div class="tight-timestamp">
-                <%= run.started_at.iso8601(3) %>
-              </div>
-            </td>
-            <td>
-              <% if run.completed_at.nil? %>
-                <div data-started-at=<%= run.started_at.iso8601 %>>
-                  <span id="elapsed-timer">0h 0m 0s</span>
-                </div>
-              <% else %>
-                <%= formatted_time_distance(run.started_at, run.completed_at) %>
-              <% end %>
-            </td>
-          </tr>
-        <% end %>
-      </tbody>
-    </table>
+<section class="section">
+  <div class="section-head">
+    <h2 class="section-title">Pipelines by class</h2>
   </div>
-</div>
+  <div class="panel table-scroller">
+    <% if @class_summaries.empty? %>
+      <p class="empty">No pipelines have been triggered yet.</p>
+    <% else %>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Class</th>
+            <th class="numeric">Active</th>
+            <th class="numeric">Halted</th>
+            <th class="numeric">Completed</th>
+            <th>Last started</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @class_summaries.each do |summary| %>
+            <tr data-href="<%= pipelines_path(klass: summary[:klass]) %>">
+              <td><%= link_to(summary[:klass], pipelines_path(klass: summary[:klass]), class: "table-primary") %></td>
+              <td class="numeric"><%= number_with_delimiter(summary[:active]) %></td>
+              <td class="numeric"><%= count_badge(summary[:halted]) %></td>
+              <td class="numeric"><%= number_with_delimiter(summary[:completed]) %></td>
+              <td><%= timestamp(summary[:last_started_at]) %></td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    <% end %>
+  </div>
+</section>
+
+<section class="section">
+  <div class="section-head">
+    <h2 class="section-title">Recent runs</h2>
+    <%= link_to("All pipelines", pipelines_path) %>
+  </div>
+  <%= render("ductwork/shared/runs_table", runs: @runs, error_counts: @error_counts) %>
+</section>

@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <title>Ductwork Dashboard</title>
+    <meta charset="utf-8">
+    <title><%= [content_for(:title), "Ductwork"].compact.join(" · ") %></title>
 
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,8 +12,6 @@
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
-    <%= stylesheet_link_tag "ductwork/vendor/pico.min.css" %>
-    <%= stylesheet_link_tag "ductwork/vendor/flexboxgrid.min.css" %>
     <%= stylesheet_link_tag "ductwork/application.css" %>
 
     <%= javascript_include_tag "ductwork/application.js", type: "module" %>
@@ -22,27 +21,24 @@
   </head>
 
   <body>
-    <header class="sticky-header">
-      <nav class="container separate-content">
-        <ul>
-          <%= link_to(dashboard_path, class: "stealthy-link") do %>
-            <li><%= image_tag("ductwork/logo.png", class: "logo") %></li>
-            <li><h6 class="title">Ductwork</h6></li>
-          <% end %>
-        </ul>
+    <header class="topbar">
+      <div class="shell topbar-inner">
+        <%= link_to(dashboard_path, class: "brand") do %>
+          <%= image_tag("ductwork/logo.png", alt: "") %>
+          <span>Ductwork</span>
+        <% end %>
 
-        <div>
-          <label>
-            Version
-          </label>
-          <div style="color: var(--pico-color);">
-            <%= Ductwork::VERSION %>
-          </div>
-        </div>
-      </nav>
+        <nav class="nav" aria-label="Dashboard">
+          <%= link_to("Overview", dashboard_path, aria: { current: controller_name == "dashboards" ? "page" : nil }) %>
+          <%= link_to("Pipelines", pipelines_path, aria: { current: controller_name == "pipelines" ? "page" : nil }) %>
+          <%= link_to("Errors", step_errors_path, aria: { current: controller_name == "step_errors" ? "page" : nil }) %>
+        </nav>
+
+        <span class="version">v<%= Ductwork::VERSION %></span>
+      </div>
     </header>
 
-    <main class="container">
+    <main class="shell">
       <%= yield %>
     </main>
   </body>

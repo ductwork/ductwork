@@ -1,0 +1,76 @@
+<% executions = step.job&.executions.to_a.sort_by(&:started_at) %>
+<details class="row">
+  <summary class="row-grid row-grid-steps">
+    <span class="cell-truncate"><span class="table-primary"><%= step.klass %></span> <%= short_id(step.id) %></span>
+    <span><%= status_badge(step.status) %></span>
+    <span class="wide-only"><%= transition_text(step.to_transition) %></span>
+    <span><%= executions.size > 1 ? count_badge(executions.size, tone: "warn") : executions.size %></span>
+    <span class="wide-only"><%= timestamp(step.started_at) %></span>
+    <span class="wide-only"><%= runtime(step) %></span>
+  </summary>
+
+  <div class="row-body">
+    <div class="detail-grid">
+      <div>
+        <span class="detail-label">Step ID</span>
+        <code><%= step.id %></code>
+      </div>
+      <div>
+        <span class="detail-label">Node</span>
+        <%= link_to(step.node, pipeline_path(@pipeline.id, node: step.node, anchor: "steps")) %>
+      </div>
+      <div>
+        <span class="detail-label">Input</span>
+        <pre class="code"><%= pretty_json(step_input(step.job)) %></pre>
+      </div>
+      <div>
+        <span class="detail-label">Output</span>
+        <pre class="code"><%= pretty_json(step_output(step.job)) %></pre>
+      </div>
+    </div>
+
+    <% if executions.any? %>
+      <div class="detail-block">
+        <span class="detail-label">Attempts</span>
+        <div class="panel table-scroller">
+          <table class="table table-compact">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Execution</th>
+                <th>Available</th>
+                <th>Claimed</th>
+                <th>Ran</th>
+                <th>Completed</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% executions.each do |execution| %>
+                <tr>
+                  <td><%= execution.retry_count + 1 %></td>
+                  <td><%= short_id(execution.id) %></td>
+                  <td><%= timestamp(execution.started_at) %></td>
+                  <td><%= timestamp(execution.availability&.completed_at) %></td>
+                  <td><%= timestamp(execution.attempt&.started_at) %></td>
+                  <td><%= timestamp(execution.completed_at) %></td>
+                  <td><%= execution.result&.result_type&.tr("_", " ") %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    <% end %>
+
+    <% failures = executions.filter_map(&:result).select(&:failure?) %>
+    <% if failures.any? %>
+      <div class="detail-block">
+        <span class="detail-label">Errors</span>
+        <% failures.each do |result| %>
+          <%= render("ductwork/shared/error", result:) %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</details>

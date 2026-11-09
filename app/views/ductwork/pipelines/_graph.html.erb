@@ -1,0 +1,37 @@
+<div class="graph-scroller">
+  <svg class="graph" width="<%= graph.width %>" height="<%= graph.height %>" viewBox="0 0 <%= graph.width %> <%= graph.height %>" role="figure" aria-label="Pipeline graph">
+    <% graph.edges.each do |edge| %>
+      <path class="graph-edge" data-state="<%= edge.state %>" d="<%= edge.path %>"></path>
+    <% end %>
+
+    <% graph.nodes.each do |node| %>
+      <g class="graph-node" data-state="<%= node.state %>" data-selected="<%= params[:node] == node.id %>">
+        <title><%= node.klass %> (<%= node.id %>)</title>
+        <rect class="graph-card" x="<%= node.x %>" y="<%= node.y %>" width="<%= graph.card_width %>" height="<%= graph.card_height %>" rx="8"></rect>
+        <rect class="graph-bar-track" x="<%= node.x + Ductwork::PipelineGraph::BAR_INSET %>" y="<%= node.y + Ductwork::PipelineGraph::BAR_TOP %>" width="<%= graph.bar_width %>" height="<%= Ductwork::PipelineGraph::BAR_HEIGHT %>" rx="3"></rect>
+        <% node.segments.each do |segment| %>
+          <rect class="graph-bar-segment" data-status="<%= segment.status %>" x="<%= node.x + segment.x %>" y="<%= node.y + Ductwork::PipelineGraph::BAR_TOP %>" width="<%= segment.width %>" height="<%= Ductwork::PipelineGraph::BAR_HEIGHT %>"></rect>
+        <% end %>
+
+        <foreignObject x="<%= node.x %>" y="<%= node.y %>" width="<%= graph.card_width %>" height="<%= Ductwork::PipelineGraph::HEADER_HEIGHT %>">
+          <div class="graph-header">
+            <div class="graph-transition"><%= node.transition %></div>
+            <%= link_to(node.name, params[:node] == node.id ? pipeline_path(@pipeline.id, anchor: "steps") : pipeline_path(@pipeline.id, node: node.id, anchor: "steps"), class: "graph-name") %>
+          </div>
+        </foreignObject>
+
+        <foreignObject x="<%= node.x %>" y="<%= node.y + Ductwork::PipelineGraph::LABELS_TOP %>" width="<%= graph.card_width %>" height="<%= graph.card_height - Ductwork::PipelineGraph::LABELS_TOP %>">
+          <div class="graph-labels">
+            <% node.labels.each do |label| %>
+              <% if label.status %>
+                <%= link_to(label.text, pipeline_path(@pipeline.id, node: node.id, status: label.status, anchor: "steps"), class: "graph-label", data: { tone: label.tone }) %>
+              <% else %>
+                <span class="graph-label <%= "graph-label-wide" if label.wide %>" data-tone="<%= label.tone %>" title="<%= label.text %>"><%= label.text %></span>
+              <% end %>
+            <% end %>
+          </div>
+        </foreignObject>
+      </g>
+    <% end %>
+  </svg>
+</div>

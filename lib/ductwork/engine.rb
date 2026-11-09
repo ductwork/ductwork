@@ -11,8 +11,6 @@ module Ductwork
     initializer "ductwork.assets.precompile" do |app|
       if app.config.respond_to?(:assets)
         app.config.assets.precompile += %w[
-          ductwork/vendor/pico.min.css
-          ductwork/vendor/flexboxgrid.min.css
           ductwork/application.css
           ductwork/application.js
         ]

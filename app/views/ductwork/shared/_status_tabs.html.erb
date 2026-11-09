@@ -1,0 +1,11 @@
+<% anchor = local_assigns[:anchor] %>
+<div class="tabs" role="group" aria-label="Filter by status">
+  <%= link_to(filtered_path(status: nil, anchor:), class: "tab", aria: { current: params[:status].blank? }) do %>
+    All<span class="tab-count"><%= number_with_delimiter(counts.values.sum) %></span>
+  <% end %>
+  <% statuses.select { |status| counts.key?(status) || params[:status] == status }.each do |status| %>
+    <%= link_to(filtered_path(status:, anchor:), class: "tab", aria: { current: params[:status] == status }) do %>
+      <%= status_text(status) %><span class="tab-count"><%= number_with_delimiter(counts.fetch(status, 0)) %></span>
+    <% end %>
+  <% end %>
+</div>

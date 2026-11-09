@@ -1,0 +1,30 @@
+<div class="panel table-scroller">
+  <% if runs.empty? %>
+    <p class="empty">No pipelines match.</p>
+  <% else %>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Pipeline</th>
+          <th>ID</th>
+          <th>Status</th>
+          <th class="numeric">Errors</th>
+          <th>Started</th>
+          <th>Runtime</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% runs.each do |run| %>
+          <tr data-href="<%= pipeline_path(run.pipeline_id) %>">
+            <td><%= link_to(run.pipeline_klass, pipeline_path(run.pipeline_id), class: "table-primary") %></td>
+            <td><%= short_id(run.pipeline_id) %></td>
+            <td><%= status_badge(run.status) %></td>
+            <td class="numeric"><%= count_badge(error_counts.fetch(run.id, 0)) %></td>
+            <td><%= timestamp(run.started_at) %></td>
+            <td><%= runtime(run) %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+</div>

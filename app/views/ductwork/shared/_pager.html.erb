@@ -1,0 +1,16 @@
+<% anchor = local_assigns[:anchor] %>
+<nav class="pager" aria-label="Pagination">
+  <span><%= page_summary(total) %></span>
+  <div class="pager-links">
+    <% if first_page? %>
+      <a class="pager-link" aria-disabled="true" aria-label="Previous page">&larr;</a>
+    <% else %>
+      <%= link_to(previous_page_path(anchor:), class: "pager-link", rel: "prev", aria: { label: "Previous page" }) do %>&larr;<% end %>
+    <% end %>
+    <% if last_page?(total) %>
+      <a class="pager-link" aria-disabled="true" aria-label="Next page">&rarr;</a>
+    <% else %>
+      <%= link_to(next_page_path(anchor:), class: "pager-link", rel: "next", aria: { label: "Next page" }) do %>&rarr;<% end %>
+    <% end %>
+  </div>
+</nav>

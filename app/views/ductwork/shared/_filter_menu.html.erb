@@ -1,0 +1,13 @@
+<% anchor = local_assigns[:anchor] %>
+<% selected = params[param] %>
+<details class="menu" data-active="<%= selected.present? %>">
+  <summary><%= selected.presence || label %></summary>
+  <div class="menu-list">
+    <% if selected.present? %>
+      <%= link_to("All #{label.downcase}", filtered_path(param => nil, anchor:), class: "menu-clear") %>
+    <% end %>
+    <% options.each do |option| %>
+      <%= link_to(option, filtered_path(param => option, anchor:), aria: { current: selected == option }) %>
+    <% end %>
+  </div>
+</details>

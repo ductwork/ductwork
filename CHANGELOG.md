@@ -1,5 +1,18 @@
 # Ductwork Changelog
 
+## [1.5.0] (Unreleased)
+
+- feat: redesign the dashboard with top-level navigation, an overview of halted pipelines and pipelines by class, status tabs with counts, compact expandable step and error rows, and a phone layout
+- feat: draw the workflow on the dashboard's pipeline page in place of the raw definition, with each node showing its step counts by status, retried and crash-recovered steps, and halt reasons, and linking to the matching steps
+- feat: add a node filter to the steps list on the dashboard's pipeline page and show the page position, disabling the next button on the last page
+- fix: stop the dashboard's runtime timer on halted runs and failed steps
+- fix: print error backtraces once on the dashboard - they were followed by a dump of the same lines as an array
+- fix: count dashboard errors per run instead of per pipeline, without loading every step of every listed run
+- fix: filter the dashboard's pipeline page steps by `klass` - the shared filter queried `pipeline_klass`, which only exists on runs, so choosing a class raised `ActiveRecord::StatementInvalid`
+- fix: order the steps list by `started_at` then `id` so steps sharing a timestamp are not repeated or skipped between pages
+- fix: clamp the dashboard's page number at zero - the previous link on the first page pointed at `page=-1`, a negative `OFFSET` that PostgreSQL rejects
+- chore: replace the dashboard's vendored Pico and flexboxgrid stylesheets with a single stylesheet and remove all inline styles
+
 ## [1.4.0]
 
 - feat: validate steps and pipelines/workflows during boot of main process
