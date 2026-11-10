@@ -1,6 +1,6 @@
 # Ductwork Changelog
 
-## [1.5.0] (Unreleased)
+## [1.5.0]
 
 - fix: re-enqueue the failed step when reviving a branch halted with `job_crashes_exhausted` - revive re-advanced it as if the job had succeeded, passing a missing return value downstream
 - fix: copy each succeeded step's job when reviving a pipeline so a `combine` or `collapse` after the revive receives every sibling's return value - the copied steps had no jobs, so the fan-in silently dropped siblings that had already completed
