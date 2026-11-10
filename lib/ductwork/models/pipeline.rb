@@ -30,8 +30,8 @@ module Ductwork
     class DefinitionError < StandardError; end
     class ReviveError < StandardError; end
 
-    STEP_ORDER_TICK = Rational(1, 1_000_000)
-    private_constant :STEP_ORDER_TICK
+    DEFAULT_STEP_ORDER_PRECISION = 6
+    private_constant :DEFAULT_STEP_ORDER_PRECISION
 
     class << self
       attr_reader :pipeline_definition
@@ -200,12 +200,19 @@ module Ductwork
 
     def duplicate_succeeded_steps(steps, new_branch, new_run, now, steps_after: 0)
       ordered_steps = steps.includes(:job).order(:started_at, :id).to_a
+      tick = step_order_tick
 
       ordered_steps.reverse_each.with_index(steps_after) do |step, ticks_back|
-        started_at = now - (ticks_back * STEP_ORDER_TICK)
+        started_at = now - (ticks_back * tick)
 
         duplicate_succeeded_step(step, new_branch, new_run, now, started_at)
       end
+    end
+
+    def step_order_tick
+      precision = Ductwork::Step.columns_hash["started_at"].precision
+
+      Rational(1, 10**(precision || DEFAULT_STEP_ORDER_PRECISION))
     end
 
     def duplicate_succeeded_step(step, new_branch, new_run, now, started_at)
