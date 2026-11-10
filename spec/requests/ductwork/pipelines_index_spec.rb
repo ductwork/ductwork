@@ -22,8 +22,9 @@ RSpec.describe "PipelinesController#index", type: :request do
 
     it "counts each run's errors separately" do
       pipeline = create(:pipeline)
-      earlier = create(:run, pipeline: pipeline, pipeline_klass: "Billing", started_at: 1.hour.ago)
-      latest = create(:run, pipeline: pipeline, pipeline_klass: "Billing", started_at: Time.current)
+      earlier = create(:run, pipeline: pipeline, pipeline_klass: "Billing", status: "completed", started_at: 1.hour.ago)
+      latest = create(:run, pipeline: pipeline, pipeline_klass: "Billing", status: "in_progress",
+                            started_at: Time.current)
       2.times { error_for(earlier) }
       error_for(latest)
 
