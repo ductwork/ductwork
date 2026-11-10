@@ -108,6 +108,35 @@ RSpec.describe Ductwork::Pipeline, "#revive!" do
     expect(revived.completed_at).to be_almost_now
   end
 
+  it "keeps the revived step as the latest step on a halted branch" do
+    halted_branch = create(:branch, :halted, run: previous_run)
+    earlier_steps = [3, 2].map do |minutes|
+      create(
+        :step,
+        :completed,
+        run: previous_run,
+        branch: halted_branch,
+        started_at: minutes.minutes.ago
+      )
+    end
+    latest_step = create(
+      :step,
+      :completed,
+      run: previous_run,
+      branch: halted_branch,
+      started_at: 1.minute.ago
+    )
+    create(:job, step: latest_step)
+
+    pipeline.revive!
+
+    revived_branch = pipeline.current_run.branches.sole
+    revived_steps = revived_branch.steps.order(:started_at)
+    expect(revived_steps.map(&:source_step)).to eq([*earlier_steps, latest_step])
+    expect(revived_steps.map(&:started_at).uniq.length).to eq(3)
+    expect(revived_branch.latest_step.source_step).to eq(latest_step)
+  end
+
   context "when the halt reason is `job_retries_exhausted`" do
     let(:halted_branch) do
       create(
@@ -148,6 +177,84 @@ RSpec.describe Ductwork::Pipeline, "#revive!" do
       expect(job.klass).to eq(failed_step.klass)
       expect(job.input_args).to eq(failed_job.input_args)
     end
+  end
+
+  context "when the halt reason is `job_crashes_exhausted`" do
+    let(:halted_branch) do
+      create(
+        :branch,
+        :halted,
+        run: previous_run,
+        halt_reason: "job_crashes_exhausted"
+      )
+    end
+    let(:failed_step) { create(:step, :failed, run: previous_run, branch: halted_branch) }
+    let(:failed_job) { create(:job, step: failed_step) }
+
+    before do
+      failed_job
+    end
+
+    it "re-creates the failed step as in_progress" do
+      pipeline.revive!
+
+      step = pipeline.current_run.steps.sole
+      expect(step).to be_in_progress
+      expect(step.source_step).to eq(failed_step)
+      expect(step.completed_at).to be_nil
+    end
+
+    it "re-enqueues a runnable job preserving the original input_args" do
+      pipeline.revive!
+
+      job = pipeline.current_run.steps.sole.job
+      expect(job.input_args).to eq(failed_job.input_args)
+      expect(job.completed_at).to be_nil
+      expect(job.executions.count).to eq(1)
+      expect(job.executions.sole.availability).to be_present
+    end
+  end
+
+  it "duplicates the job of each previously succeeded step, preserving its output" do
+    branch = create(:branch, :completed, run: previous_run)
+    step = create(:step, :completed, run: previous_run, branch: branch)
+    job = create(:job, step: step, output_payload: JSON.dump({ payload: 42 }))
+
+    expect do
+      pipeline.revive!
+    end.to change(Ductwork::Job, :count).by(1)
+
+    new_job = pipeline.current_run.steps.sole.job
+    expect(new_job.klass).to eq(job.klass)
+    expect(new_job.input_args).to eq(job.input_args)
+    expect(new_job.return_value).to eq(42)
+    expect(new_job.started_at).to be_almost_now
+    expect(new_job.completed_at).to be_almost_now
+  end
+
+  it "duplicates the job of each prior completed step on a halted branch" do
+    halted_branch = create(:branch, :halted, run: previous_run)
+    earlier_step = create(
+      :step,
+      :completed,
+      run: previous_run,
+      branch: halted_branch,
+      started_at: 2.minutes.ago
+    )
+    create(:job, step: earlier_step, output_payload: JSON.dump({ payload: 7 }))
+    latest_step = create(
+      :step,
+      :completed,
+      run: previous_run,
+      branch: halted_branch,
+      started_at: 1.minute.ago
+    )
+    create(:job, step: latest_step)
+
+    pipeline.revive!
+
+    revived = pipeline.current_run.steps.find_by(source_step: earlier_step)
+    expect(revived.job.return_value).to eq(7)
   end
 
   context "when the halt reason is an advancer halt" do

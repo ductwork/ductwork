@@ -2,6 +2,8 @@
 
 ## [1.5.0] (Unreleased)
 
+- fix: re-enqueue the failed step when reviving a branch halted with `job_crashes_exhausted` - revive re-advanced it as if the job had succeeded, passing a missing return value downstream
+- fix: copy each succeeded step's job when reviving a pipeline so a `combine` or `collapse` after the revive receives every sibling's return value - the copied steps had no jobs, so the fan-in silently dropped siblings that had already completed
 - feat: redesign the dashboard with top-level navigation, an overview of halted pipelines and pipelines by class, status tabs with counts, compact expandable step and error rows, and a phone layout
 - feat: draw the workflow on the dashboard's pipeline page in place of the raw definition, with each node showing its step counts by status, retried and crash-recovered steps, and halt reasons, and linking to the matching steps
 - feat: add a node filter to the steps list on the dashboard's pipeline page and show the page position, disabling the next button on the last page
